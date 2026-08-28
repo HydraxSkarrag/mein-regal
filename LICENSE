@@ -1,0 +1,45 @@
+Bücherregal - Licence
+
+1) Source code (PHP, HTML, CSS, JavaScript in this repository)
+
+MIT License
+
+Copyright (c) 2026 Bücherhausen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+2) Not covered by the MIT licence
+
+The following are NOT part of the software and are not licensed with it:
+
+  * The Bücherhausen logo, wordmark and other brand assets
+    (public/assets/logo.png and related files). All rights reserved.
+  * The bundled webfonts, which carry their own licences
+    (Inter and IBM Plex Serif are both SIL Open Font License 1.1).
+  * Book cover photographs and any cover images retrieved from third parties.
+    These belong to their respective rights holders. Covers photographed by
+    the operator remain the operator's own. Cover images from third-party
+    services are linked, not redistributed, and stay subject to the terms of
+    the service they come from.
+  * Catalogue data. Bibliographic metadata retrieved from the Deutsche
+    Nationalbibliothek is published by the DNB under CC0; data from other
+    services is subject to those services' terms.
+
+Anyone running their own installation should replace the brand assets in
+public/assets/ with their own before putting it online.

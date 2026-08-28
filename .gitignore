@@ -1,0 +1,21 @@
+# Real credentials - NEVER commit
+config.php
+*.local
+
+# User data: uploaded covers, logs, import reports, exports
+storage/
+public/covers/*
+!public/covers/.gitkeep
+
+# The library export itself has no place in the repository
+*.csv
+
+# Build / editor / OS noise
+.claude/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+node_modules/
+vendor/
