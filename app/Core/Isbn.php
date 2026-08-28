@@ -30,6 +30,17 @@ final class Isbn
             return self::to13($clean);
         }
 
+        // Some shop exports pad an ISBN-10 with leading zeros to EAN length:
+        // "0003548365914" is really 3548365914. Only attempted when the code
+        // starts with zeros, so genuine product EANs are not mangled into
+        // books by accident.
+        if (strlen($clean) === 13 && str_starts_with($clean, '000')) {
+            $candidate = substr($clean, 3);
+            if (self::isValid10($candidate)) {
+                return self::to13($candidate);
+            }
+        }
+
         return null;
     }
 
@@ -67,6 +78,12 @@ final class Isbn
     public static function isValid10(string $isbn): bool
     {
         if (strlen($isbn) !== 10 || !preg_match('/^\d{9}[\dX]$/', $isbn)) {
+            return false;
+        }
+        // "0000000000" satisfies the check digit but is not an assignable
+        // number. Without this guard a zero-padded placeholder would be
+        // silently accepted as a book.
+        if (substr($isbn, 0, 9) === '000000000') {
             return false;
         }
         $sum = 0;

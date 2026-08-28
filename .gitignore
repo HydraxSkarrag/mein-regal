@@ -7,8 +7,10 @@ storage/
 public/covers/*
 !public/covers/.gitkeep
 
-# The library export itself has no place in the repository
+# The library export itself has no place in the repository - not even a
+# private one. Test fixtures are small, synthetic and deliberately kept.
 *.csv
+!tests/fixtures/*.csv
 
 # Build / editor / OS noise
 .claude/
