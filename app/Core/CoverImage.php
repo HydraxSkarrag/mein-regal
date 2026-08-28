@@ -33,17 +33,26 @@ final class CoverImage
     /**
      * The URL to render for a stored cover row, or null when there is none.
      *
+     * Pass $small for the shelf grid: a full-size cover per tile would be a
+     * lot of mobile data for something rendered at 128 pixels wide.
+     *
      * @param array{source: string, path: ?string, external_url: ?string}|null $cover
      */
-    public static function url(?array $cover, string $basePath = '/covers/'): ?string
+    public static function url(?array $cover, bool $small = false, string $basePath = '/covers/'): ?string
     {
         if ($cover === null) {
             return null;
         }
-        if (($cover['path'] ?? null) !== null && $cover['path'] !== '') {
-            return $basePath . $cover['path'];
+        $path = $cover['path'] ?? null;
+        if ($path !== null && $path !== '') {
+            if ($small) {
+                $path = preg_replace('/\.webp$/', '-klein.webp', $path) ?? $path;
+            }
+
+            return $basePath . $path;
         }
 
+        // Only ever an image the signed-in owner sees; see CoverRepository.
         return $cover['external_url'] ?? null;
     }
 }

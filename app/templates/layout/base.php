@@ -18,7 +18,7 @@ $current = $current ?? '';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title><?= e($pageTitle) ?> – <?= e($siteName) ?></title>
+  <title><?= e($pageTitle === $siteName ? $pageTitle : $pageTitle . ' – ' . $siteName) ?></title>
   <?php if ($noIndex): ?>
   <meta name="robots" content="noindex, nofollow">
   <?php else: ?>
@@ -58,6 +58,7 @@ $current = $current ?? '';
   <a class="skip-link" href="#main"><?= e(t('nav.skip')) ?></a>
 
   <header class="site-header">
+    <div class="site-header-inner">
     <a class="brand" href="/">
       <img src="/assets/logo.png" alt="" width="47" height="36" class="brand-logo">
       <span class="brand-name"><?= e(t('app.shelf')) ?></span>
@@ -72,6 +73,7 @@ $current = $current ?? '';
       <a class="nav-desktop-only" href="/statistik"<?= $current === 'stats' ? ' aria-current="page"' : '' ?>><?= e(t('nav.stats')) ?></a>
       <?php if ($signedIn): ?>
       <a class="nav-desktop-only" href="/erfassen"<?= $current === 'scan' ? ' aria-current="page"' : '' ?>><?= e(t('nav.scan')) ?></a>
+      <a class="nav-desktop-only" href="/verwaltung"<?= $current === 'admin' ? ' aria-current="page"' : '' ?>><?= e(t('nav.admin')) ?></a>
       <?php endif; ?>
       <a href="/sprache/<?= $locale === 'de' ? 'en' : 'de' ?>?zurueck=<?= e(rawurlencode($currentPath ?? '/')) ?>"
          hreflang="<?= $locale === 'de' ? 'en' : 'de' ?>"><?= e($locale === 'de' ? 'EN' : 'DE') ?></a>
@@ -81,6 +83,7 @@ $current = $current ?? '';
       <a href="/anmelden"><?= e(t('auth.signin')) ?></a>
       <?php endif; ?>
     </nav>
+    </div>
   </header>
 
   <main id="main" class="container<?= ($narrow ?? false) ? ' container--prose' : '' ?>">
@@ -91,8 +94,9 @@ $current = $current ?? '';
   </main>
 
   <footer class="site-footer">
-    <nav>
-      <a href="<?= e($blogUrl) ?>" target="_blank" rel="noopener"><?= e($blogName) ?></a>
+    <nav class="site-footer-inner">
+      <a href="<?= e($blogUrl) ?>?utm_source=regal&amp;utm_medium=app&amp;utm_campaign=footer"
+         target="_blank" rel="noopener"><?= e($blogName) ?></a>
       <a href="/impressum"><?= e(t('legal.imprint')) ?></a>
       <a href="/datenschutz"><?= e(t('legal.privacy')) ?></a>
     </nav>
@@ -116,9 +120,9 @@ $current = $current ?? '';
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
       <span><?= e(t('nav.sub')) ?></span>
     </a>
-    <a href="/statistik"<?= $current === 'stats' ? ' aria-current="page"' : '' ?>>
+    <a href="/verwaltung"<?= $current === 'admin' ? ' aria-current="page"' : '' ?>>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-      <span><?= e(t('nav.stats')) ?></span>
+      <span><?= e(t('nav.admin')) ?></span>
     </a>
   </nav>
   <?php endif; ?>

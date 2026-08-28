@@ -1,0 +1,67 @@
+# Bücherregal - Apache configuration (all-inkl runs Apache)
+#
+# This is configuration, not authentication: signing in is handled by the
+# application. Nothing security-critical lives in this directory in the first
+# place - the application code sits one level above the document root - so the
+# rules here are a second line of defence.
+
+Options -Indexes
+
+# Dotfiles (.htaccess, .git*, .env, ...)
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+# Nothing but the front controller should ever be requested directly.
+<FilesMatch "\.(sql|md|json|yml|yaml|lock|dist|sample\.php|log)$">
+  Require all denied
+</FilesMatch>
+
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Force HTTPS. The barcode scanner needs it - getUserMedia is refused on
+  # an insecure origin - and so does the Secure flag on the session cookie.
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Existing files (CSS, JS, images, covers) are served as they are;
+  # everything else goes to the front controller.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # The camera must be allowed for this origin, or the scanner silently
+  # fails. The neighbouring bookaholic site sets camera=() - copying that
+  # file verbatim would break the one feature this site exists for.
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=(self)"
+
+  # The site loads nothing from anywhere else - no CDN, no web fonts, no
+  # analytics - so this can be as strict as it looks. It stays true only as
+  # long as that holds; the first external script would have to loosen it,
+  # and would also cost the site its consent-banner-free standing.
+  #
+  # img-src allows https: because third-party covers are LINKED (never
+  # copied), and those are only ever rendered for a signed-in visitor.
+  Header set Content-Security-Policy "default-src 'self'; img-src 'self' https: data:; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+
+  Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>

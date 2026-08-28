@@ -109,13 +109,20 @@ img { max-width: 100%; height: auto; }
 
 /* ---- Header --------------------------------------------------------- */
 
+/* The bar spans the window, but what is in it lines up with the content
+   below. On a wide screen a logo pinned to the far left edge floats away
+   from everything it belongs to. */
 .site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.site-header-inner {
   display: flex;
   align-items: center;
   gap: 16px;
+  max-width: var(--maxw-wide);
+  margin: 0 auto;
   padding: 12px 20px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
 }
 
 .brand {
@@ -479,7 +486,74 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 
 .chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-figure { margin: 0 0 8px; }
+.chart-bar { fill: var(--accent); transition: fill .12s ease; }
+.chart-bar--muted { fill: #c4c2c7; }
+
+/* The exact figure appears on hover rather than sitting above every column -
+   a number on each one turns a shape into a table. */
+.chart-value { fill: var(--text); opacity: 0; transition: opacity .12s ease; }
+.chart-col:hover .chart-value,
+.chart-col:focus-within .chart-value { opacity: 1; }
+.chart-col:hover .chart-bar { fill: var(--accent-dark); }
+.chart-hit { cursor: default; }
+
 .note { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+
+/* ---- Part-to-whole bar ---------------------------------------------- */
+
+.split { margin: 0 0 6px; }
+.split-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--border);
+}
+.split-part { display: block; height: 100%; }
+.split-part + .split-part { box-shadow: inset 2px 0 0 var(--surface); }
+
+.split-legend { list-style: none; margin: 12px 0 0; padding: 0; font-size: 0.88rem; }
+.split-legend li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+}
+.split-legend .swatch { width: 10px; height: 10px; border-radius: 3px; }
+.split-legend .n { color: var(--text); font-variant-numeric: tabular-nums; }
+.split-legend .pct { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+
+/* ---- Dashboard ------------------------------------------------------ */
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.panel h2 { margin-top: 0; font-size: 1.05rem; }
+
+.todo-list { list-style: none; margin: 0; padding: 0; }
+.todo-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  font-size: 0.92rem;
+}
+.todo-list li + li { border-top: 1px solid var(--border); }
+.todo-list .n { font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+.todo-list a { text-decoration: none; }
+
+.recent { list-style: none; margin: 0; padding: 0; font-size: 0.88rem; }
+.recent li { padding: 7px 0; }
+.recent li + li { border-top: 1px solid var(--border); }
+.recent a { text-decoration: none; color: var(--text); }
+.recent a:hover { color: var(--accent); }
+.recent .when { color: var(--muted); font-size: 0.78rem; }
 
 /* ---- Scanner -------------------------------------------------------- */
 
@@ -573,7 +647,14 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   background: var(--surface);
 }
 .site-footer a { color: var(--muted); }
-.site-footer nav { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.site-footer-inner {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: var(--maxw-wide);
+  margin: 0 auto;
+}
 @media (max-width: 720px) { .site-footer { margin-bottom: var(--nav-height); } }
 
 @media (prefers-reduced-motion: reduce) {

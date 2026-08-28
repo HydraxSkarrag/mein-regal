@@ -9,11 +9,17 @@ use PDO;
 /**
  * Cover images.
  *
- * Two kinds live here and they are not interchangeable. Photographs taken by
- * the owner are files we host, and they may be shown to anyone. Images from
- * Google or Open Library are LINKS - never copied - and are only rendered for
- * a signed-in visitor, because embedding them on a public page would hand
- * every visitor's IP address to a third party.
+ * What decides whether a cover may be shown to everyone is not where it came
+ * from but whether we host it. An image on this server costs the visitor
+ * nothing but a request to this server. An image embedded from Google or the
+ * Internet Archive hands that visitor's IP address to a third party, which
+ * would need consent - and a consent banner that has to be clicked before any
+ * cover appears is worse than no covers at all.
+ *
+ * So: a row with a local path is public; a row with only an external URL is
+ * not, and is rendered solely for the signed-in owner. The source is kept
+ * either way, so attribution can be shown and a specific cover can be
+ * withdrawn if a rights holder ever asks.
  *
  * is_public encodes that rule once, so no template has to remember it.
  */
@@ -24,8 +30,6 @@ final class CoverRepository
     public const SOURCE_GOOGLE      = 'google';
     public const SOURCE_OPENLIBRARY = 'openlibrary';
 
-    /** Sources we host ourselves and may therefore show to everyone. */
-    private const PUBLIC_SOURCES = [self::SOURCE_OWN, self::SOURCE_VLBTIX];
 
     /** Preference order when a book has more than one cover. */
     private const PRIORITY = [
@@ -42,9 +46,10 @@ final class CoverRepository
         $this->dialect = new Dialect($pdo);
     }
 
-    public static function isPublicSource(string $source): bool
+    /** Hosting decides visibility, not provenance. */
+    public static function isPublic(?string $path): bool
     {
-        return in_array($source, self::PUBLIC_SOURCES, true);
+        return $path !== null && $path !== '';
     }
 
     public function save(
@@ -71,7 +76,7 @@ final class CoverRepository
             $attribution,
             $width,
             $height,
-            self::isPublicSource($source) ? 1 : 0,
+            self::isPublic($path) ? 1 : 0,
         ]);
     }
 

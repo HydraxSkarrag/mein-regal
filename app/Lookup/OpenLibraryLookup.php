@@ -45,6 +45,19 @@ final class OpenLibraryLookup implements LookupSource
         return $this->parse($response['body'], $isbn13);
     }
 
+    /**
+     * The cover service, asked directly.
+     *
+     * The book endpoint only reports a cover when the edition record happens
+     * to name one, which measured at a fraction of what the cover service
+     * itself holds. "default=false" makes it answer 404 instead of handing
+     * back a blank placeholder image.
+     */
+    public static function coverUrl(string $isbn13, string $size = 'L'): string
+    {
+        return sprintf('https://covers.openlibrary.org/b/isbn/%s-%s.jpg?default=false', $isbn13, $size);
+    }
+
     public function parse(string $json, string $isbn13): ?BookData
     {
         $data = json_decode($json, true);

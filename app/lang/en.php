@@ -164,6 +164,16 @@ return [
     'error.500.body'     => 'The error has been logged. Please try again later.',
     'error.csrf'         => 'That form had gone stale. Please send it again.',
 
+    'stats.year.running'   => 'The current year is not over yet.',
+    'stats.rated.note'     => '{rated} of {total} books have a rating.',
+    'stats.enrich.note'    => 'The nightly job fills in missing covers and details on its own, a few hundred at a time.',
+    'stats.covers.none'    => 'No covers on file yet.',
+    'stats.recent'         => 'Recently added',
+    'stats.bulk.count'     => 'For {count} books the acquisition date comes from the bulk entry into Bookstats and is not a real purchase date.',
+    'stats.coverage.note'  => 'How complete the records are - the low bars show where work would pay off.',
+    'cover.own'            => 'Own photograph',
+    'book.subtitle'        => 'Subtitle',
+
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
 ];

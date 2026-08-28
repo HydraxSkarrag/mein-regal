@@ -80,6 +80,7 @@ declare(strict_types=1);
               'book'       => $book,
               'cover'      => $covers[(int) $book['id']] ?? null,
               'authorLine' => $authorLines[(int) $book['id']] ?? '',
+              'small'      => true,
           ]) ?>
           <?php if ($book['reading_status'] === 'unread'): ?>
           <span class="badge-unread" title="<?= e(t('status.unread')) ?>"></span>

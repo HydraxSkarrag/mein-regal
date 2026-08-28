@@ -164,6 +164,16 @@ return [
     'error.500.body'     => 'Der Fehler wurde vermerkt. Bitte später erneut versuchen.',
     'error.csrf'         => 'Das Formular war zu alt. Bitte noch einmal absenden.',
 
+    'stats.year.running'   => 'Das laufende Jahr ist noch nicht vorbei.',
+    'stats.rated.note'     => '{rated} von {total} Büchern sind bewertet.',
+    'stats.enrich.note'    => 'Der nächtliche Abgleich füllt fehlende Cover und Angaben nach und nach von selbst auf.',
+    'stats.covers.none'    => 'Noch keine Cover hinterlegt.',
+    'stats.recent'         => 'Zuletzt erfasst',
+    'stats.bulk.count'     => 'Bei {count} Büchern stammt das Erwerbsdatum aus der Sammelerfassung in Bookstats und ist kein echtes Kaufdatum.',
+    'stats.coverage.note'  => 'Wie vollständig die Datensätze sind – die niedrigen Werte zeigen, wo sich Nacharbeit lohnt.',
+    'cover.own'            => 'Eigenes Foto',
+    'book.subtitle'        => 'Untertitel',
+
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
 ];

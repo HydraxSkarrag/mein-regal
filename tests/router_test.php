@@ -56,3 +56,27 @@ Assert::same('redirect sets Location', Response::redirect('/login')->headers()['
 Assert::same('redirect status', Response::redirect('/login')->status(), 302);
 Assert::same('noIndex adds the header', Response::html('x')->noIndex()->headers()['X-Robots-Tag'], 'noindex, nofollow');
 Assert::same('umlauts survive JSON encoding', Response::json(['t' => 'Tollkühn'])->body(), '{"t":"Tollkühn"}');
+
+Assert::group('Autoloading: one class per file');
+
+// The autoloader maps a class name straight onto a path, so a second class
+// hiding in another class's file is invisible to it - and the failure only
+// shows up at runtime, not in a test that never names it.
+$offenders = [];
+$directory = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__) . '/app'));
+foreach ($directory as $file) {
+    if (!$file->isFile() || $file->getExtension() !== 'php') {
+        continue;
+    }
+    $source = (string) file_get_contents($file->getPathname());
+    if (!preg_match_all('/^(?:final |abstract )?(?:class|interface|trait|enum)\s+(\w+)/m', $source, $matches)) {
+        continue;
+    }
+    $expected = $file->getBasename('.php');
+    foreach ($matches[1] as $declared) {
+        if ($declared !== $expected) {
+            $offenders[] = $declared . ' declared in ' . $file->getBasename();
+        }
+    }
+}
+Assert::same('every class sits in the file named after it', $offenders, []);

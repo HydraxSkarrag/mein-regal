@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 use App\Core\CoverImage;
 
-$url = CoverImage::url($cover ?? null);
+$url = CoverImage::url($cover ?? null, $small ?? false);
 $sizes = $sizes ?? '(max-width: 600px) 33vw, 150px';
 ?>
 <?php if ($url !== null): ?>

@@ -49,6 +49,112 @@ final class CoverStorage
         return $this->storeFile($temporary, $key);
     }
 
+    /**
+     * Hosts we will fetch a cover from.
+     *
+     * An allowlist rather than a check for "is it https": the URL that reaches
+     * this method comes from a third-party API response, and an open fetcher
+     * would happily be pointed at the server's own network. Only these hosts
+     * are ever contacted.
+     */
+    private const ALLOWED_HOSTS = [
+        'covers.openlibrary.org',
+        // Open Library redirects its cover requests onto the Internet
+        // Archive's own storage, so the redirect target has to be allowed
+        // too or every one of its covers fails.
+        'archive.org',
+        'ia600000.us.archive.org',
+        'books.google.com',
+        'books.googleusercontent.com',
+        'lh3.googleusercontent.com',
+    ];
+
+    /** Internet Archive storage nodes are numbered: ia601504.us.archive.org. */
+    private const ALLOWED_HOST_PATTERNS = [
+        '/^ia\d+\.us\.archive\.org$/',
+    ];
+
+    /**
+     * Fetch a cover once and keep it.
+     *
+     * This is what lets every visitor see covers without a consent banner:
+     * because the image is served from this server, no visitor ever contacts
+     * Google or the Internet Archive, and no visitor IP leaves the site. The
+     * trade is legal rather than technical - the image is copied rather than
+     * embedded - and the source is recorded alongside it so attribution can
+     * be shown and a cover can be withdrawn on request.
+     *
+     * @return array{path: string, width: int, height: int}
+     */
+    public function storeRemote(string $url, string $key): array
+    {
+        // Open Library answers cover requests with a redirect, so redirects
+        // have to be followed - but curl's own following would happily leave
+        // the allowlist. Each hop is therefore checked by hand.
+        $body = $this->fetch($url, 3);
+
+        return $this->storeBinary($body, $key);
+    }
+
+    private function fetch(string $url, int $hopsLeft): string
+    {
+        if ($hopsLeft <= 0) {
+            throw new RuntimeException('Too many redirects.');
+        }
+        $this->assertAllowed($url);
+
+        $handle = curl_init($url);
+        if ($handle === false) {
+            throw new RuntimeException('curl_init failed.');
+        }
+        curl_setopt_array($handle, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => 6,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_USERAGENT      => 'Buecherregal/1.0 (private library catalogue)',
+            CURLOPT_NOPROGRESS     => false,
+            CURLOPT_PROGRESSFUNCTION => static function ($resource, $expected, $received): int {
+                // Stop a hostile or broken response before it fills memory.
+                return $received > self::MAX_BYTES ? 1 : 0;
+            },
+        ]);
+
+        $body = curl_exec($handle);
+        $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $location = (string) curl_getinfo($handle, CURLINFO_REDIRECT_URL);
+
+        if (in_array($status, [301, 302, 303, 307, 308], true) && $location !== '') {
+            return $this->fetch($location, $hopsLeft - 1);
+        }
+        if (!is_string($body) || $body === '' || $status !== 200) {
+            throw new RuntimeException('Cover fetch failed with status ' . $status);
+        }
+
+        return $body;
+    }
+
+    private function assertAllowed(string $url): void
+    {
+        $parts = parse_url($url);
+        if (($parts['scheme'] ?? '') !== 'https') {
+            throw new RuntimeException('Only https cover URLs are fetched.');
+        }
+        $host = strtolower($parts['host'] ?? '');
+        if (in_array($host, self::ALLOWED_HOSTS, true)) {
+            return;
+        }
+        foreach (self::ALLOWED_HOST_PATTERNS as $pattern) {
+            if (preg_match($pattern, $host) === 1) {
+                return;
+            }
+        }
+
+        throw new RuntimeException('Cover host not allowed: ' . $host);
+    }
+
     /** Also used for images captured in the browser and posted as raw bytes. */
     public function storeBinary(string $bytes, string $key): array
     {
@@ -93,19 +199,24 @@ final class CoverStorage
         }
 
         $base = $this->safeKey($key);
-        $this->ensureDirectory();
+        $shard = self::shardFor($base);
+        $this->ensureDirectory($shard);
 
         $detail = $this->resample($image, min(self::DETAIL_WIDTH, $width), $width, $height);
-        $this->write($detail, $base . '.webp');
+        $this->write($detail, $shard . '/' . $base . '.webp');
         $storedWidth = imagesx($detail);
         $storedHeight = imagesy($detail);
 
         // A second, smaller copy for the grid: three thousand full-size covers
         // on a phone would be a lot of mobile data for thumbnails.
         $grid = $this->resample($image, min(self::GRID_WIDTH, $width), $width, $height);
-        $this->write($grid, $base . '-klein.webp');
+        $this->write($grid, $shard . '/' . $base . '-klein.webp');
 
-        return ['path' => $base . '.webp', 'width' => $storedWidth, 'height' => $storedHeight];
+        return [
+            'path'   => $shard . '/' . $base . '.webp',
+            'width'  => $storedWidth,
+            'height' => $storedHeight,
+        ];
     }
 
     private function resample(\GdImage $source, int $targetWidth, int $width, int $height): \GdImage
@@ -142,6 +253,25 @@ final class CoverStorage
         return ($rotated === null || $rotated === false) ? $image : $rotated;
     }
 
+    /**
+     * Where a cover lives, relative to the cover root: "a3/9783473408061.webp".
+     *
+     * Three thousand books mean over six thousand files once the small copies
+     * are counted, and a single directory holding those is slow to list, slow
+     * to stat, and painful over FTP - which is the only way onto this server.
+     * Splitting on two hex characters of a hash of the key gives 256 buckets,
+     * so the shelf as it stands averages roughly two dozen files per
+     * directory, and it keeps scaling long past that.
+     *
+     * The hash is taken rather than, say, the ISBN's publisher prefix because
+     * publishers are wildly uneven - one of them accounts for dozens of these
+     * books while most account for one.
+     */
+    public static function shardFor(string $key): string
+    {
+        return substr(sha1($key !== '' ? $key : 'leer'), 0, 2);
+    }
+
     /** The stored name is derived from the ISBN, never from the upload. */
     private function safeKey(string $key): string
     {
@@ -150,18 +280,23 @@ final class CoverStorage
         return $clean !== '' ? $clean : bin2hex(random_bytes(8));
     }
 
-    private function ensureDirectory(): void
+    private function ensureDirectory(string $subdirectory = ''): void
     {
-        if (!is_dir($this->directory) && !mkdir($this->directory, 0o755, true) && !is_dir($this->directory)) {
-            throw new RuntimeException('Cover directory is not writable.');
+        $path = $this->directory . ($subdirectory !== '' ? '/' . $subdirectory : '');
+        if (!is_dir($path) && !mkdir($path, 0o755, true) && !is_dir($path)) {
+            throw new RuntimeException('Cover directory is not writable: ' . $path);
         }
     }
 
+    /** @param string $path as stored in the database, e.g. "a3/978....webp" */
     public function delete(string $path): void
     {
+        $shard = dirname($path);
+        $shard = $shard === '.' ? '' : $shard . '/';
         $base = basename($path, '.webp');
+
         foreach ([$base . '.webp', $base . '-klein.webp'] as $file) {
-            $full = $this->directory . '/' . $file;
+            $full = $this->directory . '/' . $shard . $file;
             if (is_file($full)) {
                 @unlink($full);
             }

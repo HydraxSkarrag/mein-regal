@@ -28,9 +28,15 @@ Assert::true('the fixture really carries an EXIF marker', str_contains(file_get_
 
 $stored = $storage->storeBinary(file_get_contents($sourceJpeg), '9783473408061');
 
-Assert::same('the file is named after the ISBN, not the upload', $stored['path'], '9783473408061.webp');
+// Covers are spread over 256 subdirectories: six thousand files in one
+// directory would be slow to list and painful over FTP, which is the only
+// way onto this server.
+$shard = CoverStorage::shardFor('9783473408061');
+Assert::same('the file is named after the ISBN, not the upload', $stored['path'], $shard . '/9783473408061.webp');
+Assert::same('the shard is two hex characters', preg_match('/^[0-9a-f]{2}$/', $shard), 1);
 Assert::true('the image was written', is_file($dir . '/' . $stored['path']));
-Assert::true('a smaller copy for the grid exists too', is_file($dir . '/9783473408061-klein.webp'));
+Assert::true('a smaller copy for the grid exists too', is_file($dir . '/' . $shard . '/9783473408061-klein.webp'));
+Assert::same('the same key always lands in the same shard', CoverStorage::shardFor('9783473408061'), $shard);
 
 $written = file_get_contents($dir . '/' . $stored['path']);
 Assert::same('no EXIF block survives re-encoding', str_contains($written, "Exif\x00\x00"), false);
@@ -48,12 +54,26 @@ try {
 }
 Assert::same('a non-image is refused', $rejected, true);
 
-// A crafted name must not escape the cover directory.
+// A crafted key must not escape the cover directory. The stored path now
+// legitimately contains a slash for the shard, so the check is that the
+// resolved file really sits underneath the cover root.
 $traversal = $storage->storeBinary(file_get_contents($dir . '/source.jpg'), '../../etc/passwd');
-Assert::same('path traversal is stripped from the name', str_contains($traversal['path'], '/'), false);
-Assert::same('and from the parent reference', str_contains($traversal['path'], '..'), false);
+Assert::same('no parent reference survives', str_contains($traversal['path'], '..'), false);
+Assert::same(
+    'the file lands inside the cover directory',
+    str_starts_with((string) realpath($dir . '/' . $traversal['path']), (string) realpath($dir)),
+    true
+);
+Assert::same('exactly one slash, for the shard', substr_count($traversal['path'], '/'), 1);
 
-array_map('unlink', glob($dir . '/*') ?: []);
+foreach (glob($dir . '/*') ?: [] as $entry) {
+    if (is_dir($entry)) {
+        array_map('unlink', glob($entry . '/*') ?: []);
+        rmdir($entry);
+        continue;
+    }
+    unlink($entry);
+}
 rmdir($dir);
 
 Assert::group('CoverImage placeholder');
@@ -74,6 +94,11 @@ foreach (range(9783000000000, 9783000000400) as $isbn) {
 }
 Assert::same('the palette is used across its full range', count($seen), 16);
 Assert::true('a book with no ISBN still gets a colour', CoverImage::placeholderColour('') !== '');
-Assert::same('a stored file becomes a path', CoverImage::url(['source' => 'own', 'path' => 'x.webp', 'external_url' => null]), '/covers/x.webp');
+Assert::same('a stored file becomes a path', CoverImage::url(['source' => 'own', 'path' => 'a3/x.webp', 'external_url' => null]), '/covers/a3/x.webp');
+Assert::same(
+    'the grid asks for the small copy',
+    CoverImage::url(['source' => 'own', 'path' => 'a3/x.webp', 'external_url' => null], true),
+    '/covers/a3/x-klein.webp'
+);
 Assert::same('a linked cover keeps its URL', CoverImage::url(['source' => 'google', 'path' => null, 'external_url' => 'https://x/y.jpg']), 'https://x/y.jpg');
 Assert::same('no cover means none', CoverImage::url(null), null);
