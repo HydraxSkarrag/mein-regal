@@ -340,6 +340,19 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   white-space: nowrap;
 }
 
+/* The value the shelf is ordered by, so the ordering can be read rather
+   than taken on trust. */
+.book-sortvalue {
+  margin: 2px 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.book-sortvalue--stars { color: var(--accent); letter-spacing: 1px; }
+
 .badge-unread {
   position: absolute;
   top: 6px; right: 6px;
@@ -691,6 +704,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
    tap lands on the nav instead - the form simply appears not to submit. */
 .edit-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 20px;
   position: sticky;
@@ -707,6 +721,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     box-shadow: 0 -8px 12px -8px rgba(20, 20, 24, 0.14);
   }
 }
+/* Three buttons are tight on a narrow phone. Let the bar wrap as a whole
+   rather than breaking a label across two lines mid-word. */
+.edit-actions .btn { white-space: nowrap; }
+.edit-actions > :first-child { flex: 1 1 auto; }
 
 /* 150px rather than 120px: a paired row squeezed narrower leaves no space
    between a long option like "Rezensionsexemplar" and the dropdown arrow.
@@ -753,18 +771,30 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .shot-thumb { width: 54px; border-radius: 3px; display: block; }
 
-/* Removing a book is folded away rather than sitting next to Save, where a
-   mis-tap on a phone would find it. */
-.danger { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 18px; }
+/* Removing a book sits in the action bar where it can be found, but the
+   confirmation stays folded away and asks for a typed word - so the button
+   is easy to reach and the deletion still is not. */
+.danger { margin-top: 32px; }
 .danger summary {
   cursor: pointer;
   color: var(--muted);
   font-size: 0.9rem;
   list-style-position: outside;
+  padding: 4px 0;
 }
 .danger summary:hover { color: var(--accent); }
-.danger[open] summary { color: var(--text); margin-bottom: 10px; }
-.danger form { max-width: 340px; }
+.danger[open] summary { color: var(--text); }
+.danger-body {
+  margin-top: 12px;
+  padding: 16px 18px;
+  border: 1px solid #f7b9c4;
+  border-radius: var(--radius);
+  background: #fdecef;
+}
+.danger-body .note { margin-top: 0; color: #8a0a22; }
+.danger-body form { max-width: 340px; }
+.danger-body input { background: var(--surface); }
+
 .btn--danger { border-color: var(--accent); color: var(--accent); }
 .btn--danger:hover { background: var(--accent); color: #fff; }
 .attribution a { color: var(--muted); }

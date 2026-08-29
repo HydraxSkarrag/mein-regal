@@ -99,6 +99,31 @@ declare(strict_types=1);
           <?php if (($authorLines[(int) $book['id']] ?? '') !== ''): ?>
           <p class="book-author"><?= e($authorLines[(int) $book['id']]) ?></p>
           <?php endif; ?>
+          <?php
+            /* Show whatever the shelf is currently ordered by. Sorting by
+               year without the years on show leaves you trusting the order
+               rather than reading it. */
+            $sortValue = null;
+            switch ($filters['sort'] ?? 'recent') {
+                case 'year':
+                    $sortValue = $book['published_year'] !== null ? (string) $book['published_year'] : null;
+                    break;
+                case 'rating':
+                    $sortValue = $book['rating'] !== null
+                        ? str_repeat('★', (int) $book['rating']) . str_repeat('☆', 5 - (int) $book['rating'])
+                        : null;
+                    break;
+                case 'read':
+                    $sortValue = $book['finished_at'] !== null ? $formatter->date($book['finished_at']) : null;
+                    break;
+                case 'recent':
+                    $sortValue = $formatter->date(substr((string) $book['created_at'], 0, 10));
+                    break;
+            }
+          ?>
+          <?php if ($sortValue !== null && $sortValue !== ''): ?>
+          <p class="book-sortvalue<?= ($filters['sort'] ?? '') === 'rating' ? ' book-sortvalue--stars' : '' ?>"><?= e($sortValue) ?></p>
+          <?php endif; ?>
         </a>
       </li>
       <?php endforeach; ?>

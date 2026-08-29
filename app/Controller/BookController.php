@@ -321,7 +321,7 @@ final class BookController
             'title'   => t('book.edit') . ' – ' . $book['title'],
             'current' => 'shelf',
             'noIndex' => true,
-            'scripts' => ['/js/tags.js'],
+            'scripts' => ['/js/tags.js', '/js/edit.js'],
         ]), $error === '' ? 200 : 422)->noIndex();
     }
 

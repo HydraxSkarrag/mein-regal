@@ -235,6 +235,9 @@ $value = static fn (?string $v): string => $v ?? '';
 
   <div class="edit-actions">
     <button class="btn btn--primary" type="submit"><?= e(t('common.save')) ?></button>
+    <!-- type="button" matters: a bare button inside a form submits it, and
+         this one must not save on its way to asking about deleting. -->
+    <button class="btn btn--danger" type="button" data-open-delete><?= e(t('delete.title')) ?></button>
     <a class="btn" href="/buch/<?= e($book['slug']) ?>"><?= e(t('common.cancel')) ?></a>
   </div>
 </form>
@@ -251,16 +254,18 @@ $value = static fn (?string $v): string => $v ?? '';
 </form>
 <?php endif; ?>
 
-<details class="danger">
+<details class="danger" id="delete-book">
   <summary><?= e(t('delete.title')) ?></summary>
-  <p class="note"><?= e(t('delete.explain')) ?></p>
-  <form method="post" action="/buch/<?= e($book['slug']) ?>/loeschen">
-    <?= $csrfField ?>
-    <div class="field">
-      <label for="confirm"><?= e(t('delete.type', ['word' => 'LÖSCHEN'])) ?></label>
-      <input id="confirm" type="text" name="confirm" autocomplete="off" required
-             pattern="LOESCHEN|LÖSCHEN" placeholder="LÖSCHEN">
-    </div>
-    <button class="btn btn--danger" type="submit"><?= e(t('delete.button')) ?></button>
-  </form>
+  <div class="danger-body">
+    <p class="note"><?= e(t('delete.explain')) ?></p>
+    <form method="post" action="/buch/<?= e($book['slug']) ?>/loeschen">
+      <?= $csrfField ?>
+      <div class="field">
+        <label for="confirm"><?= e(t('delete.type', ['word' => 'LÖSCHEN'])) ?></label>
+        <input id="confirm" type="text" name="confirm" autocomplete="off" required
+               pattern="LOESCHEN|LÖSCHEN" placeholder="LÖSCHEN">
+      </div>
+      <button class="btn btn--danger" type="submit"><?= e(t('delete.button')) ?></button>
+    </form>
+  </div>
 </details>
