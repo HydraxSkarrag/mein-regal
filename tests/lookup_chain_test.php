@@ -53,7 +53,8 @@ $dnbAnswer = new BookData(
 $googleAnswer = new BookData(
     source: 'google', isbn13: $german, title: 'Milla (Google spelling)',
     publisher: 'Wrong Publisher', publishedYear: 1999,
-    coverUrl: 'https://books.google.com/x.jpg', attribution: 'Cover: Google Books'
+    coverUrl: 'https://books.google.com/x.jpg', attribution: 'Cover: Google Books',
+    coverSource: 'google'
 );
 
 $dnb = new FakeSource('dnb', [$german => $dnbAnswer]);
@@ -70,6 +71,13 @@ Assert::same('nor the year', $book?->publishedYear, 2017);
 Assert::same('the price only the DNB has survives', $book?->price, 12.99);
 Assert::same('but the cover gap is filled', $book?->coverUrl, 'https://books.google.com/x.jpg');
 Assert::same('and carries its attribution', $book?->attribution, 'Cover: Google Books');
+
+// The record says dnb and the cover says google, and both are true. Sharing
+// one source field meant the scanner discarded the very cover it had just
+// shown the user, because the record's source was not a cover source.
+Assert::same('the record keeps its own source', $book?->source, 'dnb');
+Assert::same('while the cover keeps the source it came from', $book?->coverSource, 'google');
+Assert::same('and that reaches the client', $book?->toArray()['cover_source'], 'google');
 Assert::same('Open Library was not needed', $openlibrary->calls, 0);
 
 Assert::group('LookupChain misses');
@@ -78,3 +86,25 @@ $chain = new LookupChain(new FakeSource('dnb', []), new FakeSource('google', [])
 $outcome = $chain->find('9783473408061');
 Assert::same('no source answers means null', $outcome['result'], null);
 Assert::same('and every source was tried', $outcome['tried'], ['dnb', 'google', 'openlibrary']);
+
+
+Assert::group('BookData: a record with its own cover keeps it');
+
+// When the first source does supply a cover, a later one must not overwrite
+// either the image or who it belongs to.
+$withCover = new BookData(
+    source: 'openlibrary', title: 'Hat eins',
+    coverUrl: 'https://covers.openlibrary.org/a.jpg',
+    attribution: 'Cover: Open Library', coverSource: 'openlibrary'
+);
+$other = new BookData(
+    source: 'google', title: 'Auch da', pageCount: 200,
+    coverUrl: 'https://books.google.com/b.jpg',
+    attribution: 'Cover: Google Books', coverSource: 'google'
+);
+$merged = $withCover->mergeMissingFrom($other);
+
+Assert::same('the first cover stands', $merged->coverUrl, 'https://covers.openlibrary.org/a.jpg');
+Assert::same('with its own source', $merged->coverSource, 'openlibrary');
+Assert::same('and its own credit', $merged->attribution, 'Cover: Open Library');
+Assert::same('while a real gap is still filled', $merged->pageCount, 200);

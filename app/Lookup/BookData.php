@@ -31,6 +31,14 @@ final class BookData
         public readonly array $tags = [],
         public readonly ?string $coverUrl = null,
         public readonly ?string $attribution = null,
+        /**
+         * Where the cover came from, which is not always where the rest came
+         * from. A German book is answered by the DNB, which has no covers at
+         * all, so the image is filled in from Google or Open Library further
+         * down the chain. One shared source field cannot describe that, and
+         * the record ends up claiming an image it never supplied.
+         */
+        public readonly ?string $coverSource = null,
     ) {
     }
 
@@ -66,7 +74,11 @@ final class BookData
             priceCurrency: $this->price !== null ? $this->priceCurrency : $other->priceCurrency,
             tags:          $this->tags !== [] ? $this->tags : $other->tags,
             coverUrl:      $pick($this->coverUrl, $other->coverUrl),
+            // Attribution and provenance travel with the image, not with the
+            // record - otherwise a merged cover is credited to whichever
+            // source happened to answer first.
             attribution:   $this->coverUrl !== null ? $this->attribution : $other->attribution,
+            coverSource:   $this->coverUrl !== null ? $this->coverSource : $other->coverSource,
         );
     }
 
@@ -89,6 +101,7 @@ final class BookData
             'price_currency' => $this->priceCurrency,
             'tags'           => $this->tags,
             'cover_url'      => $this->coverUrl,
+            'cover_source'   => $this->coverSource,
             'attribution'    => $this->attribution,
         ];
     }

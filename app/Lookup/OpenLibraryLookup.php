@@ -103,6 +103,7 @@ final class OpenLibraryLookup implements LookupSource
             tags:          $this->tags($record['subjects'] ?? []),
             coverUrl:      $cover,
             attribution:   $cover !== null ? 'Cover: Open Library' : null,
+            coverSource:   $cover !== null ? $this->name() : null,
         );
     }
 

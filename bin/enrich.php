@@ -117,7 +117,11 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
         // source for German metadata - structurally has no covers at all.
         $candidates = [];
         if ($found->coverUrl !== null) {
-            $candidates[] = [$found->coverUrl, $found->source, $found->attribution];
+            $candidates[] = [
+                $found->coverUrl,
+                $found->coverSource ?? CoverRepository::SOURCE_OPENLIBRARY,
+                $found->attribution,
+            ];
         }
         $candidates[] = [
             OpenLibraryLookup::coverUrl($isbn),
@@ -133,7 +137,7 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
             }
             $covers->save(
                 $book['id'],
-                $source === 'dnb' ? CoverRepository::SOURCE_OPENLIBRARY : $source,
+                $source,
                 $stored['path'],
                 $url,
                 $attribution,

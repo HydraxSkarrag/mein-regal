@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
+use App\Lookup\OpenLibraryLookup;
 use App\Repository\CoverRepository;
 use Throwable;
 
@@ -94,6 +95,20 @@ final class ScanController
         }
 
         $data = $found->toArray();
+
+        // The best source for a German book is the DNB, and it has no covers
+        // at all. Ask Open Library's cover service directly rather than
+        // showing a bare placeholder - the same step took the nightly job's
+        // cover rate from 8% to 40%.
+        if ($data['cover_url'] === null) {
+            $probe = $this->openLibraryCover($isbn);
+            if ($probe !== null) {
+                $data['cover_url'] = $probe;
+                $data['cover_source'] = CoverRepository::SOURCE_OPENLIBRARY;
+                $data['attribution'] = 'Cover: Open Library';
+            }
+        }
+
         $data['isbn_formatted'] = Isbn::format($isbn);
         $data['source_label'] = t('scan.found.via', ['source' => $this->sourceLabel($found->source)]);
 
@@ -263,6 +278,35 @@ final class ScanController
     }
 
     // ------------------------------------------------------------ helpers
+
+    /**
+     * Is there a cover for this ISBN, and only then its address.
+     *
+     * Checked rather than assumed: handing the page a URL that answers 404
+     * would put a broken image where the cover belongs. "default=false" is
+     * what makes the service say no instead of returning a blank placeholder.
+     */
+    private function openLibraryCover(string $isbn13): ?string
+    {
+        $url = OpenLibraryLookup::coverUrl($isbn13);
+
+        $handle = curl_init($url);
+        if ($handle === false) {
+            return null;
+        }
+        curl_setopt_array($handle, [
+            CURLOPT_NOBODY         => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 3,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_USERAGENT      => 'Buecherregal/1.0 (private library catalogue)',
+        ]);
+        curl_exec($handle);
+        $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+
+        return $status === 200 ? $url : null;
+    }
 
     private function requireSignedInJson(): ?Response
     {

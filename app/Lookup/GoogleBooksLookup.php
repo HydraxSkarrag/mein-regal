@@ -77,6 +77,7 @@ final class GoogleBooksLookup implements LookupSource
             tags:          $this->tags($info['categories'] ?? []),
             coverUrl:      $cover,
             attribution:   $cover !== null ? 'Cover: Google Books' : null,
+            coverSource:   $cover !== null ? $this->name() : null,
         );
     }
 

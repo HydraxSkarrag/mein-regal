@@ -316,9 +316,13 @@
     body.append('acquisition_type', 'purchase');
     body.append('authors', JSON.stringify(currentBook.authors || []));
     body.append('tags', JSON.stringify(currentBook.tags || []));
-    if (currentBook.cover_url && currentBook.source !== 'dnb') {
+    /* The cover's own source, not the record's. A German book is answered
+       by the DNB, which has no covers, so the image shown here came from
+       somewhere further down the chain - checking the record's source threw
+       away the very cover displayed above the button. */
+    if (currentBook.cover_url && currentBook.cover_source) {
       body.append('cover_url', currentBook.cover_url);
-      body.append('cover_source', currentBook.source);
+      body.append('cover_source', currentBook.cover_source);
       body.append('cover_attribution', currentBook.attribution || '');
     }
 
