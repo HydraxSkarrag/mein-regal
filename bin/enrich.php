@@ -136,7 +136,9 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
     return $stats;
 }
 
-if (PHP_SAPI === 'cli') {
+// Only when this file is the program being run - including it for its
+// functions must not start a run of its own.
+if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
     $options = getopt('', ['limit::', 'owner::', 'sqlite::', 'quiet']);
     $limit = max(1, min(1000, (int) ($options['limit'] ?? 100)));
     $ownerId = (int) ($options['owner'] ?? 1);

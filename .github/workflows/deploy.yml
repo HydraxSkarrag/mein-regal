@@ -1,0 +1,93 @@
+name: Deploy zu all-inkl
+
+# Läuft NICHT automatisch bei Commits, sondern nur von Hand:
+# GitHub → Tab "Actions" → "Deploy zu all-inkl" → "Run workflow".
+#
+# Wichtiger Unterschied zum Bookaholic-Workflow: dort wird public/ IN den
+# Dokumentenstamm geladen. Hier liegt der Anwendungscode bewusst ÜBER dem
+# Dokumentenstamm, also wird das Repo-Wurzelverzeichnis in den Projektordner
+# geladen. Der Dokumentenstamm der Subdomain muss im KAS auf dessen
+# Unterordner public/ zeigen.
+#
+#   /regal/            <- server_dir, hierhin wird geladen
+#     app/  migrations/  schema.sql
+#     config.php        <- liegt nur auf dem Server, wird nie angefasst
+#     public/           <- Dokumentenstamm der Subdomain im KAS
+#
+# Zeigt der Dokumentenstamm versehentlich auf /regal/ statt /regal/public/,
+# ist der komplette Quellcode über HTTP abrufbar. Das ist der eine Handgriff,
+# der beim Einrichten stimmen muss.
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_dir:
+        description: "Projektordner auf dem Server (NICHT der Dokumentenstamm, sondern die Ebene darüber)"
+        required: true
+        default: "/regal/"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: PHP bereitstellen
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+
+      # Ein Tippfehler in einer PHP-Datei nimmt die Seite sonst erst auf dem
+      # Server hoch, und zurück geht es nur über einen zweiten Deploy.
+      - name: Syntax aller PHP-Dateien prüfen
+        run: |
+          set -e
+          find app bin public tests -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l > /dev/null
+          echo "Syntax in Ordnung."
+
+      - name: Tests
+        run: php tests/run.php
+
+      - name: Zielordner prüfen
+        run: |
+          case "${{ github.event.inputs.server_dir }}" in
+            */public/|*/public)
+              echo "::error::server_dir zeigt auf den Dokumentenstamm."
+              echo "::error::Erwartet wird die Ebene DARÜBER, z.B. /regal/ statt /regal/public/."
+              exit 1 ;;
+          esac
+          echo "Zielordner: ${{ github.event.inputs.server_dir }}"
+
+      - name: Per FTPS hochladen
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: ./
+          server-dir: ${{ github.event.inputs.server_dir }}
+          # Kein dangerous-clean-slate: es wird nichts gelöscht.
+          #
+          # Ausgeschlossen wird alles, was auf dem Server entsteht oder dort
+          # nichts zu suchen hat. public/covers/ steht ganz oben auf der
+          # Liste: das sind die selbst aufgenommenen Coverfotos, die es nur
+          # dort gibt und die kein Deploy überschreiben darf.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/.claude/**
+            **/.DS_Store
+            **/config.php
+            **/storage/**
+            **/public/covers/**
+            **/tests/**
+            **/router.dev.php
+            **/*.csv
+            **/*.md
