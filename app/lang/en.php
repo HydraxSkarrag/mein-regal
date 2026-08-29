@@ -54,7 +54,6 @@ return [
     'binding.paperback'  => 'Paperback',
     'binding.ebook'      => 'E-book',
     'binding.audiobook'  => 'Audiobook',
-    'binding.unknown'    => 'Unknown',
 
     'acquired.purchase'    => 'Bought',
     'acquired.review_copy' => 'Review copy',
@@ -101,7 +100,7 @@ return [
     'scan.found.via'     => 'Found via {source}',
     'scan.nothing'       => 'Nothing found for this ISBN. You can enter the book by hand.',
     'scan.save'          => 'Add to shelf',
-    'scan.photo'         => 'Add a cover',
+    'scan.photo'         => 'Choose a file',
     'scan.again'         => 'Next book',
     'scan.series'        => 'Keep scanning',
     'scan.series.hint'   => 'Go straight back to the camera after saving',
@@ -227,6 +226,30 @@ return [
     'scan.open.book'      => 'Open the book',
 
     'scan.skip'           => 'Skip',
+
+    'scan.shoot'          => 'Take the cover now',
+
+    'cover.remove'               => 'Remove the cover',
+    'cover.removed'              => 'Cover removed.',
+    'cover.from.own'             => 'Your own photograph',
+    'cover.from.vlbtix'          => 'From VLB-TIX',
+    'cover.from.google'          => 'From Google Books',
+    'cover.from.openlibrary'     => 'From Open Library',
+    'scan.shutter'               => 'Take the picture',
+    'scan.aim.cover'             => 'Hold the front cover up to the camera',
+    'scan.review'                => 'Is this the picture you want?',
+    'scan.keep'                  => 'Use this one',
+    'scan.retake'                => 'Take another',
+    'scan.drop.cover'            => 'Discard the cover',
+
+    'scan.detected'            => 'Barcode read - looking it up …',
+    'scan.nothing.short'       => 'Nothing found',
+
+    'cover.search'             => 'Look for a cover online',
+    'cover.search.hint'        => 'Asks Open Library and Google Books for this ISBN. A cover that turns up is stored here, not embedded.',
+    'cover.search.found'       => 'Cover found and stored.',
+    'cover.search.none'        => 'No cover was found for this ISBN.',
+    'cover.search.no.isbn'     => 'Without an ISBN there is nothing to search by - you can still upload an image.',
 
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',

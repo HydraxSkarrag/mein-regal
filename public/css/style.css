@@ -59,6 +59,11 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* The browser's own [hidden] rule is display:none at the same specificity as
+   any class, so a later .btn { display: inline-flex } quietly beats it and a
+   hidden button stays on screen. This settles it once for the whole site. */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {
@@ -681,14 +686,26 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .edit-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 }
 .edit-form .panel h2 { margin: 0 0 14px; }
+/* The sticky action bar has to clear the fixed bar at the bottom of a
+   phone. Without the offset the navigation sits on top of Save and every
+   tap lands on the nav instead - the form simply appears not to submit. */
 .edit-actions {
   display: flex;
   gap: 10px;
   margin-top: 20px;
   position: sticky;
   bottom: 0;
+  z-index: 21;
   padding: 14px 0;
   background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+@media (max-width: 720px) {
+  .edit-actions {
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 10px;
+    background: var(--bg);
+    box-shadow: 0 -8px 12px -8px rgba(20, 20, 24, 0.14);
+  }
 }
 
 /* 150px rather than 120px: a paired row squeezed narrower leaves no space
@@ -715,6 +732,26 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 
 .review-link { margin: 0 0 18px; }
+
+.cover-current { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+/* Set apart from the file field above it, so the two ways of getting a
+   cover read as two choices rather than one long form. */
+.cover-search { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.cover-search .note { margin-bottom: 0; }
+
+/* The captured frame, shown large enough that a blurred or half-cropped
+   cover is obvious before it is kept. */
+.shot-review { margin-top: 12px; }
+.shot-preview {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin: 0 auto 12px;
+}
+.shot-thumb { width: 54px; border-radius: 3px; display: block; }
 
 /* Removing a book is folded away rather than sitting next to Save, where a
    mis-tap on a phone would find it. */
@@ -750,10 +787,44 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   position: absolute;
   width: 74%;
   height: 34%;
-  border: 2px solid var(--accent);
+  border: 2px solid rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-sm);
   pointer-events: none;
+  transition: border-color .12s ease, box-shadow .12s ease;
 }
+/* The frame itself answers, so the moment of recognition is visible from
+   arm's length with a book in the way. */
+.scanner-reticle.is-hit {
+  border-color: #3ddc84;
+  box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.35), 0 0 22px rgba(61, 220, 132, 0.5);
+  animation: reticle-pulse .45s ease-out;
+}
+.scanner-reticle.is-miss {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(237, 0, 47, 0.3);
+}
+@keyframes reticle-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
+
+/* A banner across the picture, where the eyes already are. */
+.scanner-overlay {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  margin: 0;
+  padding: 11px 14px;
+  background: rgba(24, 24, 27, 0.82);
+  color: #fff;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+}
+.scanner-overlay--good { background: rgba(21, 128, 61, 0.9); }
+.scanner-overlay--bad  { background: rgba(194, 0, 31, 0.9); }
+.scanner-overlay--busy { background: rgba(24, 24, 27, 0.86); }
 .scanner-hint { color: var(--muted); font-size: 0.85rem; text-align: center; margin: 10px 0 0; }
 .scanner-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .scanner-actions .btn { flex: 1; }

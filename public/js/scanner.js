@@ -22,8 +22,17 @@
   var startButton = document.getElementById('start');
   var stopButton = document.getElementById('stop');
   var hint = document.getElementById('hint');
+  var reticle = document.getElementById('reticle');
+  var overlay = document.getElementById('overlay');
   var statusBox = document.getElementById('status');
   var resultBox = document.getElementById('result');
+
+  /* The cover offer gets its own container. It used to be appended to the
+     status box, which say() empties on every message - so the first status
+     line after saving swept the shutter button away before it could be
+     pressed. */
+  var afterSaveBox = document.createElement('div');
+  statusBox.parentNode.insertBefore(afterSaveBox, statusBox.nextSibling);
   var manualForm = document.getElementById('manual');
   var isbnInput = document.getElementById('isbn');
   var seriesToggle = document.getElementById('series');
@@ -36,6 +45,34 @@
   var lastCodeAt = 0;
   var savedCount = 0;
   var currentBook = null;
+  var alreadySaved = {};
+
+  /* Feedback on the picture, not under it.
+   *
+   * Someone holding a book up to the camera is looking at the camera view,
+   * not at a line of small text below the fold. Without this the moment a
+   * barcode is recognised is invisible, and people keep waving the book
+   * about while the lookup is already running. */
+  function overlaySay(message, kind) {
+    if (!overlay) { return; }
+    if (!message) { overlay.hidden = true; return; }
+    overlay.textContent = message;
+    overlay.className = 'scanner-overlay' + (kind ? ' scanner-overlay--' + kind : '');
+    overlay.hidden = false;
+  }
+
+  function flashReticle(kind) {
+    if (!reticle) { return; }
+    reticle.classList.remove('is-hit', 'is-miss');
+    // Reading the layout forces the class removal to take effect, so a
+    // second hit in a row animates again instead of sitting still.
+    void reticle.offsetWidth;
+    reticle.classList.add(kind === 'miss' ? 'is-miss' : 'is-hit');
+  }
+
+  function clearReticle() {
+    if (reticle) { reticle.classList.remove('is-hit', 'is-miss'); }
+  }
 
   function say(message, kind) {
     statusBox.innerHTML = '';
@@ -93,6 +130,8 @@
 
   function stopCamera() {
     scanning = false;
+    overlaySay('');
+    clearReticle();
     if (stream) {
       stream.getTracks().forEach(function (track) { track.stop(); });
       stream = null;
@@ -207,10 +246,17 @@
     var now = Date.now();
     // The same barcode stays in view for many frames; ignore repeats.
     if (code === lastCode && now - lastCodeAt < 4000) { return; }
+    /* And a book just added stays in view too - in series mode the camera
+       is still pointed at it. Without this it is read again immediately and
+       answered with "already on the shelf", which is both wrong-footed and
+       wipes the cover buttons off the screen. */
+    if (alreadySaved[code]) { return; }
     lastCode = code;
     lastCodeAt = now;
 
     if (navigator.vibrate) { navigator.vibrate(40); }
+    flashReticle('hit');
+    overlaySay(text.detected, 'busy');
     lookup(code);
   }
 
@@ -229,7 +275,9 @@
 
   async function lookup(isbn) {
     say(text.searching);
+    overlaySay(text.detected, 'busy');
     resultBox.hidden = true;
+    afterSaveBox.innerHTML = '';
 
     var body = new FormData();
     body.append('isbn', isbn);
@@ -242,16 +290,45 @@
       return;
     }
 
-    if (reply.status === 429) { say(text.error, 'error'); return; }
-    if (reply.status === 422) { say(reply.data.error || text.invalidIsbn, 'error'); return; }
-    if (reply.data.duplicate) {
-      say(reply.data.message || text.duplicate, 'error');
-      currentBook = null;
+    if (reply.status === 429) { say(text.error, 'error'); overlaySay(text.error, 'bad'); return; }
+    if (reply.status === 422) {
+      var message = reply.data.error || text.invalidIsbn;
+      say(message, 'error');
+      overlaySay(message, 'bad');
+      flashReticle('miss');
       return;
     }
-    if (!reply.data.found) { say(reply.data.message || text.nothing, 'error'); return; }
+    if (reply.data.duplicate) {
+      var message = reply.data.message || text.duplicate;
+      say(message, 'error');
+      overlaySay(message, 'bad');
+      flashReticle('miss');
+      currentBook = null;
+
+      /* Say which book, and offer the way there. "Already on the shelf" on
+         its own leaves you wondering whether it is the same edition, and
+         with the book in one hand the last thing you want is to go and
+         search for it. */
+      var known = reply.data.book;
+      if (known && known.slug) {
+        afterSaveBox.innerHTML = '';
+        var row = document.createElement('div');
+        row.className = 'scanner-actions';
+        row.innerHTML = '<a class="btn" style="flex:1" href="/buch/' + esc(known.slug) + '">' +
+          esc(known.title || text.openBook) + '</a>';
+        afterSaveBox.appendChild(row);
+      }
+      return;
+    }
+    if (!reply.data.found) {
+      say(reply.data.message || text.nothing, 'error');
+      overlaySay(text.nothingShort, 'bad');
+      flashReticle('miss');
+      return;
+    }
 
     say('');
+    overlaySay(reply.data.book.title, 'good');
     showResult(reply.data.book);
   }
 
@@ -341,6 +418,7 @@
       return;
     }
 
+    if (currentBook && currentBook.isbn13) { alreadySaved[currentBook.isbn13] = true; }
     savedCount++;
     counter.hidden = false;
     counter.textContent = text.count.replace('{count}', String(savedCount));
@@ -359,29 +437,152 @@
     }
   }
 
+  /* Taking the cover photograph.
+   *
+   * Aim, shoot, look at it, keep it or try again. The first version fired
+   * the instant the button was pressed, with the video hidden behind the
+   * result card - so you photographed the back of the book you had just
+   * scanned, never saw what you got, and had no way back. A camera that
+   * takes a picture you cannot see before it is saved is worse than no
+   * camera at all.
+   *
+   * Choosing a file stays available, and is the only route offered when the
+   * camera is not running because the ISBN was typed by hand. */
   function offerCoverPhoto(bookId, slug) {
     var wrapper = document.createElement('div');
     wrapper.className = 'scanner-actions';
-    /* The second button used to be a bare arrow, which said nothing about
-       where it went. Name the destination. */
+
     wrapper.innerHTML =
-      '<label class="btn" style="flex:1">' + esc(text.photo) +
+      (stream ? '<button class="btn btn--primary" type="button" data-start-shot style="flex:1">' + esc(text.shoot) + '</button>' : '') +
+      '<label class="btn"' + (stream ? '' : ' style="flex:1"') + '>' + esc(text.photo) +
         '<input type="file" accept="image/*" capture="environment" hidden>' +
       '</label>' +
       '<a class="btn" href="/buch/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
-    statusBox.appendChild(wrapper);
 
-    wrapper.querySelector('input').addEventListener('change', async function (event) {
+    afterSaveBox.innerHTML = '';
+    afterSaveBox.appendChild(wrapper);
+
+    var startShot = wrapper.querySelector('[data-start-shot]');
+    if (startShot) {
+      startShot.addEventListener('click', function () { beginCoverShot(bookId, slug); });
+    }
+    wrapper.querySelector('input').addEventListener('change', function (event) {
       var file = event.target.files && event.target.files[0];
-      if (!file) { return; }
-      var body = new FormData();
-      body.append('book_id', String(bookId));
-      body.append('cover', file);
-      try {
-        await post('/api/cover', body);
-        wrapper.remove();
-      } catch (error) { /* the book is saved either way */ }
+      if (file) { uploadCover(bookId, slug, file, file.name); }
     });
+  }
+
+  /* Step one: put the live picture back in front of the user and say what to
+     do with it. The book has to be turned round, and that is impossible to
+     do well against a hidden viewfinder. */
+  function beginCoverShot(bookId, slug) {
+    resultBox.hidden = true;
+    say('');
+    overlaySay('');
+    clearReticle();
+    hint.textContent = text.aimCover;
+
+    afterSaveBox.innerHTML = '';
+    var actions = document.createElement('div');
+    actions.className = 'scanner-actions';
+    actions.innerHTML =
+      '<button class="btn btn--primary" type="button" data-shoot style="flex:1">' + esc(text.shutter) + '</button>' +
+      '<button class="btn" type="button" data-cancel>' + esc(text.cancel) + '</button>';
+    afterSaveBox.appendChild(actions);
+
+    actions.querySelector('[data-shoot]').addEventListener('click', function () {
+      var shot = grabFullFrame();
+      if (shot) { reviewShot(bookId, slug, shot); }
+    });
+    actions.querySelector('[data-cancel]').addEventListener('click', function () {
+      hint.textContent = text.aim;
+      offerCoverPhoto(bookId, slug);
+    });
+  }
+
+  /* Step two: show what was actually captured, frozen, at a size where a
+     blurred or half-cropped cover is obvious. Nothing is uploaded until it
+     is accepted. */
+  function reviewShot(bookId, slug, shot) {
+    hint.textContent = text.reviewShot;
+    afterSaveBox.innerHTML = '';
+
+    var review = document.createElement('div');
+    review.className = 'shot-review';
+    review.appendChild(shot);
+    shot.className = 'shot-preview';
+
+    var actions = document.createElement('div');
+    actions.className = 'scanner-actions';
+    actions.innerHTML =
+      '<button class="btn btn--primary" type="button" data-keep style="flex:1">' + esc(text.keepShot) + '</button>' +
+      '<button class="btn" type="button" data-retake>' + esc(text.retake) + '</button>';
+    review.appendChild(actions);
+    afterSaveBox.appendChild(review);
+
+    actions.querySelector('[data-retake]').addEventListener('click', function () {
+      beginCoverShot(bookId, slug);
+    });
+    actions.querySelector('[data-keep]').addEventListener('click', function () {
+      var keep = actions.querySelector('[data-keep]');
+      keep.disabled = true;
+      shot.toBlob(function (blob) {
+        if (blob) { uploadCover(bookId, slug, blob, 'cover.jpg'); }
+        else { keep.disabled = false; }
+      }, 'image/jpeg', 0.92);
+    });
+  }
+
+  /* Step three: it is stored, and can still be thrown away. */
+  async function uploadCover(bookId, slug, blobOrFile, filename) {
+    var body = new FormData();
+    body.append('book_id', String(bookId));
+    body.append('cover', blobOrFile, filename);
+
+    var reply;
+    try {
+      reply = await post('/api/cover', body);
+    } catch (error) {
+      say(text.error, 'error');
+      return;
+    }
+    if (!reply.data || !reply.data.saved) {
+      say(text.error, 'error');
+      offerCoverPhoto(bookId, slug);
+      return;
+    }
+
+    hint.textContent = text.aim;
+    afterSaveBox.innerHTML = '';
+
+    var done = document.createElement('div');
+    done.className = 'scanner-actions';
+    done.innerHTML =
+      '<img src="' + esc(reply.data.url) + '" alt="" class="shot-thumb">' +
+      '<button class="btn" type="button" data-drop>' + esc(text.dropCover) + '</button>' +
+      '<a class="btn" href="/buch/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
+    afterSaveBox.appendChild(done);
+
+    done.querySelector('[data-drop]').addEventListener('click', async function () {
+      var drop = new FormData();
+      drop.append('book_id', String(bookId));
+      try {
+        await post('/api/cover-loeschen', drop);
+        offerCoverPhoto(bookId, slug);
+      } catch (error) { /* leave it as it is */ }
+    });
+  }
+
+  /* The whole frame this time, not the barcode band: a cover fills the
+     picture, so cropping would cut it in half. */
+  function grabFullFrame() {
+    if (!video.videoWidth) { return null; }
+    var shot = document.createElement('canvas');
+    shot.width = video.videoWidth;
+    shot.height = video.videoHeight;
+    shot.getContext('2d').drawImage(video, 0, 0);
+
+    return shot;
   }
 
   // ----------------------------------------------------------------- wiring

@@ -50,7 +50,7 @@ final class BookstatsRow
         'e-book'      => Binding::EBOOK,
         'ebook'       => Binding::EBOOK,
         'hörbuch'     => Binding::AUDIOBOOK,
-        'undefined'   => Binding::UNKNOWN,
+        // "UNDEFINED" means the binding was never recorded, which is NULL.
     ];
 
     /** @param array<string,string> $raw */

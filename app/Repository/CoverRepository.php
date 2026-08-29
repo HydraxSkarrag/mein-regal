@@ -139,6 +139,39 @@ final class CoverRepository
         return $best;
     }
 
+    /**
+     * Remove covers for a book, optionally just one source.
+     *
+     * Returns the stored paths so the caller can unlink the files - the
+     * repository owns rows, not the filesystem.
+     *
+     * @return list<string>
+     */
+    public function remove(int $bookId, ?string $source = null): array
+    {
+        $sql = 'SELECT path FROM covers WHERE book_id = ? AND path IS NOT NULL';
+        $parameters = [$bookId];
+        if ($source !== null) {
+            $sql .= ' AND source = ?';
+            $parameters[] = $source;
+        }
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($parameters);
+        $paths = array_values(array_filter(
+            array_map(static fn (array $row): string => (string) $row['path'], $statement->fetchAll())
+        ));
+
+        $delete = 'DELETE FROM covers WHERE book_id = ?';
+        $deleteParameters = [$bookId];
+        if ($source !== null) {
+            $delete .= ' AND source = ?';
+            $deleteParameters[] = $source;
+        }
+        $this->pdo->prepare($delete)->execute($deleteParameters);
+
+        return $paths;
+    }
+
     public function countBySource(int $ownerId): array
     {
         $statement = $this->pdo->prepare(

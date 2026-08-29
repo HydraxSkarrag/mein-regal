@@ -54,7 +54,6 @@ return [
     'binding.paperback'  => 'Taschenbuch',
     'binding.ebook'      => 'E-Book',
     'binding.audiobook'  => 'Hörbuch',
-    'binding.unknown'    => 'Unbekannt',
 
     'acquired.purchase'    => 'Kauf',
     'acquired.review_copy' => 'Rezensionsexemplar',
@@ -101,7 +100,7 @@ return [
     'scan.found.via'     => 'Gefunden über {source}',
     'scan.nothing'       => 'Zu dieser ISBN wurde nichts gefunden. Du kannst das Buch von Hand erfassen.',
     'scan.save'          => 'Ins Regal',
-    'scan.photo'         => 'Cover aufnehmen',
+    'scan.photo'         => 'Bild wählen',
     'scan.again'         => 'Nächstes Buch',
     'scan.series'        => 'Serienscan',
     'scan.series.hint'   => 'Nach dem Speichern gleich weiterscannen',
@@ -227,6 +226,30 @@ return [
     'scan.open.book'      => 'Zum Buch',
 
     'scan.skip'           => 'Überspringen',
+
+    'scan.shoot'          => 'Cover jetzt aufnehmen',
+
+    'cover.remove'               => 'Cover entfernen',
+    'cover.removed'              => 'Cover entfernt.',
+    'cover.from.own'             => 'Eigenes Foto',
+    'cover.from.vlbtix'          => 'Von VLB-TIX',
+    'cover.from.google'          => 'Von Google Books',
+    'cover.from.openlibrary'     => 'Von Open Library',
+    'scan.shutter'               => 'Auslösen',
+    'scan.aim.cover'             => 'Vorderseite vor die Kamera halten',
+    'scan.review'                => 'Passt das Bild?',
+    'scan.keep'                  => 'Übernehmen',
+    'scan.retake'                => 'Neu aufnehmen',
+    'scan.drop.cover'            => 'Cover verwerfen',
+
+    'scan.detected'            => 'Barcode erkannt – wird gesucht …',
+    'scan.nothing.short'       => 'Nichts gefunden',
+
+    'cover.search'             => 'Cover im Netz suchen',
+    'cover.search.hint'        => 'Fragt Open Library und Google Books nach dieser ISBN. Gefundene Bilder werden hier gespeichert, nicht eingebettet.',
+    'cover.search.found'       => 'Cover gefunden und gespeichert.',
+    'cover.search.none'        => 'Zu dieser ISBN wurde kein Cover gefunden.',
+    'cover.search.no.isbn'     => 'Ohne ISBN lässt sich nicht suchen – ein Bild lässt sich aber hochladen.',
 
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',

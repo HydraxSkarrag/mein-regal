@@ -21,6 +21,7 @@ require_once dirname(__DIR__) . '/app/bootstrap.php';
 use App\Core\Config;
 use App\Core\CoverStorage;
 use App\Core\Database;
+use App\Lookup\CoverFinder;
 use App\Lookup\DnbLookup;
 use App\Lookup\GoogleBooksLookup;
 use App\Lookup\HttpClient;
@@ -45,6 +46,7 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
     $authors = new AuthorRepository($pdo);
     $tags = new TagRepository($pdo);
     $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
+    $finder = new CoverFinder($chain, $covers, $storage);
 
     // Books with no cover at all come first; among those, the ones missing the
     // most metadata. Anything already tried today is skipped, so a nightly run
@@ -111,41 +113,10 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
             $stats['metadata']++;
         }
 
-        // Try the cover the lookup happened to mention, then Open Library's
-        // cover service on its own. The service knows about a good many
-        // images that the book records never point at, and the DNB - the best
-        // source for German metadata - structurally has no covers at all.
-        $candidates = [];
-        if ($found->coverUrl !== null) {
-            $candidates[] = [
-                $found->coverUrl,
-                $found->coverSource ?? CoverRepository::SOURCE_OPENLIBRARY,
-                $found->attribution,
-            ];
-        }
-        $candidates[] = [
-            OpenLibraryLookup::coverUrl($isbn),
-            CoverRepository::SOURCE_OPENLIBRARY,
-            'Cover: Open Library',
-        ];
-
-        foreach ($candidates as [$url, $source, $attribution]) {
-            try {
-                $stored = $storage->storeRemote($url, $isbn);
-            } catch (Throwable $e) {
-                continue;
-            }
-            $covers->save(
-                $book['id'],
-                $source,
-                $stored['path'],
-                $url,
-                $attribution,
-                $stored['width'],
-                $stored['height']
-            );
+        // One place decides where a cover may come from and what happens
+        // to it - the same code the scanner and the edit page use.
+        if ($finder->findFor((int) $book['id'], $isbn, $found)['stored']) {
             $stats['covers']++;
-            break;
         }
 
         if ($verbose) {

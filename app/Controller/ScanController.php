@@ -147,7 +147,7 @@ final class ScanController
                 'published_year' => $this->intOrNull($request->post('published_year'), 1400, 2100),
                 'page_count'     => $this->intOrNull($request->post('page_count'), 1, 30000),
                 'language'       => $this->orNull($request->post('language'), 3),
-                'binding'        => $this->oneOf($request->post('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook', 'unknown']),
+                'binding'        => $this->oneOf($request->post('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
                 'price'          => $this->priceOrNull($request->post('price')),
                 'acquisition_type' => $this->oneOf(
                     $request->post('acquisition_type'),
@@ -275,6 +275,33 @@ final class ScanController
         } catch (Throwable $e) {
             error_log('[regal] cover fetch failed for ' . $url . ': ' . $e->getMessage());
         }
+    }
+
+    /** POST /api/cover/loeschen - discard a cover taken moments ago. */
+    public function deleteCover(Request $request): Response
+    {
+        $guard = $this->requireSignedInJson();
+        if ($guard !== null) {
+            return $guard;
+        }
+        if (!$this->app->csrf->isValid($request->allPost())) {
+            return Response::json(['error' => t('error.csrf')], 400);
+        }
+
+        $bookId = (int) $request->post('book_id');
+        $statement = $this->app->pdo->prepare('SELECT id FROM books WHERE id = ? AND owner_id = ?');
+        $statement->execute([$bookId, $this->app->ownerId]);
+        if ($statement->fetch() === false) {
+            return Response::json(['error' => t('error.404.title')], 404);
+        }
+
+        $paths = $this->app->covers->remove($bookId);
+        $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
+        foreach ($paths as $path) {
+            $storage->delete($path);
+        }
+
+        return Response::json(['removed' => true]);
     }
 
     // ------------------------------------------------------------ helpers

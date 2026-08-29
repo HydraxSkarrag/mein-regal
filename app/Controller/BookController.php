@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
+use App\Lookup\CoverFinder;
 use App\Repository\CoverRepository;
 use Throwable;
 
@@ -26,7 +27,7 @@ use Throwable;
 final class BookController
 {
     private const STATUSES  = ['read', 'unread', 'abandoned', 'reading'];
-    private const BINDINGS  = ['hardcover', 'paperback', 'ebook', 'audiobook', 'unknown'];
+    private const BINDINGS  = ['hardcover', 'paperback', 'ebook', 'audiobook'];
     private const ACQUIRED  = ['purchase', 'review_copy', 'gift', 'prize', 'loan', 'swap'];
     private const ROLES     = ['author', 'illustrator', 'translator', 'editor', 'narrator'];
 
@@ -183,6 +184,83 @@ final class BookController
         $this->app->session->flash(t('delete.done', ['title' => $title]), 'ok');
 
         return Response::redirect('/');
+    }
+
+    /**
+     * Throw a cover away.
+     *
+     * Wanted more often than it sounds: a cover fetched from elsewhere can be
+     * the wrong edition, and a photograph can simply be a bad one. Without
+     * this the only way back is to delete the book.
+     */
+    public function deleteCover(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $book = $this->app->books->findBySlug($this->app->ownerId, $params['slug'] ?? '');
+        if ($book === null) {
+            return $this->app->notFound();
+        }
+        if (!$this->app->csrf->isValid($request->allPost())) {
+            return $this->render($book, t('error.csrf'));
+        }
+
+        $paths = $this->app->covers->remove((int) $book['id']);
+
+        $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
+        foreach ($paths as $path) {
+            $storage->delete($path);
+        }
+
+        $this->app->session->flash(t('cover.removed'), 'ok');
+
+        return Response::redirect('/buch/' . $book['slug'] . '/bearbeiten');
+    }
+
+    /**
+     * Go and look for a cover for this one book.
+     *
+     * The nightly job works through the backlog on its own, but for a book
+     * in front of you right now, waiting until tomorrow is silly.
+     */
+    public function findCover(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $book = $this->app->books->findBySlug($this->app->ownerId, $params['slug'] ?? '');
+        if ($book === null) {
+            return $this->app->notFound();
+        }
+        if (!$this->app->csrf->isValid($request->allPost())) {
+            return $this->render($book, t('error.csrf'));
+        }
+
+        $isbn = $book['isbn13'] ?? null;
+        if ($isbn === null) {
+            $this->app->session->flash(t('cover.search.no.isbn'), 'error');
+
+            return Response::redirect('/buch/' . $book['slug'] . '/bearbeiten');
+        }
+
+        $finder = new CoverFinder(
+            $this->app->lookup,
+            $this->app->covers,
+            new CoverStorage(PROJECT_ROOT . '/public/covers')
+        );
+        $result = $finder->findFor((int) $book['id'], (string) $isbn);
+
+        $this->app->session->flash(
+            $result['stored'] ? t('cover.search.found') : t('cover.search.none'),
+            $result['stored'] ? 'ok' : 'error'
+        );
+
+        return Response::redirect('/buch/' . $book['slug'] . '/bearbeiten');
     }
 
     private function storeCover(int $bookId, array $upload, string $key): void

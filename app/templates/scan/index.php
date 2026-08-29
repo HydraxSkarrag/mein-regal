@@ -13,7 +13,8 @@ declare(strict_types=1);
 
   <div class="scanner-frame" id="frame" hidden>
     <video id="video" playsinline muted></video>
-    <div class="scanner-reticle" aria-hidden="true"></div>
+    <div class="scanner-reticle" id="reticle" aria-hidden="true"></div>
+    <p class="scanner-overlay" id="overlay" hidden></p>
   </div>
 
   <div class="scanner-actions">
@@ -47,10 +48,20 @@ declare(strict_types=1);
 <script type="application/json" id="scan-i18n">
 <?= json_encode([
     'searching'   => t('scan.searching'),
+    'detected'    => t('scan.detected'),
+    'nothingShort'=> t('scan.nothing.short'),
     'save'        => t('scan.save'),
     'photo'       => t('scan.photo'),
     'openBook'    => t('scan.open.book'),
     'skip'        => t('scan.skip'),
+    'shoot'       => t('scan.shoot'),
+    'shutter'     => t('scan.shutter'),
+    'aimCover'    => t('scan.aim.cover'),
+    'reviewShot'  => t('scan.review'),
+    'keepShot'    => t('scan.keep'),
+    'retake'      => t('scan.retake'),
+    'dropCover'   => t('scan.drop.cover'),
+    'cancel'      => t('common.cancel'),
     'again'       => t('scan.again'),
     'nothing'     => t('scan.nothing'),
     'duplicate'   => t('scan.duplicate'),

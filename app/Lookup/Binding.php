@@ -16,7 +16,15 @@ final class Binding
     public const PAPERBACK = 'paperback';
     public const EBOOK     = 'ebook';
     public const AUDIOBOOK = 'audiobook';
-    public const UNKNOWN   = 'unknown';
+
+    /**
+     * There is deliberately no UNKNOWN binding.
+     *
+     * An unrecorded binding is NULL. Having a value that also means "not
+     * recorded" put the same word twice in the editor's dropdown and split
+     * the same books across two buckets in the statistics. The export's
+     * "UNDEFINED" therefore maps to nothing at all.
+     */
 
     private const KEYWORDS = [
         self::HARDCOVER => [
@@ -51,6 +59,6 @@ final class Binding
     /** @return list<string> */
     public static function all(): array
     {
-        return [self::HARDCOVER, self::PAPERBACK, self::EBOOK, self::AUDIOBOOK, self::UNKNOWN];
+        return [self::HARDCOVER, self::PAPERBACK, self::EBOOK, self::AUDIOBOOK];
     }
 }

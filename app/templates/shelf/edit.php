@@ -205,14 +205,31 @@ $value = static fn (?string $v): string => $v ?? '';
       <div class="panel" style="margin-top:20px">
         <h2><?= e(t('edit.group.cover')) ?></h2>
         <?php if ($cover !== null): ?>
-        <div style="max-width:120px;margin-bottom:12px">
-          <?= $view->render('partials.cover', ['book' => $book, 'cover' => $cover, 'authorLine' => '', 'sizes' => '120px']) ?>
+        <div class="cover-current">
+          <div style="max-width:110px">
+            <?= $view->render('partials.cover', ['book' => $book, 'cover' => $cover, 'authorLine' => '', 'sizes' => '110px']) ?>
+          </div>
+          <div>
+            <p class="note" style="margin-top:0"><?= e(t('cover.from.' . $cover['source'])) ?></p>
+            <button class="btn btn--danger" type="submit" form="cover-delete"><?= e(t('cover.remove')) ?></button>
+          </div>
         </div>
         <?php endif; ?>
         <div class="field">
           <label for="cover"><?= e(t('edit.cover.upload')) ?></label>
           <input id="cover" type="file" name="cover" accept="image/*" capture="environment">
           <p class="note"><?= e(t('edit.cover.hint')) ?></p>
+        </div>
+
+        <div class="cover-search">
+          <?php if (($book['isbn13'] ?? null) !== null): ?>
+          <button class="btn" type="submit" form="cover-search"><?= e(t('cover.search')) ?></button>
+          <p class="note"><?= e(t('cover.search.hint')) ?></p>
+          <?php else: ?>
+          <!-- Hiding the button without a word looks like a fault. Say why
+               it is not there. -->
+          <p class="note"><?= e(t('cover.search.no.isbn')) ?></p>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -223,6 +240,18 @@ $value = static fn (?string $v): string => $v ?? '';
     <a class="btn" href="/buch/<?= e($book['slug']) ?>"><?= e(t('common.cancel')) ?></a>
   </div>
 </form>
+
+<?php if ($cover !== null): ?>
+<form id="cover-delete" method="post" action="/buch/<?= e($book['slug']) ?>/cover-loeschen" hidden>
+  <?= $csrfField ?>
+</form>
+<?php endif; ?>
+
+<?php if (($book['isbn13'] ?? null) !== null): ?>
+<form id="cover-search" method="post" action="/buch/<?= e($book['slug']) ?>/cover-suchen" hidden>
+  <?= $csrfField ?>
+</form>
+<?php endif; ?>
 
 <details class="danger">
   <summary><?= e(t('delete.title')) ?></summary>
