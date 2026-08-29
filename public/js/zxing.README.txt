@@ -1,0 +1,17 @@
+zxing.min.js
+
+@zxing/library 0.21.3, UMD build, taken from
+https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js
+
+Licensed under the Apache License 2.0.
+https://github.com/zxing-js/library
+
+Vendored rather than loaded from a CDN. The site fetches nothing from other
+hosts - that is what lets its content-security policy stay strict and its
+footer stay free of a consent banner - so a copy lives here instead.
+
+It is only requested when the browser has no BarcodeDetector of its own,
+which in practice means Safari on iOS. Chrome on Android never downloads it.
+
+To update: fetch the same URL at a newer version, replace this file, and note
+the new version here.

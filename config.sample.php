@@ -40,6 +40,12 @@ return [
     // Optional Google Books API key. Without one the shared per-IP quota applies.
     'google_books_key' => '',
 
+    // Secret for the scheduled job at /cron?key=...
+    // all-inkl's scheduler calls a URL rather than running a script, so this
+    // is the only way in. Generate a long random value; the job refuses to
+    // run while this is empty or shorter than 20 characters.
+    'cron_secret' => '',
+
     // Contact address sent to the metadata APIs in the User-Agent header.
     // Open Library and the DNB ask for this so they can reach you about heavy usage.
     'api_contact' => '',

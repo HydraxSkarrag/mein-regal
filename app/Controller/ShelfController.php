@@ -26,6 +26,7 @@ final class ShelfController
             'status'   => $this->oneOf($request->query('status'), ['read', 'unread', 'abandoned', 'reading']),
             'tag'      => $request->query('tag'),
             'binding'  => $this->oneOf($request->query('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook', 'unknown']),
+            'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'sort'     => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read'], 'recent'),
         ];
 
@@ -83,6 +84,7 @@ final class ShelfController
             'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, 14),
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
             'bindingCounts' => $this->app->books->countBy($this->app->ownerId, 'binding'),
+            'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
             'filters'       => $filters,
             'hasFilters'    => array_filter($filters) !== ['sort' => 'recent'] && array_filter($filters) !== [],
             'urlFor'        => $urlFor,
@@ -123,6 +125,7 @@ final class ShelfController
             'authorLine'    => $authorLine,
             'tags'          => $this->tagsFor($bookId),
             'isbnFormatted' => $book['isbn13'] !== null ? Isbn::format((string) $book['isbn13']) : '',
+            'coverLink'     => \App\Core\CoverImage::attributionLink($cover, $book['isbn13'] ?? null),
             'duration'      => $this->duration($book['audio_minutes'] ?? null),
             'view'          => $this->app->view,
         ]);

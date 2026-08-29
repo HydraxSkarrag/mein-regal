@@ -275,7 +275,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 
 .book { min-width: 0; }
-.book a { text-decoration: none; color: inherit; display: block; }
+/* The unread dot is positioned against this link. Without the relative
+   context it anchors to the page instead and floats into the top-right
+   corner of the window. */
+.book a { text-decoration: none; color: inherit; display: block; position: relative; }
 
 .cover {
   position: relative;
@@ -554,6 +557,48 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .recent a { text-decoration: none; color: var(--text); }
 .recent a:hover { color: var(--accent); }
 .recent .when { color: var(--muted); font-size: 0.78rem; }
+
+/* ---- Editing -------------------------------------------------------- */
+
+.detail-actions { display: flex; gap: 20px; flex-wrap: wrap; }
+
+.edit-grid { display: grid; gap: 20px; }
+@media (min-width: 860px) {
+  .edit-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
+.edit-form .panel h2 { margin: 0 0 14px; }
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  position: sticky;
+  bottom: 0;
+  padding: 14px 0;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+
+.field-row { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+
+.contributors { border: 0; margin: 0 0 16px; padding: 0; }
+.contributors legend {
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.contributor-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; margin-bottom: 8px; }
+.contributor-row input, .contributor-row select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  color: inherit;
+}
+
+.review-link { margin: 0 0 18px; }
+.attribution a { color: var(--muted); }
 
 /* ---- Scanner -------------------------------------------------------- */
 

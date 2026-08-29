@@ -12,6 +12,8 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
 
 use App\Controller\AuthController;
+use App\Controller\BookController;
+use App\Controller\CronController;
 use App\Controller\PageController;
 use App\Controller\ScanController;
 use App\Controller\ShelfController;
@@ -38,6 +40,8 @@ $auth  = new AuthController($app);
 $scan  = new ScanController($app);
 $stats = new StatsController($app);
 $pages = new PageController($app);
+$cron  = new CronController($app);
+$books = new BookController($app);
 
 // Public
 $app->router->get('/', $shelf->index(...));
@@ -63,6 +67,12 @@ $app->router->post('/abmelden', $auth->signOut(...));
 // Behind the login
 $app->router->get('/erfassen', $scan->page(...));
 $app->router->get('/verwaltung', $stats->dashboard(...));
+$app->router->get('/buch/{slug}/bearbeiten', $books->form(...));
+$app->router->post('/buch/{slug}/bearbeiten', $books->save(...));
+
+// Scheduled work. all-inkl's scheduler calls a URL, so the nightly job needs
+// an address; it is guarded by cron_secret from config.php.
+$app->router->get('/cron', $cron->run(...));
 $app->router->post('/api/lookup', $scan->lookup(...));
 $app->router->post('/api/buch', $scan->store(...));
 $app->router->post('/api/cover', $scan->uploadCover(...));

@@ -12,7 +12,12 @@
  */
 declare(strict_types=1);
 ?>
-<p><a href="/">&larr; <?= e(t('book.back')) ?></a></p>
+<p class="detail-actions">
+  <a href="/">&larr; <?= e(t('book.back')) ?></a>
+  <?php if ($signedIn): ?>
+  <a href="/buch/<?= e($book['slug']) ?>/bearbeiten"><?= e(t('book.edit')) ?></a>
+  <?php endif; ?>
+</p>
 
 <div class="book-detail">
   <div>
@@ -23,7 +28,13 @@ declare(strict_types=1);
         'sizes'      => '220px',
     ]) ?>
     <?php if (($cover['attribution'] ?? null) !== null): ?>
-    <p class="attribution"><?= e($cover['attribution']) ?></p>
+    <p class="attribution">
+      <?php if ($coverLink !== null): ?>
+      <a href="<?= e($coverLink) ?>" target="_blank" rel="noopener nofollow"><?= e($cover['attribution']) ?></a>
+      <?php else: ?>
+      <?= e($cover['attribution']) ?>
+      <?php endif; ?>
+    </p>
     <?php endif; ?>
   </div>
 
@@ -44,6 +55,14 @@ declare(strict_types=1);
     <?php if ($book['rating'] !== null): ?>
     <p class="stars" aria-label="<?= e(t('book.rating')) ?>: <?= (int) $book['rating'] ?>/5">
       <?php for ($star = 1; $star <= 5; $star++): ?><span<?= $star > (int) $book['rating'] ? ' class="off"' : '' ?>>&#9733;</span><?php endfor; ?>
+    </p>
+    <?php endif; ?>
+
+    <?php if (($book['review_url'] ?? null) !== null): ?>
+    <p class="review-link">
+      <a class="btn" href="<?= e($book['review_url']) ?>" target="_blank" rel="noopener">
+        <?= e(t('book.review.read', ['blog' => $blogName])) ?> &rarr;
+      </a>
     </p>
     <?php endif; ?>
 

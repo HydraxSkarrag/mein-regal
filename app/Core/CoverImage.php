@@ -31,6 +31,28 @@ final class CoverImage
     }
 
     /**
+     * Where the credit for a cover should point.
+     *
+     * Open Library asks for a link back as a courtesy and it costs nothing to
+     * give; Google's terms ask for one outright. Naming the source without
+     * linking it is the half-measure that satisfies neither.
+     *
+     * @param array{source: string, external_url?: ?string}|null $cover
+     */
+    public static function attributionLink(?array $cover, ?string $isbn13): ?string
+    {
+        if ($cover === null || $isbn13 === null || $isbn13 === '') {
+            return null;
+        }
+
+        return match ($cover['source'] ?? '') {
+            'openlibrary' => 'https://openlibrary.org/isbn/' . rawurlencode($isbn13),
+            'google'      => 'https://books.google.com/books?vid=ISBN' . rawurlencode($isbn13),
+            default       => null,
+        };
+    }
+
+    /**
      * The URL to render for a stored cover row, or null when there is none.
      *
      * Pass $small for the shelf grid: a full-size cover per tile would be a

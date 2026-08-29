@@ -95,6 +95,10 @@ CREATE TABLE IF NOT EXISTS books (
     notes         TEXT NULL,
     audio_minutes SMALLINT UNSIGNED NULL,
 
+    -- Address of the review on the blog, where there is one. Filled in by
+    -- hand for now; a later automatic match can complete it.
+    review_url VARCHAR(500) NULL,
+
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

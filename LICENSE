@@ -32,6 +32,8 @@ The following are NOT part of the software and are not licensed with it:
     (public/assets/logo.png and related files). All rights reserved.
   * The bundled webfonts, which carry their own licences
     (Inter and IBM Plex Serif are both SIL Open Font License 1.1).
+  * public/js/zxing.min.js - @zxing/library, Apache License 2.0.
+    See public/js/zxing.README.txt for the version and origin.
   * Book cover photographs and any cover images retrieved from third parties.
     These belong to their respective rights holders. Covers photographed by
     the operator remain the operator's own. Cover images from third-party

@@ -53,6 +53,16 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
+    <h2><?= e(t('filter.cover')) ?></h2>
+    <ul>
+      <li><a href="<?= e($urlFor(['cover' => ($filters['cover'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
+             aria-current="<?= ($filters['cover'] ?? '') === 'yes' ? 'true' : 'false' ?>">
+        <span><?= e(t('filter.cover.yes')) ?></span><span class="n"><?= e($formatter->number($coverCounts['with'])) ?></span></a></li>
+      <li><a href="<?= e($urlFor(['cover' => ($filters['cover'] ?? '') === 'no' ? '' : 'no'])) ?>"
+             aria-current="<?= ($filters['cover'] ?? '') === 'no' ? 'true' : 'false' ?>">
+        <span><?= e(t('filter.cover.no')) ?></span><span class="n"><?= e($formatter->number($coverCounts['without'])) ?></span></a></li>
+    </ul>
+
     <h2><?= e(t('filter.binding')) ?></h2>
     <ul>
       <?php foreach ($bindingCounts as $binding => $count): ?>

@@ -53,6 +53,7 @@ declare(strict_types=1);
     'nothing'     => t('scan.nothing'),
     'duplicate'   => t('scan.duplicate'),
     'noCamera'    => t('scan.no.camera'),
+    'noDecoder'   => t('scan.no.decoder'),
     'noHttps'     => t('scan.no.https'),
     'denied'      => t('scan.denied'),
     'invalidIsbn' => t('scan.invalid.isbn'),

@@ -81,7 +81,7 @@
 
     scanning = true;
     detector = await makeDetector();
-    if (!detector) { say(text.noCamera, 'error'); stopCamera(); return; }
+    if (!detector) { say(text.noDecoder, 'error'); stopCamera(); return; }
     tick();
   }
 

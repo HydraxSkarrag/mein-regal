@@ -50,6 +50,74 @@ final class BookRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * Update a book. Only the named columns are touched, and only for a book
+     * this owner actually has - the owner check is in the WHERE clause rather
+     * than left to the caller.
+     *
+     * @param array<string,mixed> $data
+     */
+    public function update(int $ownerId, int $bookId, array $data): bool
+    {
+        $allowed = [
+            'isbn13', 'isbn10', 'title', 'subtitle', 'publisher', 'published_year',
+            'page_count', 'language', 'binding', 'price', 'acquisition_type',
+            'acquired_at', 'reading_status', 'started_at', 'finished_at',
+            'rating', 'notes', 'audio_minutes', 'review_url',
+        ];
+        $data = array_intersect_key($data, array_flip($allowed));
+        if ($data === []) {
+            return false;
+        }
+
+        $assignments = [];
+        foreach (array_keys($data) as $column) {
+            $assignments[] = $column . ' = ?';
+        }
+        $assignments[] = 'updated_at = ?';
+
+        $values = array_values($data);
+        $values[] = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+        $values[] = $bookId;
+        $values[] = $ownerId;
+
+        $statement = $this->pdo->prepare(
+            'UPDATE books SET ' . implode(', ', $assignments) . ' WHERE id = ? AND owner_id = ?'
+        );
+        $statement->execute($values);
+
+        return $statement->rowCount() > 0;
+    }
+
+    public function findById(int $ownerId, int $bookId): ?array
+    {
+        $statement = $this->pdo->prepare('SELECT * FROM books WHERE id = ? AND owner_id = ?');
+        $statement->execute([$bookId, $ownerId]);
+        $row = $statement->fetch();
+
+        return $row === false ? null : $row;
+    }
+
+    /** Replace the whole contributor list for a book. */
+    public function replaceAuthors(int $ownerId, int $bookId, array $people, AuthorRepository $authors): void
+    {
+        $this->pdo->prepare('DELETE FROM book_authors WHERE book_id = ?')->execute([$bookId]);
+        foreach ($people as $position => $person) {
+            $authorId = $authors->findOrCreate($ownerId, $person['name']);
+            $authors->link($bookId, $authorId, $person['role'], $position);
+        }
+    }
+
+    /** Replace the whole tag list for a book. */
+    public function replaceTags(int $ownerId, int $bookId, array $names, TagRepository $tags): void
+    {
+        $this->pdo->prepare('DELETE FROM book_tags WHERE book_id = ?')->execute([$bookId]);
+        foreach ($names as $name) {
+            $tagId = $tags->findOrCreate($ownerId, $name);
+            $tags->link($bookId, $tagId);
+        }
+    }
+
     public function findByIsbn(int $ownerId, string $isbn13): ?array
     {
         $statement = $this->pdo->prepare('SELECT * FROM books WHERE owner_id = ? AND isbn13 = ?');
@@ -97,7 +165,7 @@ final class BookRepository
     /**
      * The shelf listing.
      *
-     * @param array{search?: string, status?: string, tag?: string, binding?: string, rating?: int, language?: string, sort?: string} $filters
+     * @param array{search?: string, status?: string, tag?: string, binding?: string, rating?: int, language?: string, cover?: string, sort?: string} $filters
      * @return array{rows: list<array<string,mixed>>, total: int}
      */
     public function search(int $ownerId, array $filters = [], int $limit = 60, int $offset = 0): array
@@ -163,8 +231,33 @@ final class BookRepository
             $conditions[] = 't.slug = ?';
             $parameters[] = $filters['tag'];
         }
+        // Covers arrive gradually, so "show me the ones that have one" and
+        // "show me what still needs one" are both worth asking for.
+        if (($filters['cover'] ?? '') === 'yes') {
+            $conditions[] = 'EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id)';
+        } elseif (($filters['cover'] ?? '') === 'no') {
+            $conditions[] = 'NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id)';
+        }
 
         return [['sql' => implode(' AND ', $conditions), 'join' => $join], $parameters];
+    }
+
+    /** @return array{with: int, without: int} */
+    public function countByCover(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT
+                 SUM(CASE WHEN EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id) THEN 1 ELSE 0 END) AS with_cover,
+                 SUM(CASE WHEN EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id) THEN 0 ELSE 1 END) AS without_cover
+               FROM books b WHERE b.owner_id = ?'
+        );
+        $statement->execute([$ownerId]);
+        $row = $statement->fetch() ?: [];
+
+        return [
+            'with'    => (int) ($row['with_cover'] ?? 0),
+            'without' => (int) ($row['without_cover'] ?? 0),
+        ];
     }
 
     /** @return array<string,int> */
