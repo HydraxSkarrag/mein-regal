@@ -21,7 +21,7 @@ return [
     'db_dsn' => '',
 
     // Branding. Kept out of the code so a second installation only edits this file.
-    'site_name'    => 'Das Regal',
+    'site_name'    => 'Mein Regal',
     'site_url'     => 'https://regal.buecherhausen.de',
     'blog_url'     => 'https://www.buecherhausen.de/',
     'blog_name'    => 'Bücherhausen',

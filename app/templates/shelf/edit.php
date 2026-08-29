@@ -186,6 +186,7 @@ $value = static fn (?string $v): string => $v ?? '';
           <input id="review_url" type="url" name="review_url" value="<?= e($value($book['review_url'] ?? null)) ?>"
                  placeholder="https://www.buecherhausen.de/…" maxlength="500">
           <p class="note"><?= e(t('book.review.url')) ?></p>
+
         </div>
       </div>
 

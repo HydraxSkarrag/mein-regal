@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 return [
-    'app.shelf'          => 'Das Regal',
+    'app.shelf'          => 'Mein Regal',
     'app.tagline'        => 'Die Bibliothek von Bücherhausen',
     'app.by'             => 'von',
 
@@ -22,7 +22,7 @@ return [
     'nav.skip'           => 'Zum Inhalt springen',
     'nav.menu'           => 'Menü',
 
-    'shelf.title'        => 'Das Regal',
+    'shelf.title'        => 'Mein Regal',
     'shelf.count'        => '{count} Bücher',
     'shelf.search'       => 'Titel, Autor, ISBN',
     'shelf.empty'        => 'Kein Buch gefunden.',
@@ -180,7 +180,7 @@ return [
     'filter.cover.no'      => 'Ohne Cover',
     'book.review.read'     => 'Rezension auf {blog} lesen',
     'book.review'          => 'Rezension',
-    'book.review.url'      => 'Adresse der Rezension im Blog',
+    'book.review.url'      => 'Falls es dazu eine Besprechung auf dem Blog gibt – wird auf der Buchseite verlinkt.',
 
     'edit.group.book'          => 'Das Buch',
     'edit.group.reading'       => 'Gelesen',

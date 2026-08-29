@@ -100,7 +100,7 @@ final class PageController
     public function manifest(): Response
     {
         return Response::json([
-            'name'             => $this->app->config->str('site_name', 'Das Regal'),
+            'name'             => $this->app->config->str('site_name', 'Mein Regal'),
             'short_name'       => $this->app->config->str('site_name', 'Regal'),
             'description'      => t('app.tagline'),
             'start_url'        => '/',

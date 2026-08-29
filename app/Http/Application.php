@@ -138,7 +138,7 @@ final class Application
         $this->view->share('formatter', $this->formatter);
         $this->view->share('signedIn', $this->auth->isSignedIn());
         $this->view->share('user', $this->auth->user());
-        $this->view->share('siteName', $this->config->str('site_name', 'Das Regal'));
+        $this->view->share('siteName', $this->config->str('site_name', 'Mein Regal'));
         $this->view->share('siteUrl', rtrim($this->config->str('site_url'), '/'));
         $this->view->share('blogUrl', $this->config->str('blog_url'));
         $this->view->share('blogName', $this->config->str('blog_name', 'Bücherhausen'));

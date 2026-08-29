@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 return [
-    'app.shelf'          => 'The Shelf',
+    'app.shelf'          => 'My Shelf',
     'app.tagline'        => 'The Bücherhausen library',
     'app.by'             => 'by',
 
@@ -22,7 +22,7 @@ return [
     'nav.skip'           => 'Skip to content',
     'nav.menu'           => 'Menu',
 
-    'shelf.title'        => 'The Shelf',
+    'shelf.title'        => 'My Shelf',
     'shelf.count'        => '{count} books',
     'shelf.search'       => 'Title, author, ISBN',
     'shelf.empty'        => 'No books found.',
@@ -180,7 +180,7 @@ return [
     'filter.cover.no'      => 'Without a cover',
     'book.review.read'     => 'Read the review on {blog}',
     'book.review'          => 'Review',
-    'book.review.url'      => 'Address of the review on the blog',
+    'book.review.url'      => 'If the blog has a review of this book - it gets linked from the book page.',
 
     'edit.group.book'          => 'The book',
     'edit.group.reading'       => 'Reading',

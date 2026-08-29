@@ -412,11 +412,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 .field { margin: 0 0 16px; }
 .field label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 5px; }
-.field input[type="text"],
-.field input[type="email"],
-.field input[type="password"],
-.field input[type="number"],
-.field input[type="date"],
+/* Written as an exclusion rather than a list of types. Listing them meant
+   that adding a url field left it unstyled - a stunted 147px box next to
+   full-width neighbours - and the same would happen with the next type. */
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]),
 .field select,
 .field textarea {
   width: 100%;
@@ -426,6 +425,37 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   background: var(--surface);
   font: inherit;
   color: inherit;
+}
+.field textarea { resize: vertical; min-height: 96px; }
+/* Room for the native dropdown arrow, whatever the option is called. */
+.field select { padding-right: 32px; }
+
+/* A file input cannot be restyled from the inside, so it gets a frame it
+   can sit in rather than being stretched. */
+.field input[type="file"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.field input[type="file"]::file-selector-button {
+  font: inherit;
+  font-size: 0.85rem;
+  margin-right: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.field input[type="file"]::file-selector-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .field input:focus, .field select:focus, .field textarea:focus {
   outline: none;
@@ -577,7 +607,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   background: linear-gradient(to top, var(--bg) 70%, transparent);
 }
 
-.field-row { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+/* 150px rather than 120px: a paired row squeezed narrower leaves no space
+   between a long option like "Rezensionsexemplar" and the dropdown arrow.
+   Below that the fields stack instead. */
+.field-row { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
 .contributors { border: 0; margin: 0 0 16px; padding: 0; }
 .contributors legend {
