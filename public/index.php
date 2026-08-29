@@ -14,8 +14,10 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 use App\Controller\AuthController;
 use App\Controller\BookController;
 use App\Controller\CronController;
+use App\Controller\MaintenanceController;
 use App\Controller\PageController;
 use App\Controller\ScanController;
+use App\Controller\SetupController;
 use App\Controller\ShelfController;
 use App\Controller\StatsController;
 use App\Core\Config;
@@ -42,6 +44,8 @@ $stats = new StatsController($app);
 $pages = new PageController($app);
 $cron  = new CronController($app);
 $books = new BookController($app);
+$setup = new SetupController($app);
+$data  = new MaintenanceController($app);
 
 // Public
 $app->router->get('/', $shelf->index(...));
@@ -59,6 +63,11 @@ $app->router->get('/manifest.webmanifest', $pages->manifest(...));
 // Language switch - a preference, stored in a cookie and on the account.
 $app->router->get('/sprache/{locale}', $auth->setLanguage(...));
 
+// First run. Only answers while no account exists; afterwards it is a 404
+// like any other unknown address.
+$app->router->get('/einrichten', $setup->form(...));
+$app->router->post('/einrichten', $setup->submit(...));
+
 // Sign in and out
 $app->router->get('/anmelden', $auth->form(...));
 $app->router->post('/anmelden', $auth->submit(...));
@@ -68,6 +77,9 @@ $app->router->post('/abmelden', $auth->signOut(...));
 // Behind the login
 $app->router->get('/erfassen', $scan->page(...));
 $app->router->get('/verwaltung', $stats->dashboard(...));
+$app->router->get('/verwaltung/daten', $data->page(...));
+$app->router->post('/verwaltung/import', $data->import(...));
+$app->router->get('/verwaltung/export/{format}', $data->export(...));
 $app->router->get('/ueber/bearbeiten', $pages->editAbout(...));
 $app->router->post('/ueber/bearbeiten', $pages->editAbout(...));
 $app->router->get('/buch/{slug}/bearbeiten', $books->form(...));

@@ -34,7 +34,7 @@ use App\Repository\TagRepository;
 /**
  * @param array<string,mixed> $options
  */
-function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbose = true): array
+function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbose = true, int $budgetSeconds = 0): array
 {
     $http = new HttpClient($config->str('api_contact'));
     $chain = new LookupChain(
@@ -67,9 +67,21 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
     $statement->execute([$ownerId, (new DateTimeImmutable('-30 days'))->format('Y-m-d H:i:s')]);
     $books = $statement->fetchAll();
 
-    $stats = ['looked_up' => 0, 'covers' => 0, 'metadata' => 0, 'misses' => 0];
+    $stats = ['looked_up' => 0, 'covers' => 0, 'metadata' => 0, 'misses' => 0, 'stopped_early' => false];
+    $deadline = $budgetSeconds > 0 ? microtime(true) + $budgetSeconds : null;
 
     foreach ($books as $book) {
+        /* Stop on the clock rather than on a count.
+         *
+         * Each book costs a wait plus however long the sources take, so a
+         * fixed number of books is a promise about time that nothing keeps.
+         * The caller that matters here is a cron service with its own
+         * patience, and the work resumes tomorrow exactly where it stopped. */
+        if ($deadline !== null && microtime(true) >= $deadline) {
+            $stats['stopped_early'] = true;
+            break;
+        }
+
         $isbn = (string) $book['isbn13'];
         $stats['looked_up']++;
 
@@ -139,8 +151,9 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
 // Only when this file is the program being run - including it for its
 // functions must not start a run of its own.
 if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
-    $options = getopt('', ['limit::', 'owner::', 'sqlite::', 'quiet']);
+    $options = getopt('', ['limit::', 'owner::', 'sqlite::', 'budget::', 'quiet']);
     $limit = max(1, min(1000, (int) ($options['limit'] ?? 100)));
+    $budget = max(0, (int) ($options['budget'] ?? 0));
     $ownerId = (int) ($options['owner'] ?? 1);
 
     if (isset($options['sqlite']) && $options['sqlite'] !== false) {
@@ -154,14 +167,15 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
     }
 
     $started = microtime(true);
-    $stats = enrich($pdo, $config, $limit, $ownerId, !isset($options['quiet']));
+    $stats = enrich($pdo, $config, $limit, $ownerId, !isset($options['quiet']), $budget);
 
     printf(
-        "\nAbgefragt %d | Cover %d | Metadaten ergänzt %d | ohne Treffer %d | %.1f s\n",
+        "\nAbgefragt %d | Cover %d | Metadaten ergänzt %d | ohne Treffer %d | %.1f s%s\n",
         $stats['looked_up'],
         $stats['covers'],
         $stats['metadata'],
         $stats['misses'],
-        microtime(true) - $started
+        microtime(true) - $started,
+        $stats['stopped_early'] ? ' (Zeitbudget erreicht)' : ''
     );
 }

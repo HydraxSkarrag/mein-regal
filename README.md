@@ -61,6 +61,12 @@ gehört neben `app/`, nicht in `public/`, und niemals ins Repository.
 
 ### 4. Konto anlegen
 
+`https://deine-adresse/einrichten` aufrufen und das erste Konto anlegen. Die Seite
+antwortet nur, solange es noch kein Konto gibt — danach ist sie nicht mehr
+erreichbar.
+
+Mit Shell-Zugang geht es auch so:
+
 ```bash
 php bin/setup.php --email=du@example.org --name="Dein Name"
 ```
@@ -70,13 +76,20 @@ noch als Hash gespeichert.
 
 ### 5. Bestand importieren
 
+Unter *Verwaltung → Daten* die CSV-Datei hochladen. Erst **ohne** den Haken
+„Wirklich schreiben" — dann kommt nur der Bericht, der Dubletten, fehlende ISBNs
+und unklare Autorenfelder nennt. Erst danach mit Haken.
+
+Für dreitausend Bücher sind das rund 23.000 Datenbankabfragen, also je nach Server
+fünf bis zwanzig Sekunden. Der Vorgang läuft in einer Transaktion: bricht er ab,
+bleibt nichts halb Importiertes zurück.
+
+Mit Shell-Zugang:
+
 ```bash
 php bin/import.php --file=Buecher.csv            # Trockenlauf, schreibt nichts
 php bin/import.php --file=Buecher.csv --commit
 ```
-
-Immer erst ohne `--commit` laufen lassen und den Bericht lesen: er nennt Dubletten,
-fehlende ISBNs und Autorenfelder, die nicht eindeutig zu lesen waren.
 
 ### 6. Nächtlichen Cronjob einrichten
 
@@ -87,8 +100,14 @@ Cronjobs* eintragen:
 https://regal.example.org/cron?key=DEIN_CRON_SECRET
 ```
 
-Der Auftrag sucht fehlende Cover und Angaben nach — gedrosselt, damit die
-Tagesquoten der Datenquellen halten — und räumt abgelaufene Anmeldetoken weg.
+Der Auftrag sichert zuerst Datenbank, Katalog und Cover, sucht dann fehlende Cover
+und Angaben nach und räumt abgelaufene Anmeldetoken weg.
+
+Die Nachsuche arbeitet gegen ein **Zeitbudget** statt gegen eine Stückzahl:
+Standard sind 120 Sekunden, danach bricht sie ab und macht in der nächsten Nacht
+dort weiter. Sie wartet bewusst zwischen den Abfragen, um die freien Datenquellen
+nicht zu überlasten — für dreitausend Bücher wären das Stunden, die kein Cronjob
+durchhält. Anpassbar über `&budget=180`.
 
 ## Werkzeuge
 
@@ -103,6 +122,23 @@ php tests/run.php                         # Tests
 
 Alle Skripte nehmen `--sqlite=/pfad/zur/datei` und laufen dann ohne `config.php`
 gegen eine Wegwerf-Datenbank — so entsteht auch die Entwicklungsumgebung.
+`REGAL_CONFIG=/pfad/zur/config.php` überschreibt den Pfad zur Konfiguration.
+
+### Ohne Shell-Zugang
+
+Auf all-inkl gibt es SSH erst ab dem Premium-Tarif. Alles, was für den Betrieb
+nötig ist, geht deshalb auch über den Browser:
+
+| Aufgabe | Weg ohne Shell | Warum |
+|---|---|---|
+| Konto anlegen | `/einrichten` | einmalig, sofort |
+| Bestand importieren | Verwaltung → Daten | einmalig, Sekunden |
+| Export herunterladen | Verwaltung → Daten | wenige Abfragen |
+| Sicherung | nächtlicher Cronjob | Sekunden |
+| Cover nachtragen | **nur** Cronjob | wartet je Buch, dauert Stunden |
+
+Die Nachsuche ist bewusst nicht über den Browser erreichbar. Sie ist die einzige
+Aufgabe, die länger läuft als jedes vernünftige Zeitlimit.
 
 ## Entwickeln
 

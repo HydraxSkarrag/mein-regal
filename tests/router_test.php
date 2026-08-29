@@ -109,3 +109,34 @@ Assert::same(
 
 unlink(sys_get_temp_dir() . '/regal-view-test/probe.php');
 rmdir(sys_get_temp_dir() . '/regal-view-test');
+
+Assert::group('bin/ scripts that are included at runtime');
+
+/*
+ * The cron endpoint includes enrich.php and backup.php for their functions.
+ * A "exit unless PHP_SAPI is cli" guard at the top of such a file does not
+ * protect anything - bin/ is outside the document root - but it does kill the
+ * request that included it. That is how the nightly job came to answer 404
+ * and do nothing, silently, on every server where it mattered.
+ */
+foreach (['enrich.php', 'backup.php'] as $script) {
+    $source = (string) file_get_contents(dirname(__DIR__) . '/bin/' . $script);
+
+    Assert::same(
+        $script . ' does not exit when merely included',
+        (bool) preg_match('/PHP_SAPI\s*!==\s*[\'"]cli[\'"]/', $source),
+        false
+    );
+    Assert::true(
+        $script . ' still guards whether it runs',
+        str_contains($source, "PHP_SAPI === 'cli'") && str_contains($source, '__FILE__')
+    );
+}
+
+// Including them must define their functions and start nothing.
+require_once dirname(__DIR__) . '/bin/enrich.php';
+require_once dirname(__DIR__) . '/bin/backup.php';
+
+Assert::true('enrich() is available after including', function_exists('enrich'));
+Assert::true('backup() is available after including', function_exists('backup'));
+Assert::true('so is the statement splitter', function_exists('splitStatements'));

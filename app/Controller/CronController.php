@@ -38,29 +38,62 @@ final class CronController
             return $this->app->notFound();
         }
 
-        // A cron run must not be limited by the web request timeout, and must
-        // not leave a half-finished job if the caller hangs up.
-        @set_time_limit(300);
+        /* A budget rather than a book count.
+         *
+         * Enrichment waits between requests on purpose, so a hundred books
+         * take minutes - and the cron service on the other end has its own
+         * patience. Working to a clock keeps the run inside it; whatever is
+         * left waits for tomorrow, which is what a nightly job is for. */
+        $budget = max(20, min(240, $request->queryInt('budget', 120)));
+
+        // Room for the budget plus the backup, and the job finishes even if
+        // the caller hangs up on it.
+        @set_time_limit($budget + 180);
         ignore_user_abort(true);
 
         $lines = [];
         $started = microtime(true);
+
+        // The copy comes first. It takes seconds; the lookups take minutes,
+        // and a night that runs out of time should still have left a backup.
+        if ($request->query('backup') !== 'nein') {
+            try {
+                require_once PROJECT_ROOT . '/bin/backup.php';
+                $result = backup(
+                    $this->app->pdo,
+                    PROJECT_ROOT . '/storage/backup',
+                    (int) max(1, min(365, $request->queryInt('keep', 30))),
+                    false
+                );
+                $lines[] = sprintf(
+                    'backup: %d files, %.1f MB, %d old ones removed',
+                    count($result['files']),
+                    $result['bytes'] / 1024 / 1024,
+                    $result['removed']
+                );
+            } catch (Throwable $e) {
+                error_log('[regal] cron backup failed: ' . $e->getMessage());
+                $lines[] = 'backup: FAILED - ' . $e->getMessage();
+            }
+        }
 
         try {
             require_once PROJECT_ROOT . '/bin/enrich.php';
             $stats = enrich(
                 $this->app->pdo,
                 $this->app->config,
-                (int) max(1, min(500, $request->queryInt('limit', 150))),
+                (int) max(1, min(500, $request->queryInt('limit', 500))),
                 $this->app->ownerId,
-                false
+                false,
+                $budget
             );
             $lines[] = sprintf(
-                'enrich: looked up %d, covers %d, metadata %d, misses %d',
+                'enrich: looked up %d, covers %d, metadata %d, misses %d%s',
                 $stats['looked_up'],
                 $stats['covers'],
                 $stats['metadata'],
-                $stats['misses']
+                $stats['misses'],
+                $stats['stopped_early'] ? ' (budget reached, rest waits for tomorrow)' : ''
             );
         } catch (Throwable $e) {
             error_log('[regal] cron enrich failed: ' . $e->getMessage());

@@ -23,10 +23,19 @@
  */
 declare(strict_types=1);
 
-if (PHP_SAPI !== 'cli') {
-    http_response_code(404);
-    exit;
-}
+/*
+ * No "exit unless CLI" guard here, deliberately.
+ *
+ * The /cron endpoint includes this file for its functions, and PHP_SAPI is
+ * never 'cli' under a web server - it is 'cgi-fcgi' on the hosting this
+ * targets. Such a guard does not protect the file; it kills the request that
+ * legitimately included it. That is exactly how the nightly job came to
+ * answer 404 and do nothing at all.
+ *
+ * The file needs no guard: bin/ lives outside the document root and cannot be
+ * fetched over HTTP. Whether it *runs* is decided at the bottom, where it
+ * checks that it is the program being executed rather than merely included.
+ */
 
 require dirname(__DIR__) . '/app/bootstrap.php';
 

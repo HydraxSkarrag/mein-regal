@@ -1,5 +1,9 @@
-# Real credentials - NEVER commit
-config.php
+# Real credentials - NEVER commit.
+#
+# The leading slash matters: without it the pattern matches at every level,
+# and app/Core/Config.php - the class that reads the file - was quietly
+# excluded from the repository. Cloning gave a broken application.
+/config.php
 *.local
 
 # User data: uploaded covers, logs, import reports, exports
