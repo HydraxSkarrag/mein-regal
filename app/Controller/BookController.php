@@ -129,6 +129,62 @@ final class BookController
         return Response::redirect('/buch/' . $book['slug']);
     }
 
+    /**
+     * Give a book away.
+     *
+     * POST only and behind a CSRF token, because a link that deletes on GET
+     * is one prefetching browser away from an empty shelf. The typed
+     * confirmation is not ceremony either: without it the delete button sits
+     * a mis-tap away from Save on a phone.
+     */
+    public function delete(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $book = $this->app->books->findBySlug($this->app->ownerId, $params['slug'] ?? '');
+        if ($book === null) {
+            return $this->app->notFound();
+        }
+        if (!$this->app->csrf->isValid($request->allPost())) {
+            return $this->render($book, t('error.csrf'));
+        }
+        $confirm = mb_strtoupper(trim($request->post('confirm')), 'UTF-8');
+        if (!in_array($confirm, ['LOESCHEN', 'LÖSCHEN', 'DELETE'], true)) {
+            return $this->render($book, t('delete.confirm.missing'));
+        }
+
+        $title = (string) $book['title'];
+
+        try {
+            $this->app->pdo->beginTransaction();
+            $result = $this->app->books->delete($this->app->ownerId, (int) $book['id']);
+            $this->app->pdo->commit();
+        } catch (Throwable $e) {
+            if ($this->app->pdo->inTransaction()) {
+                $this->app->pdo->rollBack();
+            }
+            error_log('[regal] delete failed: ' . $e->getMessage());
+
+            return $this->render($book, t('error.500.title'));
+        }
+
+        // Files go only after the rows are safely gone, so a failure here
+        // leaves an orphaned image rather than a book pointing at nothing.
+        if ($result['deleted']) {
+            $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
+            foreach ($result['coverPaths'] as $path) {
+                $storage->delete($path);
+            }
+        }
+
+        $this->app->session->flash(t('delete.done', ['title' => $title]), 'ok');
+
+        return Response::redirect('/');
+    }
+
     private function storeCover(int $bookId, array $upload, string $key): void
     {
         try {

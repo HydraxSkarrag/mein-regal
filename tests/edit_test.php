@@ -127,3 +127,58 @@ Assert::same('and everything without the filter', $books->search($maike, [])['to
 
 $counts = $books->countByCover($maike);
 Assert::same('the counts agree', [$counts['with'], $counts['without']], [1, 1]);
+
+Assert::group('BookRepository::delete');
+
+$doomed = $books->insert($maike, ['isbn13' => '9783442718689', 'title' => 'Weggegeben', 'reading_status' => 'unread']);
+$books->replaceAuthors($maike, $doomed, [['name' => 'Nur Dieses Buch', 'role' => 'author']], $authors);
+$books->replaceTags($maike, $doomed, ['Einmalgenre'], $tags);
+$pdo->prepare('INSERT INTO covers (book_id, source, path, is_public) VALUES (?, ?, ?, 1)')
+    ->execute([$doomed, 'own', 'ff/9783442718689.webp']);
+
+// A book kept, sharing an author with the one about to go.
+$kept = $books->insert($maike, ['isbn13' => '9783499006548', 'title' => 'Bleibt', 'reading_status' => 'unread']);
+$books->replaceAuthors($maike, $kept, [['name' => 'Geteilte Person', 'role' => 'author']], $authors);
+$books->replaceAuthors($maike, $doomed, [
+    ['name' => 'Nur Dieses Buch', 'role' => 'author'],
+    ['name' => 'Geteilte Person', 'role' => 'author'],
+], $authors);
+
+$authorsBefore = (int) $pdo->query('SELECT COUNT(*) FROM authors')->fetchColumn();
+
+// Another owner must not be able to delete it.
+$refused = $books->delete($daniel, $doomed);
+Assert::same('a stranger cannot delete the book', $refused['deleted'], false);
+Assert::same('and it is still there', $books->findById($maike, $doomed) !== null, true);
+
+$result = $books->delete($maike, $doomed);
+Assert::same('the owner can', $result['deleted'], true);
+Assert::same('the book is gone', $books->findById($maike, $doomed), null);
+
+// The caller gets the paths so it can remove the files; the repository owns
+// rows, not the filesystem.
+Assert::same('cover paths come back for the caller to unlink', $result['coverPaths'], ['ff/9783442718689.webp']);
+Assert::same('the cover row is gone', (int) $pdo->query('SELECT COUNT(*) FROM covers')->fetchColumn(), 1);
+
+$statement = $pdo->prepare('SELECT COUNT(*) FROM book_authors WHERE book_id = ?');
+$statement->execute([$doomed]);
+Assert::same('its contributor links are gone', (int) $statement->fetchColumn(), 0);
+
+// Giving a book away must not leave its author in the filter list forever -
+// but an author who still has books stays.
+$remaining = $pdo->query('SELECT name FROM authors ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
+Assert::same('the author with no books left is cleared out', in_array('Nur Dieses Buch', $remaining, true), false);
+Assert::same('the one still holding a book stays', in_array('Geteilte Person', $remaining, true), true);
+// The sweep is not limited to this book's authors: it clears every person
+// left without one, including any orphaned by an earlier edit. Assert that
+// invariant rather than a fixture-specific count.
+$orphans = (int) $pdo->query(
+    'SELECT COUNT(*) FROM authors WHERE NOT EXISTS (SELECT 1 FROM book_authors ba WHERE ba.author_id = authors.id)'
+)->fetchColumn();
+Assert::same('no author is left without a book', $orphans, 0);
+Assert::true('and the list got shorter', count($remaining) < $authorsBefore);
+
+$remainingTags = $pdo->query('SELECT name FROM tags')->fetchAll(PDO::FETCH_COLUMN);
+Assert::same('an orphaned tag goes too', in_array('Einmalgenre', $remainingTags, true), false);
+
+Assert::same('deleting something already gone is harmless', $books->delete($maike, $doomed)['deleted'], false);

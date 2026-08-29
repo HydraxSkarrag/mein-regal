@@ -63,7 +63,13 @@
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+        video: {
+          facingMode: { ideal: 'environment' },
+          // A barcode has to survive being cropped and scaled, so ask for
+          // more than the default 640x480 a laptop otherwise hands over.
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
         audio: false
       });
     } catch (error) {
@@ -102,9 +108,11 @@
       try {
         var formats = await window.BarcodeDetector.getSupportedFormats();
         if (formats.indexOf('ean_13') !== -1) {
-          var native = new window.BarcodeDetector({ formats: ['ean_13'] });
+          var native = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8'] });
           return function (source) {
-            return native.detect(source).then(function (codes) {
+            var canvas = frameFrom(source);
+            if (!canvas) { return Promise.resolve(null); }
+            return native.detect(canvas).then(function (codes) {
               return codes.length ? codes[0].rawValue : null;
             });
           };
@@ -115,18 +123,38 @@
   }
 
   /* ZXing is only fetched when the native detector is missing, so Android
-     never pays for a library it does not need. */
+     never pays for a library it does not need.
+     
+     It decodes a single still frame per call. The obvious-looking
+     decodeOnceFromVideoElement is wrong here: it takes the video element
+     over and runs its own loop, resolving only once it finds something, so
+     calling it from a timer stacks a new decoder on top of the last one
+     every fifth of a second and nothing ever reads. That is why scanning
+     appeared dead on the desktop - the camera was on and dozens of decoders
+     were fighting over it. */
   function loadZxing() {
     return new Promise(function (resolve) {
       var script = document.createElement('script');
       script.src = '/js/zxing.min.js';
       script.onload = function () {
         if (!window.ZXing) { resolve(null); return; }
-        var reader = new window.ZXing.BrowserMultiFormatReader();
+        var Z = window.ZXing;
+        var reader = new Z.BrowserMultiFormatReader();
         resolve(function (source) {
-          return reader.decodeOnceFromVideoElement(source)
-            .then(function (r) { return r ? r.getText() : null; })
-            .catch(function () { return null; });
+          var canvas = frameFrom(source);
+          if (!canvas) { return Promise.resolve(null); }
+          try {
+            // One frame, decoded in place. This build has no
+            // decodeFromCanvas, so the bitmap is assembled directly - the
+            // documented way to hand ZXing a canvas.
+            var luminance = new Z.HTMLCanvasElementLuminanceSource(canvas);
+            var bitmap = new Z.BinaryBitmap(new Z.HybridBinarizer(luminance));
+            var result = reader.decodeBitmap(bitmap);
+            return Promise.resolve(result ? result.getText() : null);
+          } catch (error) {
+            // NotFoundException on a frame with no barcode in it.
+            return Promise.resolve(null);
+          }
         });
       };
       script.onerror = function () { resolve(null); };
@@ -134,8 +162,40 @@
     });
   }
 
+  /* Crop the frame to the band inside the reticle before decoding.
+     
+     A laptop webcam sees a whole desk; the barcode is a small part of it,
+     and handing a decoder the full picture makes it hunt through furniture.
+     Cropping to what the frame on screen already tells the user to aim with
+     is both faster and markedly more reliable. */
+  var scratch = document.createElement('canvas');
+
+  function frameFrom(source) {
+    var w = source.videoWidth;
+    var h = source.videoHeight;
+    if (!w || !h) { return null; }
+
+    var cropW = Math.round(w * 0.8);
+    var cropH = Math.round(h * 0.45);
+    var x = Math.round((w - cropW) / 2);
+    var y = Math.round((h - cropH) / 2);
+
+    scratch.width = cropW;
+    scratch.height = cropH;
+    scratch.getContext('2d').drawImage(source, x, y, cropW, cropH, 0, 0, cropW, cropH);
+
+    return scratch;
+  }
+
   async function tick() {
-    if (!scanning) { return; }
+    if (!scanning || currentBook !== null) {
+      // A result is on screen waiting for a decision. Keep the camera
+      // running but stop reading, or the next pass wipes the card the
+      // moment it appears - on a phone still pointed at the book, that is
+      // every four seconds.
+      if (scanning) { setTimeout(tick, 300); }
+      return;
+    }
     try {
       var code = await detector(video);
       if (code) { onCode(code); }
@@ -184,7 +244,11 @@
 
     if (reply.status === 429) { say(text.error, 'error'); return; }
     if (reply.status === 422) { say(reply.data.error || text.invalidIsbn, 'error'); return; }
-    if (reply.data.duplicate) { say(reply.data.message || text.duplicate, 'error'); return; }
+    if (reply.data.duplicate) {
+      say(reply.data.message || text.duplicate, 'error');
+      currentBook = null;
+      return;
+    }
     if (!reply.data.found) { say(reply.data.message || text.nothing, 'error'); return; }
 
     say('');
@@ -215,11 +279,22 @@
         '</div>' +
         '<div class="scanner-actions">' +
           '<button class="btn btn--primary" type="button" id="save">' + esc(text.save) + '</button>' +
+          '<button class="btn" type="button" id="skip">' + esc(text.skip) + '</button>' +
         '</div>' +
       '</div>';
 
     resultBox.hidden = false;
     document.getElementById('save').addEventListener('click', save);
+    document.getElementById('skip').addEventListener('click', dismiss);
+  }
+
+  /* Put the card away and start reading again. */
+  function dismiss() {
+    currentBook = null;
+    lastCode = '';
+    resultBox.hidden = true;
+    say('');
+    if (scanning) { tick(); }
   }
 
   async function save() {
@@ -276,17 +351,20 @@
     if (seriesToggle.checked && stream) {
       lastCode = '';
       resultBox.hidden = true;
+      if (scanning) { tick(); }
     }
   }
 
   function offerCoverPhoto(bookId, slug) {
     var wrapper = document.createElement('div');
     wrapper.className = 'scanner-actions';
+    /* The second button used to be a bare arrow, which said nothing about
+       where it went. Name the destination. */
     wrapper.innerHTML =
       '<label class="btn" style="flex:1">' + esc(text.photo) +
         '<input type="file" accept="image/*" capture="environment" hidden>' +
       '</label>' +
-      '<a class="btn" href="/buch/' + esc(slug) + '">&rarr;</a>';
+      '<a class="btn" href="/buch/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
     statusBox.appendChild(wrapper);
 
     wrapper.querySelector('input').addEventListener('change', async function (event) {

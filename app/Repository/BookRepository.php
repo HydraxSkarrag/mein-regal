@@ -89,6 +89,54 @@ final class BookRepository
         return $statement->rowCount() > 0;
     }
 
+    /**
+     * Remove a book and everything hanging off it.
+     *
+     * Returns the cover paths so the caller can delete the files - the
+     * repository owns rows, not the filesystem, and a repository that
+     * quietly unlinks files is a repository nobody can test.
+     *
+     * People and tags left without any book are cleared out too. Without
+     * that, giving a book away leaves its author in the list forever, and the
+     * genre sidebar slowly fills with entries that match nothing.
+     *
+     * @return array{deleted: bool, coverPaths: list<string>}
+     */
+    public function delete(int $ownerId, int $bookId): array
+    {
+        $book = $this->findById($ownerId, $bookId);
+        if ($book === null) {
+            return ['deleted' => false, 'coverPaths' => []];
+        }
+
+        $covers = $this->pdo->prepare('SELECT path FROM covers WHERE book_id = ? AND path IS NOT NULL');
+        $covers->execute([$bookId]);
+        $paths = array_values(array_filter(
+            array_map(static fn (array $row): string => (string) $row['path'], $covers->fetchAll())
+        ));
+
+        $this->pdo->prepare('DELETE FROM covers WHERE book_id = ?')->execute([$bookId]);
+        $this->pdo->prepare('DELETE FROM book_authors WHERE book_id = ?')->execute([$bookId]);
+        $this->pdo->prepare('DELETE FROM book_tags WHERE book_id = ?')->execute([$bookId]);
+
+        $statement = $this->pdo->prepare('DELETE FROM books WHERE id = ? AND owner_id = ?');
+        $statement->execute([$bookId, $ownerId]);
+        $deleted = $statement->rowCount() > 0;
+
+        if ($deleted) {
+            $this->pdo->prepare(
+                'DELETE FROM authors WHERE owner_id = ?
+                  AND NOT EXISTS (SELECT 1 FROM book_authors ba WHERE ba.author_id = authors.id)'
+            )->execute([$ownerId]);
+            $this->pdo->prepare(
+                'DELETE FROM tags WHERE owner_id = ?
+                  AND NOT EXISTS (SELECT 1 FROM book_tags bt WHERE bt.tag_id = tags.id)'
+            )->execute([$ownerId]);
+        }
+
+        return ['deleted' => $deleted, 'coverPaths' => $paths];
+    }
+
     public function findById(int $ownerId, int $bookId): ?array
     {
         $statement = $this->pdo->prepare('SELECT * FROM books WHERE id = ? AND owner_id = ?');

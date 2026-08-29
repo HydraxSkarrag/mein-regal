@@ -72,6 +72,7 @@ $app->router->get('/ueber/bearbeiten', $pages->editAbout(...));
 $app->router->post('/ueber/bearbeiten', $pages->editAbout(...));
 $app->router->get('/buch/{slug}/bearbeiten', $books->form(...));
 $app->router->post('/buch/{slug}/bearbeiten', $books->save(...));
+$app->router->post('/buch/{slug}/loeschen', $books->delete(...));
 
 // Scheduled work. all-inkl's scheduler calls a URL, so the nightly job needs
 // an address; it is guarded by cron_secret from config.php.

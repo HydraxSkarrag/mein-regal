@@ -715,6 +715,21 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 
 .review-link { margin: 0 0 18px; }
+
+/* Removing a book is folded away rather than sitting next to Save, where a
+   mis-tap on a phone would find it. */
+.danger { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 18px; }
+.danger summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+  list-style-position: outside;
+}
+.danger summary:hover { color: var(--accent); }
+.danger[open] summary { color: var(--text); margin-bottom: 10px; }
+.danger form { max-width: 340px; }
+.btn--danger { border-color: var(--accent); color: var(--accent); }
+.btn--danger:hover { background: var(--accent); color: #fff; }
 .attribution a { color: var(--muted); }
 
 /* ---- Scanner -------------------------------------------------------- */

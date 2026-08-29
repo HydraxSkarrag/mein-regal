@@ -223,3 +223,17 @@ $value = static fn (?string $v): string => $v ?? '';
     <a class="btn" href="/buch/<?= e($book['slug']) ?>"><?= e(t('common.cancel')) ?></a>
   </div>
 </form>
+
+<details class="danger">
+  <summary><?= e(t('delete.title')) ?></summary>
+  <p class="note"><?= e(t('delete.explain')) ?></p>
+  <form method="post" action="/buch/<?= e($book['slug']) ?>/loeschen">
+    <?= $csrfField ?>
+    <div class="field">
+      <label for="confirm"><?= e(t('delete.type', ['word' => 'LÖSCHEN'])) ?></label>
+      <input id="confirm" type="text" name="confirm" autocomplete="off" required
+             pattern="LOESCHEN|LÖSCHEN" placeholder="LÖSCHEN">
+    </div>
+    <button class="btn btn--danger" type="submit"><?= e(t('delete.button')) ?></button>
+  </form>
+</details>
