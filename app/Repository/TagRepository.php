@@ -51,6 +51,37 @@ final class TagRepository
         $this->pdo->prepare($sql)->execute([$bookId, $tagId]);
     }
 
+    /**
+     * Every tag this owner has, with how often it is used.
+     *
+     * Fed to the editor so a genre is picked from what already exists rather
+     * than retyped. With 382 of them, one typo quietly makes it 383, and the
+     * count is what tells "Fantasy, 173 books" apart from a near-miss that
+     * someone created by accident last Tuesday.
+     *
+     * @return list<array{name: string, slug: string, n: int}>
+     */
+    public function allForOwner(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT t.name, t.slug, COUNT(bt.book_id) AS n
+               FROM tags t LEFT JOIN book_tags bt ON bt.tag_id = t.id
+              WHERE t.owner_id = ?
+              GROUP BY t.id, t.name, t.slug
+              ORDER BY n DESC, t.name ASC'
+        );
+        $statement->execute([$ownerId]);
+
+        return array_map(
+            static fn (array $row): array => [
+                'name' => (string) $row['name'],
+                'slug' => (string) $row['slug'],
+                'n'    => (int) $row['n'],
+            ],
+            $statement->fetchAll()
+        );
+    }
+
     /** @return list<array{id: int, name: string, slug: string, book_count: int}> */
     public function listWithCounts(int $ownerId, int $limit = 40): array
     {

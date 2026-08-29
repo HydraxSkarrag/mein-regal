@@ -36,8 +36,11 @@ final class View
         }
 
         $view = $this;
-        extract($this->shared, EXTR_SKIP);
-        extract($data, EXTR_SKIP);
+        // Page data wins over the shared defaults. Extracting the defaults
+        // first with EXTR_SKIP did the opposite: a template asking for
+        // 'scripts' or 'noIndex' had its value silently discarded in favour
+        // of the default it was trying to replace.
+        extract(array_merge($this->shared, $data), EXTR_SKIP);
 
         ob_start();
         try {

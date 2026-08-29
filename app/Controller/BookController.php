@@ -170,6 +170,7 @@ final class BookController
             'book'         => $book,
             'contributors' => $contributors,
             'tagList'      => implode(', ', array_column($tagStatement->fetchAll(), 'name')),
+            'knownTags'    => $this->app->tags->allForOwner($this->app->ownerId),
             'cover'        => $this->app->covers->bestFor($bookId, true),
             'statuses'     => self::STATUSES,
             'bindings'     => self::BINDINGS,
@@ -186,6 +187,7 @@ final class BookController
             'title'   => t('book.edit') . ' – ' . $book['title'],
             'current' => 'shelf',
             'noIndex' => true,
+            'scripts' => ['/js/tags.js'],
         ]), $error === '' ? 200 : 422)->noIndex();
     }
 

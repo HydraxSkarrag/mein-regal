@@ -193,7 +193,7 @@ return [
     'edit.contributor.name'    => 'Name',
     'edit.contributor.role'    => 'Role',
     'edit.contributor.hint'    => 'Empty rows are ignored. Clear a name to remove that person.',
-    'edit.tags.hint'           => 'Separate several with commas.',
+    'edit.tags.hint'           => 'Pick from the ones already in use, so a typo does not quietly create a new genre.',
     'edit.cover.upload'        => 'Photograph or upload a cover',
     'edit.cover.hint'          => 'Replaces any existing cover. Location data is stripped on save.',
     'edit.bulk.hint'           => 'This date comes from the bulk entry into Bookstats and is probably not the real one.',
@@ -210,6 +210,12 @@ return [
     'about.body.hint'    => 'A blank line starts a new paragraph. Addresses are linked automatically. HTML is not executed.',
     'about.suggested'    => 'My bookshelf - {owner} of {blog}. What I read, have read, and still mean to read.',
     'nav.about'          => 'About',
+
+    'edit.tags.placeholder'    => 'Search a genre or add a new one …',
+    'edit.tags.new'            => 'create new',
+    'edit.tags.similar'        => 'Similar already exists: "{tag}" - did you mean that?',
+    'edit.tags.remove'         => 'Remove:',
+    'edit.tags.books'          => 'books',
 
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',

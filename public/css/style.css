@@ -588,6 +588,87 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .recent a:hover { color: var(--accent); }
 .recent .when { color: var(--muted); font-size: 0.78rem; }
 
+/* ---- Tag picker ------------------------------------------------------ */
+
+.tagbox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.tagbox:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(237, 0, 47, 0.12); }
+.tagbox-chips { display: contents; }
+
+.tagbox-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px 4px 11px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+/* A tag that does not exist yet looks different, so creating one is a
+   visible act rather than something that happens by accident. */
+.tagbox-chip--new { background: #fdecef; color: #8a0a22; }
+.tagbox-chip button {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tagbox-chip button:hover { color: var(--accent); }
+
+.tagbox-entry {
+  flex: 1;
+  min-width: 130px;
+  border: 0;
+  padding: 5px 2px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+}
+.tagbox-entry:focus { outline: none; }
+
+.tagbox-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.tagbox-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.tagbox-list li:hover, .tagbox-list li.is-active { background: var(--surface-2); }
+.tagbox-list .n { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+.tagbox-list .tagbox-new .n { color: var(--accent); }
+
+.tagbox-warning {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #8a0a22;
+}
+
 .prose { max-width: 62ch; }
 .prose p { margin: 0 0 1.1em; }
 

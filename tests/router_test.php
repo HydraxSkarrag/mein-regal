@@ -80,3 +80,32 @@ foreach ($directory as $file) {
     }
 }
 Assert::same('every class sits in the file named after it', $offenders, []);
+
+Assert::group('View: page data overrides shared defaults');
+
+$view = new App\Core\View(sys_get_temp_dir() . '/regal-view-test');
+@mkdir(sys_get_temp_dir() . '/regal-view-test', 0o755, true);
+file_put_contents(
+    sys_get_temp_dir() . '/regal-view-test/probe.php',
+    '<?= $a ?>|<?= $b ?>|<?= implode(",", $list) ?>'
+);
+
+$view->share('a', 'shared');
+$view->share('b', 'shared');
+$view->share('list', []);
+
+// The shared value is the fallback, not the winner. Getting this backwards
+// meant a page could not add a script or mark itself noindex.
+Assert::same(
+    'page data replaces a shared default',
+    $view->render('probe', ['a' => 'page', 'list' => ['x', 'y']]),
+    'page|shared|x,y'
+);
+Assert::same(
+    'and the untouched default still applies',
+    $view->render('probe', ['a' => 'page', 'list' => []]),
+    'page|shared|'
+);
+
+unlink(sys_get_temp_dir() . '/regal-view-test/probe.php');
+rmdir(sys_get_temp_dir() . '/regal-view-test');

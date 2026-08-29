@@ -193,7 +193,7 @@ return [
     'edit.contributor.name'    => 'Name',
     'edit.contributor.role'    => 'Rolle',
     'edit.contributor.hint'    => 'Leere Zeilen werden ignoriert. Zum Entfernen den Namen löschen.',
-    'edit.tags.hint'           => 'Mehrere durch Komma trennen.',
+    'edit.tags.hint'           => 'Aus dem Bestand wählen, damit nicht durch Vertipper neue Genres entstehen.',
     'edit.cover.upload'        => 'Cover fotografieren oder hochladen',
     'edit.cover.hint'          => 'Ersetzt ein vorhandenes Cover. Standortdaten werden beim Speichern entfernt.',
     'edit.bulk.hint'           => 'Dieses Datum stammt aus der Sammelerfassung in Bookstats und ist vermutlich nicht das echte Erwerbsdatum.',
@@ -210,6 +210,12 @@ return [
     'about.body.hint'    => 'Leerzeile trennt Absätze. Adressen werden automatisch verlinkt. HTML wird nicht ausgeführt.',
     'about.suggested'    => 'Mein Bücherregal – {owner} von {blog}. Hier steht, was ich lese, gelesen habe und noch lesen will.',
     'nav.about'          => 'Über',
+
+    'edit.tags.placeholder'    => 'Genre suchen oder neu anlegen …',
+    'edit.tags.new'            => 'neu anlegen',
+    'edit.tags.similar'        => 'Ähnlich vorhanden: „{tag}“ – vielleicht ist das gemeint?',
+    'edit.tags.remove'         => 'Entfernen:',
+    'edit.tags.books'          => 'Bücher',
 
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
