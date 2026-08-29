@@ -49,6 +49,7 @@ $app->router->get('/sub', $shelf->unread(...));
 $app->router->get('/suche', $shelf->index(...));
 $app->router->get('/buch/{slug}', $shelf->detail(...));
 $app->router->get('/statistik', $stats->page(...));
+$app->router->get('/ueber', $pages->about(...));
 $app->router->get('/impressum', $pages->imprint(...));
 $app->router->get('/datenschutz', $pages->privacy(...));
 $app->router->get('/robots.txt', $pages->robots(...));
@@ -67,6 +68,8 @@ $app->router->post('/abmelden', $auth->signOut(...));
 // Behind the login
 $app->router->get('/erfassen', $scan->page(...));
 $app->router->get('/verwaltung', $stats->dashboard(...));
+$app->router->get('/ueber/bearbeiten', $pages->editAbout(...));
+$app->router->post('/ueber/bearbeiten', $pages->editAbout(...));
 $app->router->get('/buch/{slug}/bearbeiten', $books->form(...));
 $app->router->post('/buch/{slug}/bearbeiten', $books->save(...));
 

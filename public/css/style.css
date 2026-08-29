@@ -588,6 +588,9 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .recent a:hover { color: var(--accent); }
 .recent .when { color: var(--muted); font-size: 0.78rem; }
 
+.prose { max-width: 62ch; }
+.prose p { margin: 0 0 1.1em; }
+
 /* ---- Editing -------------------------------------------------------- */
 
 .detail-actions { display: flex; gap: 20px; flex-wrap: wrap; }

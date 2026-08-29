@@ -16,6 +16,7 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
 <div class="page-head">
   <h1><?= e(t('nav.admin')) ?></h1>
   <span class="count"><?= e(t('auth.hello', ['name' => $user['display_name'] ?? ''])) ?></span>
+  <span class="count"><a href="/statistik"><?= e(t('stats.public')) ?></a></span>
 </div>
 
 <div class="metrics">

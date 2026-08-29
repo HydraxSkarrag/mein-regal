@@ -127,6 +127,10 @@ final class Importer
                     $this->authors->link($bookId, $authorId, 'author', $position);
                 }
 
+                if ($row->genreIsIdentifier()) {
+                    $report->flag($number, $title, 'Genre ist eine Kennung, nicht übernommen: ' . ($raw['Genre'] ?? ''));
+                }
+
                 $genre = $row->genre();
                 if ($genre !== null) {
                     $tagId = $this->tags->findOrCreate($ownerId, $genre, $tagCreated);

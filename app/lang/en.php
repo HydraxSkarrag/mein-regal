@@ -200,6 +200,17 @@ return [
     'edit.saved'               => 'Saved.',
     'edit.cover.failed'        => 'The image could not be saved. Everything else was.',
 
+    'stats.public'         => 'View the public statistics',
+
+    'about.title'        => 'About this shelf',
+    'about.empty'        => 'Nothing has been written about this shelf yet.',
+    'about.write'        => 'Write it now',
+    'about.edit'         => 'Edit the about page',
+    'about.body'         => 'Text',
+    'about.body.hint'    => 'A blank line starts a new paragraph. Addresses are linked automatically. HTML is not executed.',
+    'about.suggested'    => 'My bookshelf - {owner} of {blog}. What I read, have read, and still mean to read.',
+    'nav.about'          => 'About',
+
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
 ];

@@ -97,8 +97,46 @@ final class BookstatsRow
     public function genre(): ?string
     {
         $genre = trim($this->raw['Genre'] ?? '');
+        if ($genre === '' || self::looksLikeIdentifier($genre)) {
+            return null;
+        }
 
-        return $genre !== '' ? $genre : null;
+        return $genre;
+    }
+
+    /** True when the genre field holds a machine identifier rather than a genre. */
+    public function genreIsIdentifier(): bool
+    {
+        return self::looksLikeIdentifier(trim($this->raw['Genre'] ?? ''));
+    }
+
+    /**
+     * Nineteen rows of the export carry something like
+     * "7c9a6c79-19ea-4dea-90da-d7d47042d341_1001" in the genre column - a
+     * shop's internal category id that leaked through whatever Bookstats
+     * scraped. Importing those faithfully produces tags nobody can read and a
+     * filter list nobody can use.
+     *
+     * The test is deliberately narrow, because real genres also contain
+     * hyphens: "Science-Fiction" and "New Adult" must survive it.
+     */
+    public static function looksLikeIdentifier(string $value): bool
+    {
+        if ($value === '') {
+            return false;
+        }
+        // A UUID anywhere in the value.
+        if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $value) === 1) {
+            return true;
+        }
+        // A slug: no spaces, several separators, and at least one digit.
+        if (!str_contains($value, ' ')
+            && preg_match_all('/[-_]/', $value) >= 3
+            && preg_match('/\d/', $value) === 1) {
+            return true;
+        }
+
+        return false;
     }
 
     public function publishedYear(): ?int

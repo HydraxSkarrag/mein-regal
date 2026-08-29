@@ -61,3 +61,36 @@ Assert::same('two authors split', $two->authors()['names'], ['Bernd Flessner', '
 
 $untitled = new BookstatsRow(['Titel' => '']);
 Assert::same('an empty title still gets one', $untitled->title(), '(ohne Titel)');
+
+Assert::group('BookstatsRow: machine identifiers in the genre column');
+
+// Nineteen rows of the real export carry a shop's internal category id where
+// a genre should be. Imported faithfully they become tags nobody can read.
+Assert::same(
+    'a UUID is not a genre',
+    BookstatsRow::looksLikeIdentifier('7c9a6c79-19ea-4dea-90da-d7d47042d341_1001'),
+    true
+);
+Assert::same(
+    'nor is a campaign slug',
+    BookstatsRow::looksLikeIdentifier('2017-Ravensburger-Alle-Leserabe-Buecher'),
+    true
+);
+
+// The test has to be narrow: real genres contain hyphens and ampersands too.
+foreach ([
+    'Fantasy', 'New Adult', 'Science-Fiction', 'Fantasy & Horror',
+    'Mythen & Legenden', 'Erstes Lesealter', 'Bildung & Nachschlagewerk',
+    'Kinderbücher', 'Paranormal & Urban', 'Graphic Novel', 'Krimi/Thriller',
+] as $genre) {
+    Assert::same('"' . $genre . '" survives', BookstatsRow::looksLikeIdentifier($genre), false);
+}
+Assert::same('an empty value is not an identifier', BookstatsRow::looksLikeIdentifier(''), false);
+
+$identifierRow = new BookstatsRow(['Titel' => 'X', 'Genre' => '7c9a6c79-19ea-4dea-90da-d7d47042d341_1001']);
+Assert::same('the genre is dropped', $identifierRow->genre(), null);
+Assert::same('but the row is flagged for the report', $identifierRow->genreIsIdentifier(), true);
+
+$goodRow = new BookstatsRow(['Titel' => 'X', 'Genre' => 'Science-Fiction']);
+Assert::same('a real genre is kept', $goodRow->genre(), 'Science-Fiction');
+Assert::same('and not flagged', $goodRow->genreIsIdentifier(), false);

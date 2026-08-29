@@ -6,6 +6,7 @@ namespace App\Controller;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
+use App\Repository\PageRepository;
 
 /**
  * The pages that are not the shelf: legal texts, robots.txt, the sitemap and
@@ -15,6 +16,91 @@ final class PageController
 {
     public function __construct(private readonly Application $app)
     {
+    }
+
+    /**
+     * The page that says what this shelf is and whose it is.
+     *
+     * Its text lives in the database rather than in this template, so a second
+     * installation introduces itself in its own words without anyone editing
+     * the source - and so it can be reworded without a deployment.
+     */
+    public function about(): Response
+    {
+        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT);
+
+        $body = $this->app->view->render('pages.about', [
+            'page'     => $page,
+            'signedIn' => $this->app->auth->isSignedIn(),
+        ]);
+
+        return Response::html($this->app->view->render('layout.base', [
+            'content'         => $body,
+            'title'           => $page['title'] ?? t('about.title'),
+            'narrow'          => true,
+            'canonical'       => $this->app->url('/ueber'),
+            'metaDescription' => $this->summarise($page['body'] ?? null),
+        ]));
+    }
+
+    public function editAbout(Request $request): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT);
+
+        if ($request->isPost()) {
+            if (!$this->app->csrf->isValid($request->allPost())) {
+                return $this->aboutForm($page, t('error.csrf'));
+            }
+            $title = trim($request->post('title'));
+            if ($title === '') {
+                return $this->aboutForm($page, t('edit.title.required'));
+            }
+
+            $this->app->pages->save(
+                $this->app->ownerId,
+                PageRepository::ABOUT,
+                mb_substr($title, 0, 200),
+                mb_substr(trim($request->post('body')), 0, 20000) ?: null
+            );
+            $this->app->session->flash(t('edit.saved'), 'ok');
+
+            return Response::redirect('/ueber');
+        }
+
+        return $this->aboutForm($page);
+    }
+
+    private function aboutForm(?array $page, string $error = ''): Response
+    {
+        $body = $this->app->view->render('pages.about_edit', [
+            'page'      => $page,
+            'error'     => $error,
+            'csrfField' => $this->app->csrf->field(),
+            'suggested' => t('about.suggested', [
+                'owner' => $this->app->config->str('legal.operator'),
+                'blog'  => $this->app->config->str('blog_name'),
+            ]),
+        ]);
+
+        return Response::html($this->app->view->render('layout.base', [
+            'content' => $body,
+            'title'   => t('about.edit'),
+            'narrow'  => true,
+            'noIndex' => true,
+        ]), $error === '' ? 200 : 422)->noIndex();
+    }
+
+    /** A plain-text opening for the meta description. */
+    private function summarise(?string $body): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', (string) $body) ?? '');
+
+        return $text === '' ? t('app.tagline') : \App\Core\Text::truncate($text, 155);
     }
 
     public function imprint(): Response

@@ -97,35 +97,55 @@ $current = $current ?? '';
     <nav class="site-footer-inner">
       <a href="<?= e($blogUrl) ?>?utm_source=regal&amp;utm_medium=app&amp;utm_campaign=footer"
          target="_blank" rel="noopener"><?= e($blogName) ?></a>
+      <a href="/ueber"><?= e(t('nav.about')) ?></a>
       <a href="/impressum"><?= e(t('legal.imprint')) ?></a>
       <a href="/datenschutz"><?= e(t('legal.privacy')) ?></a>
     </nav>
   </footer>
 
-  <?php if ($signedIn): ?>
+  <?php
+    // The bar is for everyone. Hiding it from signed-out visitors left a
+    // phone with no way to reach the unread pile or the statistics at all -
+    // the header drops those links below 720px. Only the raised scan button
+    // is conditional, because only the owner can scan.
+    $navIcons = [
+      'shelf'  => '<path d="M4 4h5v16H4zM10 4h4v16h-4zM15.5 5.2l3.9 1 -3 15.2 -3.9-1z"/>',
+      'search' => '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+      'sub'    => '<path d="M6 4h12v16l-6-4-6 4z"/>',
+      'stats'  => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+      'admin'  => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    ];
+    $navItems = [
+      ['key' => 'shelf',  'href' => '/',           'label' => t('nav.shelf')],
+      ['key' => 'search', 'href' => '/suche',      'label' => t('nav.search')],
+      ['key' => 'sub',    'href' => '/sub',        'label' => t('nav.sub')],
+    ];
+    $navItems[] = $signedIn
+      ? ['key' => 'admin', 'href' => '/verwaltung', 'label' => t('nav.admin')]
+      : ['key' => 'stats', 'href' => '/statistik',  'label' => t('nav.stats')];
+  ?>
   <nav class="bottom-nav" aria-label="<?= e(t('nav.menu')) ?>">
-    <a href="/"<?= $current === 'shelf' ? ' aria-current="page"' : '' ?>>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 4h5v16H4zM10 4h4v16h-4zM15.5 5.2l3.9 1 -3 15.2 -3.9-1z"/></svg>
-      <span><?= e(t('nav.shelf')) ?></span>
+    <?php foreach (array_slice($navItems, 0, 2) as $item): ?>
+    <a href="<?= e($item['href']) ?>"<?= $current === $item['key'] ? ' aria-current="page"' : '' ?>>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><?= $navIcons[$item['key']] ?></svg>
+      <span><?= e($item['label']) ?></span>
     </a>
-    <a href="/suche"<?= $current === 'search' ? ' aria-current="page"' : '' ?>>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
-      <span><?= e(t('nav.search')) ?></span>
-    </a>
+    <?php endforeach; ?>
+
+    <?php if ($signedIn): ?>
     <a class="nav-scan" href="/erfassen" aria-label="<?= e(t('nav.scan')) ?>"<?= $current === 'scan' ? ' aria-current="page"' : '' ?>>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M7 12h10"/></svg>
       <span><?= e(t('nav.scan')) ?></span>
     </a>
-    <a href="/sub"<?= $current === 'sub' ? ' aria-current="page"' : '' ?>>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
-      <span><?= e(t('nav.sub')) ?></span>
+    <?php endif; ?>
+
+    <?php foreach (array_slice($navItems, 2) as $item): ?>
+    <a href="<?= e($item['href']) ?>"<?= $current === $item['key'] ? ' aria-current="page"' : '' ?>>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><?= $navIcons[$item['key']] ?></svg>
+      <span><?= e($item['label']) ?></span>
     </a>
-    <a href="/verwaltung"<?= $current === 'admin' ? ' aria-current="page"' : '' ?>>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-      <span><?= e(t('nav.admin')) ?></span>
-    </a>
+    <?php endforeach; ?>
   </nav>
-  <?php endif; ?>
 <?php foreach ($scripts ?? [] as $script): ?>
   <script src="<?= e($script) ?>?v=<?= e($assetVersion) ?>" defer></script>
 <?php endforeach; ?>

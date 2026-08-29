@@ -200,6 +200,17 @@ return [
     'edit.saved'               => 'Gespeichert.',
     'edit.cover.failed'        => 'Das Bild konnte nicht gespeichert werden. Die übrigen Änderungen sind gesichert.',
 
+    'stats.public'         => 'Öffentliche Statistik ansehen',
+
+    'about.title'        => 'Über dieses Regal',
+    'about.empty'        => 'Zu diesem Regal wurde noch nichts geschrieben.',
+    'about.write'        => 'Jetzt schreiben',
+    'about.edit'         => 'Über-Seite bearbeiten',
+    'about.body'         => 'Text',
+    'about.body.hint'    => 'Leerzeile trennt Absätze. Adressen werden automatisch verlinkt. HTML wird nicht ausgeführt.',
+    'about.suggested'    => 'Mein Bücherregal – {owner} von {blog}. Hier steht, was ich lese, gelesen habe und noch lesen will.',
+    'nav.about'          => 'Über',
+
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
 ];
