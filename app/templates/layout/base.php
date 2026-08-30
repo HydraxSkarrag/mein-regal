@@ -133,14 +133,7 @@ $current = $current ?? '';
     <p class="site-credit">
       <?= t('app.credit', [
         'app'    => '<a href="/project">' . e(PageController::SOFTWARE_NAME) . '</a>',
-        /*
-         * Tagged, so the blog can see that the credit is doing something.
-         * utm_source names the software rather than this installation: the
-         * link travels to every shelf running it, and "regal" would say only
-         * that some shelf somewhere sent the visitor.
-         */
-        'origin' => '<a href="' . e(PageController::ORIGIN_URL
-                        . '?utm_source=meinregal&utm_medium=app&utm_campaign=credit')
+        'origin' => '<a href="' . e(PageController::originUrl('credit'))
                     . '" rel="noopener">' . e(PageController::ORIGIN_NAME) . '</a>',
       ]) ?>
     </p>

@@ -27,9 +27,27 @@ final class PageController
      * genuinely live somewhere else.
      */
     public const SOFTWARE_NAME = 'Mein Regal';
-    public const REPOSITORY  = 'https://github.com/hydrax/mein-regal';
+    public const REPOSITORY  = 'https://github.com/HydraxSkarrag/mein-regal';
     public const ORIGIN_NAME = 'Bücherhausen';
     public const ORIGIN_URL  = 'https://www.buecherhausen.de/';
+
+    /**
+     * The origin link, tagged so the blog can see the credit doing something.
+     *
+     * utm_source names the software rather than this installation: the link
+     * travels to every shelf running it, and "regal" would say only that some
+     * shelf somewhere sent the visitor. Built here rather than written out
+     * wherever it is needed - the last time it was written out twice, one of
+     * the two went untagged.
+     */
+    public static function originUrl(string $campaign): string
+    {
+        return self::ORIGIN_URL . '?' . http_build_query([
+            'utm_source'   => 'meinregal',
+            'utm_medium'   => 'app',
+            'utm_campaign' => $campaign,
+        ]);
+    }
 
     public function __construct(private readonly Application $app)
     {
@@ -207,7 +225,7 @@ final class PageController
         $body = $this->app->view->render('pages.project', [
             'repository' => $this->app->config->str('repository_url', self::REPOSITORY),
             'originName' => self::ORIGIN_NAME,
-            'originUrl'  => self::ORIGIN_URL,
+            'originUrl'  => self::originUrl('project'),
         ]);
 
         return Response::html($this->app->view->render('layout.base', [
