@@ -117,6 +117,7 @@ php bin/export.php --format=full          # alle Spalten, UTF-8
 php bin/export.php --format=json          # alles, inklusive Beteiligter und Tags
 php bin/backup.php --keep=30              # Datenbank, Katalog und Cover
 php bin/enrich.php --limit=100            # Cover und Angaben nachtragen
+php bin/check.php                        # sind die Datenquellen erreichbar?
 php tests/run.php                         # Tests
 ```
 
@@ -179,8 +180,36 @@ aufgenommenen Coverfotos, die es nur auf dem Server gibt.
 | Quelle | Wofür | Bedingungen |
 |---|---|---|
 | [DNB](https://services.dnb.de/sru/dnb) | deutsche Titel | Metadaten CC0, kein Schlüssel nötig |
-| [Google Books](https://developers.google.com/books) | englische Titel, Cover | ~1.000 Abfragen am Tag, Schlüssel kostenlos |
+| [Google Books](https://developers.google.com/books) | englische Titel, Cover | eigener Schlüssel nötig, kostenlos, ~1.000 Abfragen am Tag |
 | [Open Library](https://openlibrary.org/developers/api) | englische Titel, Cover | offen, Rücklink erwünscht |
+
+### Google-Schlüssel einrichten
+
+Ohne eigenen Schlüssel fällt Google Books praktisch aus: alle anonymen Anfragen
+teilen sich ein gemeinsames Tageskontingent, das üblicherweise erschöpft ist. Die
+Antwort lautet dann `429 Quota exceeded` mit einer fremden Projektnummer.
+
+1. [console.cloud.google.com](https://console.cloud.google.com) öffnen und ein
+   Projekt anlegen (Name egal).
+2. Unter *APIs & Dienste → Bibliothek* nach **Books API** suchen und aktivieren.
+   Ohne diesen Schritt lehnt jeder Schlüssel mit „has not been used" ab.
+3. Unter *APIs & Dienste → Anmeldedaten* → *Anmeldedaten erstellen* → **API-Schlüssel**.
+4. Den Schlüssel einschränken: unter *API-Einschränkungen* auf **Books API** begrenzen.
+   Bei *Anwendungseinschränkungen* **IP-Adressen** wählen und die Server-IP eintragen —
+   nicht „HTTP-Verweis-URLs", denn die Abfragen kommen vom Server, nicht aus dem Browser.
+5. In `config.php` unter `google_books_key` eintragen.
+
+Die Books API ist kostenlos und verlangt keine Zahlungsdaten.
+
+Ob es greift:
+
+```bash
+php bin/check.php --key=DEIN_SCHLUESSEL
+```
+
+Das Skript prüft alle drei Quellen und nennt bei Google den Grund im Klartext —
+ob das Kontingent erschöpft ist, die API nicht aktiviert wurde oder der Schlüssel
+falsch eingeschränkt ist.
 
 Cover werden **heruntergeladen und selbst ausgeliefert**, nicht eingebettet. So
 entsteht beim Betrachten des Regals keine Verbindung zu Dritten. Quelle und
