@@ -207,6 +207,10 @@ final class CoverStorage
             $height = imagesy($image);
         }
 
+        if (self::istPlatzhalter($image, $width, $height)) {
+            throw new RuntimeException('placeholder');
+        }
+
         $base = $this->safeKey($key);
         $shard = self::shardFor($base);
         $this->ensureDirectory($shard);
@@ -226,6 +230,36 @@ final class CoverStorage
             'width'  => $storedWidth,
             'height' => $storedHeight,
         ];
+    }
+
+    /**
+     * Ist das überhaupt ein Cover?
+     *
+     * Google liefert für Bücher ohne Vorschau ein einfarbiges Ersatzbild
+     * statt eines Fehlers - beim Testen war es 575x750 Pixel in sieben
+     * Farben, durchgehend blau. Gespeichert sähe das im Regal aus wie ein
+     * Cover und wäre schlechter als der selbst erzeugte Platzhalter, der
+     * wenigstens den Titel zeigt.
+     *
+     * Ein paar hundert Bildpunkte reichen für die Unterscheidung: ein
+     * gedrucktes Cover hat Dutzende Farbwerte, ein Ersatzbild eine Handvoll.
+     */
+    private static function istPlatzhalter(\GdImage $image, int $width, int $height): bool
+    {
+        $schrittX = max(1, (int) ($width / 30));
+        $schrittY = max(1, (int) ($height / 30));
+
+        $farben = [];
+        for ($x = 0; $x < $width; $x += $schrittX) {
+            for ($y = 0; $y < $height; $y += $schrittY) {
+                $farben[imagecolorat($image, $x, $y)] = true;
+                if (count($farben) > 24) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private function resample(\GdImage $source, int $targetWidth, int $width, int $height): \GdImage

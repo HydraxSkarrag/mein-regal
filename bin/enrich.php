@@ -160,7 +160,15 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
         $pdo = new PDO('sqlite:' . $options['sqlite']);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        $config = new Config(['api_contact' => '', 'google_books_key' => '']);
+        /* Die echte Konfiguration, wenn es sie gibt: --sqlite soll nur die
+           Datenbank ersetzen, nicht den Google-Schlüssel wegwerfen. Genau das
+           tat es und die Anreicherung lief dann ohne Google, ohne dass etwas
+           darauf hingewiesen hätte. */
+        try {
+            $config = Config::load();
+        } catch (Throwable $e) {
+            $config = new Config(['api_contact' => '', 'google_books_key' => '']);
+        }
     } else {
         $config = Config::load();
         $pdo = Database::connect($config);

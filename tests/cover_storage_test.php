@@ -10,9 +10,16 @@ $dir = sys_get_temp_dir() . '/regal-cover-test-' . bin2hex(random_bytes(4));
 mkdir($dir, 0o755, true);
 $storage = new CoverStorage($dir);
 
-// A JPEG carrying EXIF, the way a phone photo arrives.
+// A JPEG carrying EXIF, the way a phone photo arrives. Given real detail,
+// because a flat colour is now refused as a placeholder - which is the point
+// of that check.
 $image = imagecreatetruecolor(600, 900);
-imagefill($image, 0, 0, imagecolorallocate($image, 90, 60, 120));
+for ($x = 0; $x < 600; $x += 6) {
+    for ($y = 0; $y < 900; $y += 6) {
+        imagefilledrectangle($image, $x, $y, $x + 5, $y + 5,
+            imagecolorallocate($image, ($x * 7) % 256, ($y * 3) % 256, ($x + $y) % 256));
+    }
+}
 $sourceJpeg = $dir . '/source.jpg';
 imagejpeg($image, $sourceJpeg, 90);
 
@@ -102,3 +109,53 @@ Assert::same(
 );
 Assert::same('a linked cover keeps its URL', CoverImage::url(['source' => 'google', 'path' => null, 'external_url' => 'https://x/y.jpg']), 'https://x/y.jpg');
 Assert::same('no cover means none', CoverImage::url(null), null);
+
+Assert::group('CoverStorage rejects placeholder images');
+
+$dir2 = sys_get_temp_dir() . '/regal-placeholder-' . bin2hex(random_bytes(4));
+mkdir($dir2, 0o755, true);
+$storage2 = new CoverStorage($dir2);
+
+// Google answers "no preview available" with a solid-colour image rather than
+// an error. Stored, it would look like a cover in the shelf and be worse than
+// the generated placeholder, which at least shows the title.
+$plain = imagecreatetruecolor(575, 750);
+imagefill($plain, 0, 0, imagecolorallocate($plain, 0, 0, 255));
+$plainPath = $dir2 . '/plain.png';
+imagepng($plain, $plainPath);
+
+$rejected = false;
+try {
+    $storage2->storeBinary((string) file_get_contents($plainPath), 'plain');
+} catch (Throwable $e) {
+    $rejected = $e->getMessage() === 'placeholder';
+}
+Assert::same('a solid-colour image is refused', $rejected, true);
+
+// A real cover has to survive the same test.
+$cover = imagecreatetruecolor(300, 450);
+for ($x = 0; $x < 300; $x += 5) {
+    for ($y = 0; $y < 450; $y += 5) {
+        imagefilledrectangle($cover, $x, $y, $x + 4, $y + 4, imagecolorallocate($cover, $x % 256, $y % 256, ($x + $y) % 256));
+    }
+}
+$coverPath = $dir2 . '/cover.png';
+imagepng($cover, $coverPath);
+
+$accepted = null;
+try {
+    $accepted = $storage2->storeBinary((string) file_get_contents($coverPath), 'cover');
+} catch (Throwable $e) {
+    $accepted = null;
+}
+Assert::true('a picture with real detail is kept', $accepted !== null);
+
+foreach (glob($dir2 . '/*') ?: [] as $entry) {
+    if (is_dir($entry)) {
+        array_map('unlink', glob($entry . '/*') ?: []);
+        rmdir($entry);
+        continue;
+    }
+    unlink($entry);
+}
+rmdir($dir2);
