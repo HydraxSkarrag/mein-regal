@@ -12,6 +12,8 @@ declare(strict_types=1);
   <h1 style="margin-bottom:6px"><?= e(t('setup.title')) ?></h1>
   <p class="note" style="margin-top:0"><?= e(t('setup.intro')) ?></p>
 
+  <?= $view->render('partials.brand_hint') ?>
+
   <?php if (($error ?? '') !== ''): ?>
   <p class="form-error"><?= e($error) ?></p>
   <?php endif; ?>

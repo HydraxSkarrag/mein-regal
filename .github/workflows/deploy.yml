@@ -75,7 +75,9 @@ jobs:
           # Excluded is everything that is created on the server or has no
           # business being there. public/covers/ is top of the list: those are
           # the cover photographs, which exist only there and which no deploy
-          # may overwrite.
+          # may overwrite. public/assets/brand/ is the same case for the site's
+          # own logo and icons: they are not in the repository, and a deploy
+          # that carried them would put one installation's brand on another.
           exclude: |
             **/.git*
             **/.git*/**
@@ -83,8 +85,10 @@ jobs:
             **/.claude/**
             **/.DS_Store
             **/config.php
+            **/config.php.bak
             **/storage/**
             **/public/covers/**
+            **/public/assets/brand/**
             **/tests/**
             **/router.dev.php
             **/dev.sh

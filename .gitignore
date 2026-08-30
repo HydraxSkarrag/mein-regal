@@ -4,6 +4,7 @@
 # and app/Core/Config.php - the class that reads the file - was quietly
 # excluded from the repository. Cloning gave a broken application.
 /config.php
+/config.php.bak
 /config.dev.php
 *.local
 
@@ -11,6 +12,11 @@
 storage/
 public/covers/*
 !public/covers/.gitkeep
+
+# The operator's own logo and icons. They override the neutral defaults that
+# ship in public/assets/, they belong to whoever made them, and a deploy must
+# never carry one installation's brand into another.
+public/assets/brand/
 
 # The library export itself has no place in the repository - not even a
 # private one. Test fixtures are small, synthetic and deliberately kept.

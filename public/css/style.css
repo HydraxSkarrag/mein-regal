@@ -137,7 +137,7 @@ img { max-width: 100%; height: auto; }
   text-decoration: none;
   color: var(--text);
 }
-.brand-logo { display: block; }
+.brand-logo { display: block; height: 36px; width: auto; }
 .brand-name {
   font-family: var(--font-head);
   font-weight: 700;
@@ -511,6 +511,8 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .flash--ok { background: #edf7f1; border-color: #b6dfc7; color: #14532d; }
 .flash--error { background: #fdecef; border-color: #f7b9c4; color: #8a0a22; }
+.flash--hint { background: #fffbeb; border-color: #fde68a; color: #713f12; }
+.flash--hint a { color: inherit; }
 
 /* ---- Statistics ----------------------------------------------------- */
 

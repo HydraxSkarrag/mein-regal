@@ -28,8 +28,9 @@ SOFTWARE.
 
 The following are NOT part of the software and are not licensed with it:
 
-  * The Bücherhausen logo, wordmark and other brand assets
-    (public/assets/logo.png and related files). All rights reserved.
+  * Anything in public/assets/brand/ - the operator's own logo and icons.
+    That folder is excluded from version control and from the deployment, so
+    nothing in it travels with this repository; it belongs to whoever made it.
   * The bundled webfonts, which carry their own licences
     (Inter and IBM Plex Serif are both SIL Open Font License 1.1).
   * public/js/zxing.min.js - @zxing/library, Apache License 2.0.
@@ -43,5 +44,8 @@ The following are NOT part of the software and are not licensed with it:
     Nationalbibliothek is published by the DNB under CC0; data from other
     services is subject to those services' terms.
 
-Anyone running their own installation should replace the brand assets in
-public/assets/ with their own before putting it online.
+The default logo and icons in public/assets/ are part of the software and are
+covered by the MIT licence above. They exist so that a fresh installation has a
+mark of its own rather than borrowing somebody else's - which is also why no
+other brand ships here. To use your own, put it in public/assets/brand/; see
+the README.

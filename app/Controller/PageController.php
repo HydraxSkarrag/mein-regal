@@ -294,14 +294,32 @@ final class PageController
             'background_color' => '#f9fefd',
             'theme_color'      => '#ed002f',
             'lang'             => $this->app->translator->locale(),
-            'icons'            => [
-                ['src' => '/assets/favicon-192x192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
-                ['src' => '/assets/apple-touch-icon.png', 'sizes' => '180x180', 'type' => 'image/png'],
-            ],
+            'icons'            => $this->manifestIcons(),
             'shortcuts' => [[
                 'name' => t('nav.scan'),
                 'url'  => '/scan',
             ]],
         ])->withHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+    }
+
+    /**
+     * The manifest icons, from whichever brand is in force.
+     *
+     * Only the sizes that are actually there are listed: an entry pointing at
+     * a missing file makes Android fall back to a screenshot of the page.
+     *
+     * @return list<array<string, string>>
+     */
+    private function manifestIcons(): array
+    {
+        $icons = [];
+        foreach ([['tile', '192x192'], ['touch', '180x180'], ['icon', '32x32']] as [$name, $sizes]) {
+            $url = $this->app->brand->url($name);
+            if ($url !== null) {
+                $icons[] = ['src' => $url, 'sizes' => $sizes, 'type' => 'image/png'];
+            }
+        }
+
+        return $icons;
     }
 }

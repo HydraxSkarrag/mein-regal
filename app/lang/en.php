@@ -282,6 +282,8 @@ return [
     'setup.password.hint'        => 'At least {min} characters. A password manager makes this easier.',
     'setup.password.repeat'      => 'Repeat the password',
     'setup.password.mismatch'    => 'The two passwords do not match.',
+    'brand.defaults'             => 'This shelf is still wearing the logo it shipped with. Your own logo and icons belong in {folder}, where they replace the defaults and survive every update.',
+    'brand.defaults.files'       => 'The names it looks for are {files}. Whatever is there is used; the rest stays on the default.',
 
     'maintenance.title'                    => 'Data',
     'maintenance.export'                   => 'Download',

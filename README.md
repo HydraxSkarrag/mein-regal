@@ -66,7 +66,28 @@ belongs next to `app/`, never inside `public/`, and never in the repository.
 Leaving `blog_url` and `blog_name` empty is fine — the link to a blog then simply
 does not appear. A shelf does not have to belong to one.
 
-### 4. Create an account
+### 4. Your own logo
+
+The shelf ships with a neutral mark so a fresh installation looks finished
+rather than borrowed. To use your own, put the files in `public/assets/brand/`:
+
+| File | Used for |
+|---|---|
+| `logo.svg` or `logo.png` | the header, scaled to 36 pixels tall |
+| `favicon-32x32.png` | the browser tab |
+| `favicon-192x192.png` | the home-screen tile |
+| `apple-touch-icon.png` | the same on iOS, 180×180 |
+
+Whatever is there wins; the rest stays on the default. The folder is excluded
+from Git **and** from the deployment, so your logo is neither published with the
+source nor overwritten the next time you deploy — the same treatment
+`public/covers/` gets, and for the same reason. Until something is in it, the
+setup page and the dashboard say so.
+
+`public/assets/logo.svg` is the source the default PNG icons were drawn from;
+copy it if you want a starting point in your own colours.
+
+### 5. Create an account
 
 Open `https://your-address/setup` and create the first account. The page answers
 only while no account exists; afterwards it is a 404 like any unknown address.
@@ -86,7 +107,7 @@ php bin/setup.php --email=you@example.org --name="Your Name"
 Without `--password` one is generated and printed once. After that only its hash
 is stored.
 
-### 5. Import an existing collection
+### 6. Import an existing collection
 
 Upload the CSV under *Admin → Data*. First **without** the "really write" box —
 that produces only the report naming duplicates, missing ISBNs and ambiguous
@@ -103,7 +124,7 @@ php bin/import.php --file=books.csv            # dry run, writes nothing
 php bin/import.php --file=books.csv --commit
 ```
 
-### 6. Set up the nightly cron job
+### 7. Set up the nightly cron job
 
 all-inkl's scheduler calls a URL rather than running a script. Under
 *Tools → Cronjobs*:
@@ -238,6 +259,7 @@ quota exhausted, API not enabled, or the key restricted to the wrong thing.
 
 ## Licence
 
-Source under MIT. The logo, the fonts and the cover images are excluded and belong
-to their rights holders — see [LICENSE](LICENSE). Anyone running their own
-installation should replace the files in `public/assets/` with their own.
+Source under MIT, and that includes the default logo — see [LICENSE](LICENSE).
+Excluded are the bundled fonts and the cover images, which belong to their
+rights holders. Nobody else's brand ships in this repository: an operator's own
+logo lives in `public/assets/brand/`, which is not in version control.

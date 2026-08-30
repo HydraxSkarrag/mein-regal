@@ -20,6 +20,8 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
   <span class="count"><a href="/admin/data"><?= e(t('maintenance.title')) ?></a></span>
 </div>
 
+<?= $view->render('partials.brand_hint') ?>
+
 <div class="metrics">
   <div class="metric">
     <div class="label"><?= e(t('stats.books')) ?></div>

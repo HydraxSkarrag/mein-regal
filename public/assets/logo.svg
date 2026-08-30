@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="">
+  <!--
+    The default mark: three books, one leaning.
+
+    Deliberately generic. It ships with the software so that a fresh
+    installation looks finished rather than borrowed, and it is meant to be
+    replaced: put your own logo in public/assets/brand/ and this one steps
+    aside.
+
+    The lean is what earns its keep. Three upright rectangles on a baseline
+    read as a bar chart at small sizes; one of them tipped over reads as
+    books. Nothing else survives being scaled to sixteen pixels, which is why
+    there is no shelf, no lettering and no detail on the spines.
+
+    The PNG icons beside this file are drawn from the same coordinates.
+    Colours are the interface palette: text, accent, muted.
+  -->
+  <rect x="8"  y="16" width="14" height="38" rx="2" fill="#27272a"/>
+  <rect x="24" y="8"  width="14" height="46" rx="2" fill="#ed002f"/>
+  <rect x="45.2" y="22" width="13" height="32" rx="2" fill="#a1a1aa"
+        transform="rotate(-13 45.2 54)"/>
+</svg>

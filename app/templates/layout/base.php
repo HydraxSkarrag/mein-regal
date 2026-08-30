@@ -4,6 +4,7 @@
  *
  * @var string      $content
  * @var string      $title
+ * @var App\Core\Brand      $brand
  * @var App\Core\Translator $translator
  */
 declare(strict_types=1);
@@ -30,8 +31,12 @@ $current = $current ?? '';
   <meta name="theme-color" content="#ed002f">
 
   <link rel="stylesheet" href="/css/style.css?v=<?= e($assetVersion) ?>">
-  <link rel="icon" href="/assets/favicon-32x32.png" sizes="32x32">
-  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <?php if ($brand->url('icon') !== null): ?>
+  <link rel="icon" href="<?= e($brand->url('icon')) ?>" sizes="32x32">
+  <?php endif; ?>
+  <?php if ($brand->url('touch') !== null): ?>
+  <link rel="apple-touch-icon" href="<?= e($brand->url('touch')) ?>">
+  <?php endif; ?>
   <link rel="manifest" href="/manifest.webmanifest">
 <?php if (!$noIndex): ?>
 
@@ -62,7 +67,10 @@ $current = $current ?? '';
   <header class="site-header">
     <div class="site-header-inner">
     <a class="brand" href="/">
-      <img src="/assets/logo.png" alt="" width="47" height="36" class="brand-logo">
+      <?php if ($brand->url('logo') !== null): [$logoWidth, $logoHeight] = $brand->logoSize(); ?>
+      <img src="<?= e($brand->url('logo')) ?>" alt=""
+           width="<?= $logoWidth ?>" height="<?= $logoHeight ?>" class="brand-logo">
+      <?php endif; ?>
       <span class="brand-name"><?= e($siteName) ?></span>
     </a>
     <?php /* A shelf need not belong to a blog; with no blog configured the line is simply absent. */ ?>

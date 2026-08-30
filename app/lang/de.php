@@ -282,6 +282,8 @@ return [
     'setup.password.hint'        => 'Mindestens {min} Zeichen. Ein Passwortmanager macht das leichter.',
     'setup.password.repeat'      => 'Passwort wiederholen',
     'setup.password.mismatch'    => 'Die beiden Passwörter stimmen nicht überein.',
+    'brand.defaults'             => 'Dieses Regal trägt noch das mitgelieferte Standard-Logo. Ein eigenes Logo und eigene Symbole gehören in den Ordner {folder} – dort ersetzen sie die Standarddateien und überstehen jede Aktualisierung.',
+    'brand.defaults.files'       => 'Erwartet werden {files}. Vorhanden ist, was da ist; der Rest bleibt beim Standard.',
 
     'maintenance.title'                    => 'Daten',
     'maintenance.export'                   => 'Herunterladen',

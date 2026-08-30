@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Core\Auth;
+use App\Core\Brand;
 use App\Core\Config;
 use App\Core\Cookies;
 use App\Core\Csrf;
@@ -48,6 +49,7 @@ final class Application
     public readonly Formatter $formatter;
     public readonly View $view;
     public readonly Router $router;
+    public readonly Brand $brand;
 
     public readonly BookRepository $books;
     public readonly AuthorRepository $authors;
@@ -94,6 +96,8 @@ final class Application
         $this->formatter = new Formatter($this->translator->locale());
 
         $this->ownerId = $this->resolveOwnerId();
+
+        $this->brand = new Brand(PROJECT_ROOT);
 
         $this->view = new View(APP_ROOT . '/templates');
         $this->shareViewDefaults();
@@ -144,7 +148,8 @@ final class Application
         $this->view->share('siteName', $this->config->str('site_name', 'Mein Regal'));
         $this->view->share('siteUrl', rtrim($this->config->str('site_url'), '/'));
         $this->view->share('blogUrl', $this->config->str('blog_url'));
-        $this->view->share('blogName', $this->config->str('blog_name', 'Bücherhausen'));
+        $this->view->share('blogName', $this->config->str('blog_name'));
+        $this->view->share('brand', $this->brand);
         $this->view->share('publicStats', $this->publicStats());
         $this->view->share('currentPath', $this->request->path);
         $this->view->share('csrfField', $this->csrf->field());
