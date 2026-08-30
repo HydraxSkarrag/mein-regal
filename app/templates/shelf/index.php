@@ -44,21 +44,21 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
-    <h2><?= e(t('filter.author')) ?></h2>
-    <ul>
-      <?php foreach ($topAuthors as $person): ?>
-      <li><a href="<?= e($urlFor(['autor' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"
-             aria-current="<?= ($filters['author'] ?? '') === $person['name'] ? 'true' : 'false' ?>">
-        <span><?= e($person['name']) ?></span><span class="n"><?= e($formatter->number((int) $person['book_count'])) ?></span></a></li>
-      <?php endforeach; ?>
-    </ul>
-
     <h2><?= e(t('filter.genre')) ?></h2>
     <ul>
       <?php foreach ($tags as $tag): ?>
       <li><a href="<?= e($urlFor(['tag' => ($filters['tag'] ?? '') === $tag['slug'] ? '' : $tag['slug']])) ?>"
              aria-current="<?= ($filters['tag'] ?? '') === $tag['slug'] ? 'true' : 'false' ?>">
         <span><?= e($tag['name']) ?></span><span class="n"><?= e($formatter->number((int) $tag['book_count'])) ?></span></a></li>
+      <?php endforeach; ?>
+    </ul>
+
+    <h2><?= e(t('filter.author')) ?></h2>
+    <ul>
+      <?php foreach ($topAuthors as $person): ?>
+      <li><a href="<?= e($urlFor(['autor' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"
+             aria-current="<?= ($filters['author'] ?? '') === $person['name'] ? 'true' : 'false' ?>">
+        <span><?= e($person['name']) ?></span><span class="n"><?= e($formatter->number((int) $person['book_count'])) ?></span></a></li>
       <?php endforeach; ?>
     </ul>
 
