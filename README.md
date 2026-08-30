@@ -204,7 +204,7 @@ Die Books API ist kostenlos und verlangt keine Zahlungsdaten.
 Ob es greift:
 
 ```bash
-php bin/check.php --key=DEIN_SCHLUESSEL
+php bin/check.php --key=AIzaSy...
 ```
 
 Das Skript prüft alle drei Quellen und nennt bei Google den Grund im Klartext —

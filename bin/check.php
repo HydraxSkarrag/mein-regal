@@ -33,6 +33,23 @@ if (isset($options['key']) && $options['key'] !== false) {
     }
 }
 
+/**
+ * Sieht das nach einem echten Schlüssel aus?
+ *
+ * Google-API-Schlüssel beginnen mit "AIza" und sind 39 Zeichen lang. Wer den
+ * Platzhalter aus der Anleitung stehen lässt, bekommt sonst "API key not
+ * valid" - eine völlig korrekte Antwort, die aber wie ein Problem mit dem
+ * Google-Konto aussieht statt wie ein Tippfehler im Aufruf.
+ */
+function siehtNachSchluesselAus(string $key): bool
+{
+    if (preg_match('/^(DEIN|YOUR|MEIN|XXX|AIzaSy\.\.\.)/i', $key) === 1) {
+        return false;
+    }
+
+    return str_starts_with($key, 'AIza') && strlen($key) >= 35;
+}
+
 $http = new HttpClient('', 12);
 
 function zeile(string $name, bool $ok, string $hinweis = ''): void
@@ -64,7 +81,9 @@ zeile('Open Library Cover', in_array($response['status'], [200, 404], true),
 echo "\n";
 $url = 'https://www.googleapis.com/books/v1/volumes?q=isbn:' . $isbn;
 $ohne = $http->get($url);
-$mitKey = $key !== null ? $http->get($url . '&key=' . urlencode($key)) : null;
+
+$platzhalter = $key !== null && !siehtNachSchluesselAus($key);
+$mitKey = ($key !== null && !$platzhalter) ? $http->get($url . '&key=' . urlencode($key)) : null;
 
 if ($ohne['status'] === 200) {
     zeile('Google (ohne Key)', true, 'antwortet - das gemeinsame Kontingent ist gerade frei');
@@ -81,10 +100,15 @@ if ($ohne['status'] === 200) {
     echo "                         eigenen Schlüssel. Ein eigener behebt das.\n";
 }
 
-if ($key === null) {
+if ($platzhalter) {
+    echo "\n  Das war der Platzhalter aus der Anleitung, kein echter Schlüssel.\n";
+    echo "  Ein Google-Schlüssel beginnt mit \"AIza\" und ist 39 Zeichen lang.\n";
+    echo "  Anlegen unter console.cloud.google.com, dann:\n";
+    echo "    php bin/check.php --key=AIzaSy...\n";
+} elseif ($key === null) {
     echo "\n  Kein Google-Schlüssel hinterlegt.\n";
     echo "  In config.php unter 'google_books_key' eintragen, oder hier testen:\n";
-    echo "    php bin/check.php --key=DEIN_SCHLUESSEL\n";
+    echo "    php bin/check.php --key=AIzaSy...\n";
 } else {
     $daten = json_decode($mitKey['body'], true);
     if ($mitKey['status'] === 200) {
