@@ -105,17 +105,14 @@ $value = static fn (?string $v): string => $v ?? '';
         <p class="note"><?= e(t('edit.tags.hint')) ?></p>
       </div>
 
-      <script type="application/json" id="known-tags"><?= json_encode(
-          $knownTags,
-          JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
-      ) ?></script>
-      <script type="application/json" id="tag-i18n"><?= json_encode([
+      <script type="application/json" id="known-tags"><?= json_for_script($knownTags) ?></script>
+      <script type="application/json" id="tag-i18n"><?= json_for_script([
           'placeholder' => t('edit.tags.placeholder'),
           'newTag'      => t('edit.tags.new'),
           'similar'     => t('edit.tags.similar'),
           'remove'      => t('edit.tags.remove'),
           'books'       => t('edit.tags.books'),
-      ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+      ]) ?></script>
 
       <?php if ($isbnFormatted !== ''): ?>
       <p class="note"><?= e(t('book.isbn')) ?>: <?= e($isbnFormatted) ?></p>

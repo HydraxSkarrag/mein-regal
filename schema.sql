@@ -107,6 +107,9 @@ CREATE TABLE IF NOT EXISTS books (
     KEY idx_books_owner_isbn (owner_id, isbn13),
     KEY idx_books_owner_status (owner_id, reading_status),
     KEY idx_books_owner_year (owner_id, published_year),
+    -- The shelf's default order. Without it every page is sorted through a
+    -- temporary structure.
+    KEY idx_books_owner_created (owner_id, created_at),
     KEY idx_books_slug (slug),
     KEY idx_books_title (title(100))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

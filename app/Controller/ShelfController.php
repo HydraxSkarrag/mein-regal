@@ -27,6 +27,7 @@ final class ShelfController
             'tag'      => $request->query('tag'),
             'binding'  => $this->oneOf($request->query('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
+            'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
             'sort'     => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read'], 'recent'),
         ];
 
@@ -85,6 +86,7 @@ final class ShelfController
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
             'bindingCounts' => $this->app->books->countBy($this->app->ownerId, 'binding'),
             'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
+            'isbnCounts'    => $this->app->books->countByIsbn($this->app->ownerId),
             'filters'       => $filters,
             'hasFilters'    => array_filter($filters) !== ['sort' => 'recent'] && array_filter($filters) !== [],
             'urlFor'        => $urlFor,

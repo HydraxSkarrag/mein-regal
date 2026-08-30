@@ -49,7 +49,7 @@ $current = $current ?? '';
 <?php if (($jsonLd ?? null) !== null): ?>
 
   <script type="application/ld+json">
-<?= json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+<?= json_for_script($jsonLd, true) ?>
 
   </script>
 <?php endif; ?>

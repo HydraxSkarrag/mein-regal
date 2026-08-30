@@ -213,7 +213,7 @@ final class BookRepository
     /**
      * The shelf listing.
      *
-     * @param array{search?: string, status?: string, tag?: string, binding?: string, rating?: int, language?: string, cover?: string, sort?: string} $filters
+     * @param array{search?: string, status?: string, tag?: string, binding?: string, rating?: int, language?: string, cover?: string, isbn?: string, sort?: string} $filters
      * @return array{rows: list<array<string,mixed>>, total: int}
      */
     public function search(int $ownerId, array $filters = [], int $limit = 60, int $offset = 0): array
@@ -279,6 +279,14 @@ final class BookRepository
             $conditions[] = 't.slug = ?';
             $parameters[] = $filters['tag'];
         }
+        // The hundred books with no ISBN are exactly the ones that cannot be
+        // looked up automatically, so being able to list them is what makes
+        // them findable at all.
+        if (($filters['isbn'] ?? '') === 'yes') {
+            $conditions[] = 'b.isbn13 IS NOT NULL';
+        } elseif (($filters['isbn'] ?? '') === 'no') {
+            $conditions[] = 'b.isbn13 IS NULL';
+        }
         // Covers arrive gradually, so "show me the ones that have one" and
         // "show me what still needs one" are both worth asking for.
         if (($filters['cover'] ?? '') === 'yes') {
@@ -288,6 +296,24 @@ final class BookRepository
         }
 
         return [['sql' => implode(' AND ', $conditions), 'join' => $join], $parameters];
+    }
+
+    /** @return array{with: int, without: int} */
+    public function countByIsbn(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT
+                 SUM(CASE WHEN isbn13 IS NOT NULL THEN 1 ELSE 0 END) AS with_isbn,
+                 SUM(CASE WHEN isbn13 IS NULL THEN 1 ELSE 0 END) AS without_isbn
+               FROM books WHERE owner_id = ?'
+        );
+        $statement->execute([$ownerId]);
+        $row = $statement->fetch() ?: [];
+
+        return [
+            'with'    => (int) ($row['with_isbn'] ?? 0),
+            'without' => (int) ($row['without_isbn'] ?? 0),
+        ];
     }
 
     /** @return array{with: int, without: int} */

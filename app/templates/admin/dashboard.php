@@ -44,12 +44,12 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
     <h2><?= e(t('stats.todo')) ?></h2>
     <ul class="todo-list">
       <li>
-        <span><?= e(t('stats.no.cover')) ?></span>
+        <span><a href="/?cover=no"><?= e(t('stats.no.cover')) ?></a></span>
         <span class="n"><?= e($formatter->number($todo['no_cover'] ?? 0)) ?>
           <span class="note">· <?= e($formatter->number($pct((int) ($todo['no_cover'] ?? 0)), 1)) ?> %</span></span>
       </li>
       <li>
-        <span><a href="/?q="><?= e(t('stats.no.isbn')) ?></a></span>
+        <span><a href="/?isbn=no"><?= e(t('stats.no.isbn')) ?></a></span>
         <span class="n"><?= e($formatter->number($todo['no_isbn'] ?? 0)) ?></span>
       </li>
       <li>

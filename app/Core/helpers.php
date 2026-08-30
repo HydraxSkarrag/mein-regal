@@ -15,6 +15,29 @@ if (!function_exists('e')) {
     }
 }
 
+if (!function_exists('json_for_script')) {
+    /**
+     * JSON that is safe to place inside a <script> element.
+     *
+     * The browser ends a script element at the first "</script>" it sees,
+     * wherever that appears - including inside a JSON string. A book title
+     * containing one therefore closes the block early and everything after it
+     * is parsed as HTML. That is a stored cross-site scripting hole reachable
+     * from a book title, so escaping the angle brackets is not optional.
+     *
+     * JSON_HEX_AMP, _APOS and _QUOT are along for the same reason: they make
+     * the output safe inside an attribute as well, so the one helper can be
+     * used everywhere without thinking about the context again.
+     */
+    function json_for_script(mixed $value, bool $pretty = false): string
+    {
+        $flags = JSON_UNESCAPED_UNICODE
+            | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+
+        return (string) json_encode($value, $pretty ? $flags | JSON_PRETTY_PRINT : $flags);
+    }
+}
+
 if (!function_exists('t')) {
     /**
      * Translate an interface string. Content - book titles, author names -

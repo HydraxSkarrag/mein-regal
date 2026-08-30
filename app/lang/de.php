@@ -287,6 +287,10 @@ return [
     'maintenance.cron'                     => 'Nächtlicher Abgleich',
     'maintenance.cron.hint'                => 'Fehlende Cover und Angaben trägt der Cronjob nach, nicht diese Seite. Er wartet zwischen den Abfragen, um die Datenquellen nicht zu überlasten – für dreitausend Bücher wären das Stunden, die kein Browserfenster durchhält.',
 
+    'filter.isbn'          => 'ISBN',
+    'filter.isbn.yes'      => 'Mit ISBN',
+    'filter.isbn.no'       => 'Ohne ISBN',
+
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
 ];

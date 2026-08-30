@@ -89,5 +89,7 @@ jobs:
             **/public/covers/**
             **/tests/**
             **/router.dev.php
+            **/dev.sh
+            **/config.dev.php
             **/*.csv
             **/*.md

@@ -287,6 +287,10 @@ return [
     'maintenance.cron'                     => 'The nightly job',
     'maintenance.cron.hint'                => 'Missing covers and details are filled in by the cron job, not by this page. It waits between requests so as not to hammer the sources - for three thousand books that is hours, which no browser window survives.',
 
+    'filter.isbn'          => 'ISBN',
+    'filter.isbn.yes'      => 'With an ISBN',
+    'filter.isbn.no'       => 'Without an ISBN',
+
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
 ];

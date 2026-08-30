@@ -63,6 +63,16 @@ declare(strict_types=1);
         <span><?= e(t('filter.cover.no')) ?></span><span class="n"><?= e($formatter->number($coverCounts['without'])) ?></span></a></li>
     </ul>
 
+    <h2><?= e(t('filter.isbn')) ?></h2>
+    <ul>
+      <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
+             aria-current="<?= ($filters['isbn'] ?? '') === 'yes' ? 'true' : 'false' ?>">
+        <span><?= e(t('filter.isbn.yes')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['with'])) ?></span></a></li>
+      <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'no' ? '' : 'no'])) ?>"
+             aria-current="<?= ($filters['isbn'] ?? '') === 'no' ? 'true' : 'false' ?>">
+        <span><?= e(t('filter.isbn.no')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['without'])) ?></span></a></li>
+    </ul>
+
     <h2><?= e(t('filter.binding')) ?></h2>
     <ul>
       <?php foreach ($bindingCounts as $binding => $count): ?>

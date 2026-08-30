@@ -9,6 +9,25 @@
  */
 declare(strict_types=1);
 
+/*
+ * Errors are logged, never shown.
+ *
+ * A PHP warning printed into the page leaks file paths and, at the wrong
+ * moment, fragments of a query. Whether display_errors is on is the host's
+ * default and not something to inherit by accident, so it is settled here -
+ * before anything can go wrong - rather than hoped for.
+ *
+ * REGAL_DEBUG=1 turns display back on for local work.
+ */
+if (getenv('REGAL_DEBUG') === '1') {
+    ini_set('display_errors', '1');
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+    error_reporting(E_ALL & ~E_DEPRECATED);
+}
+
 require dirname(__DIR__) . '/app/bootstrap.php';
 
 use App\Controller\AuthController;

@@ -46,7 +46,7 @@ declare(strict_types=1);
 <?= $csrfField ?>
 
 <script type="application/json" id="scan-i18n">
-<?= json_encode([
+<?= json_for_script([
     'searching'   => t('scan.searching'),
     'detected'    => t('scan.detected'),
     'nothingShort'=> t('scan.nothing.short'),
@@ -74,5 +74,5 @@ declare(strict_types=1);
     'aim'         => t('scan.aim'),
     'count'       => t('scan.count', ['count' => '{count}']),
     'error'       => t('error.500.title'),
-], JSON_UNESCAPED_UNICODE) ?>
+]) ?>
 </script>

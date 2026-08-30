@@ -57,6 +57,13 @@ DirectoryIndex index.php
   Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
 </IfModule>
 
+# Zweite Reihe: falls PHP als Modul läuft und die Anwendung gar nicht erst
+# startet, soll trotzdem keine Warnung im Browser landen.
+<IfModule mod_php.c>
+  php_flag display_errors Off
+  php_flag log_errors On
+</IfModule>
+
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType text/css "access plus 7 days"
