@@ -291,6 +291,12 @@ return [
     'filter.isbn.yes'      => 'Mit ISBN',
     'filter.isbn.no'       => 'Ohne ISBN',
 
+    'edit.isbn.hint'         => 'Mit oder ohne Bindestriche, 10 oder 13 Ziffern. Leer lassen, wenn das Buch keine hat – dann gibt es aber auch keine Cover-Suche.',
+    'edit.isbn.invalid'      => 'Das ist keine gültige ISBN. Die Prüfziffer stimmt nicht.',
+    'edit.isbn.taken'        => 'Diese ISBN gehört bereits zu „{title}“.',
+
+    'edit.isbn.notabook'  => 'Dieser Strichcode gehört zu keinem Buch – Buch-ISBNs beginnen mit 978 oder 979.',
+
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
 ];

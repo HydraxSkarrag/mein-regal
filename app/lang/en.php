@@ -291,6 +291,12 @@ return [
     'filter.isbn.yes'      => 'With an ISBN',
     'filter.isbn.no'       => 'Without an ISBN',
 
+    'edit.isbn.hint'         => 'With or without hyphens, ten or thirteen digits. Leave it empty if the book has none - but then there is nothing to search a cover by.',
+    'edit.isbn.invalid'      => 'That is not a valid ISBN - the check digit does not match.',
+    'edit.isbn.taken'        => 'That ISBN already belongs to "{title}".',
+
+    'edit.isbn.notabook'  => 'That barcode does not belong to a book - book ISBNs start with 978 or 979.',
+
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
 ];

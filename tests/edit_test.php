@@ -182,3 +182,29 @@ $remainingTags = $pdo->query('SELECT name FROM tags')->fetchAll(PDO::FETCH_COLUM
 Assert::same('an orphaned tag goes too', in_array('Einmalgenre', $remainingTags, true), false);
 
 Assert::same('deleting something already gone is harmless', $books->delete($maike, $doomed)['deleted'], false);
+
+Assert::group('Editing the ISBN');
+
+// The hundred books without an ISBN cannot be looked up or given a cover, so
+// being able to type one in is what unlocks the rest for them.
+$noIsbn = $books->insert($maike, ['title' => 'Ohne Nummer', 'reading_status' => 'unread']);
+Assert::same('starts without one', $books->findById($maike, $noIsbn)['isbn13'], null);
+
+$books->update($maike, $noIsbn, ['isbn13' => '9783596704057', 'isbn10' => '3596704057']);
+$updated = $books->findById($maike, $noIsbn);
+Assert::same('the ISBN is stored', $updated['isbn13'], '9783596704057');
+Assert::same('and the ten-digit form with it', $updated['isbn10'], '3596704057');
+
+// Hyphens and the ten-digit form are what people copy off a cover.
+Assert::same('hyphens are accepted', App\Core\Isbn::normalize('978-3-596-70405-7'), '9783596704057');
+Assert::same('so is an ISBN-10', App\Core\Isbn::normalize('3596704057'), '9783596704057');
+
+// A product barcode has a valid check digit and is still not a book; the two
+// cases deserve different messages.
+Assert::same('a product EAN is refused', App\Core\Isbn::normalize('4005556022946'), null);
+Assert::same('but its check digit is fine', App\Core\Isbn::hasValidEan13Checksum('4005556022946'), true);
+Assert::same('a real typo fails the check digit', App\Core\Isbn::hasValidEan13Checksum('9783473408062'), false);
+
+// Clearing it must be possible - some books genuinely have none.
+$books->update($maike, $noIsbn, ['isbn13' => null, 'isbn10' => null]);
+Assert::same('it can be cleared again', $books->findById($maike, $noIsbn)['isbn13'], null);

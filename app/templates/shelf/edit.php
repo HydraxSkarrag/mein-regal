@@ -114,9 +114,12 @@ $value = static fn (?string $v): string => $v ?? '';
           'books'       => t('edit.tags.books'),
       ]) ?></script>
 
-      <?php if ($isbnFormatted !== ''): ?>
-      <p class="note"><?= e(t('book.isbn')) ?>: <?= e($isbnFormatted) ?></p>
-      <?php endif; ?>
+      <div class="field">
+        <label for="isbn13"><?= e(t('book.isbn')) ?></label>
+        <input id="isbn13" type="text" name="isbn13" inputmode="numeric" autocomplete="off"
+               value="<?= e($isbnFormatted) ?>" placeholder="978-3-473-40806-1">
+        <p class="note"><?= e(t('edit.isbn.hint')) ?></p>
+      </div>
     </div>
 
     <div>

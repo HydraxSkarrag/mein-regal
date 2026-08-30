@@ -72,10 +72,38 @@ final class BookController
 
         $bookId = (int) $book['id'];
 
+        /* The ISBN is editable because the hundred books that have none are
+           exactly the ones that need it most: without it there is nothing to
+           look a cover up by, and nothing to ask the DNB about. */
+        $rawIsbn = trim($request->post('isbn13'));
+        $isbn13 = null;
+        if ($rawIsbn !== '') {
+            $isbn13 = Isbn::normalize($rawIsbn);
+            if ($isbn13 === null) {
+                /* A product barcode has a perfectly good check digit - it is
+                   simply not a book. Telling someone their check digit is
+                   wrong sends them hunting for a typo that is not there. */
+                $digits = preg_replace('/\D/', '', $rawIsbn) ?? '';
+                $message = strlen($digits) === 13 && Isbn::hasValidEan13Checksum($digits)
+                    ? t('edit.isbn.notabook')
+                    : t('edit.isbn.invalid');
+
+                return $this->render($book, $message);
+            }
+            // Two books claiming the same ISBN makes the duplicate check
+            // during scanning point at whichever the database returns first.
+            $existing = $this->app->books->findByIsbn($this->app->ownerId, $isbn13);
+            if ($existing !== null && (int) $existing['id'] !== $bookId) {
+                return $this->render($book, t('edit.isbn.taken', ['title' => $existing['title']]));
+            }
+        }
+
         try {
             $this->app->pdo->beginTransaction();
 
             $this->app->books->update($this->app->ownerId, $bookId, [
+                'isbn13'           => $isbn13,
+                'isbn10'           => $isbn13 !== null ? Isbn::to10($isbn13) : null,
                 'title'            => mb_substr($title, 0, 500),
                 'subtitle'         => $this->orNull($request->post('subtitle'), 500),
                 'publisher'        => $this->orNull($request->post('publisher'), 255),
