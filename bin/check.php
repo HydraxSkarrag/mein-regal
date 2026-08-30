@@ -83,7 +83,21 @@ $url = 'https://www.googleapis.com/books/v1/volumes?q=isbn:' . $isbn;
 $ohne = $http->get($url);
 
 $platzhalter = $key !== null && !siehtNachSchluesselAus($key);
-$mitKey = ($key !== null && !$platzhalter) ? $http->get($url . '&key=' . urlencode($key)) : null;
+
+/* Ein frisch angelegter Schlüssel antwortet oft ein paar Minuten lang mit
+   503, bis Google ihn verteilt hat. Einmal wortlos nachfassen erspart den
+   Eindruck, etwas sei kaputt. */
+$mitKey = null;
+$versuche = 0;
+if ($key !== null && !$platzhalter) {
+    for ($versuche = 1; $versuche <= 3; $versuche++) {
+        $mitKey = $http->get($url . '&key=' . urlencode($key));
+        if ($mitKey['status'] !== 503 || $versuche === 3) {
+            break;
+        }
+        sleep(3);
+    }
+}
 
 if ($ohne['status'] === 200) {
     zeile('Google (ohne Key)', true, 'antwortet - das gemeinsame Kontingent ist gerade frei');
@@ -119,9 +133,17 @@ if ($platzhalter) {
         ));
     } else {
         $meldung = is_array($daten) ? ($daten['error']['message'] ?? '') : '';
-        zeile('Google (mit Key)', false, 'HTTP ' . $mitKey['status']);
+        zeile('Google (mit Key)', false, 'HTTP ' . $mitKey['status']
+            . ($versuche > 1 ? ' (nach ' . $versuche . ' Versuchen)' : ''));
         echo "                         " . substr($meldung, 0, 90) . "\n";
-        if (str_contains($meldung, 'not been used') || str_contains($meldung, 'disabled')) {
+        if ($mitKey['status'] === 503) {
+            echo "                         -> Der Schlüssel wird akzeptiert, Google antwortet nur\n";
+            echo "                            gerade nicht. Bei einem frisch angelegten Schlüssel\n";
+            echo "                            ist das normal: es dauert einige Minuten, bis er\n";
+            echo "                            überall bekannt ist. In zehn Minuten noch einmal.\n";
+            echo "                            Bleibt es dabei, in der Cloud Console prüfen, ob\n";
+            echo "                            die Books API im richtigen Projekt aktiviert ist.\n";
+        } elseif (str_contains($meldung, 'not been used') || str_contains($meldung, 'disabled')) {
             echo "                         -> Die Books API ist im Projekt noch nicht aktiviert.\n";
         } elseif (str_contains($meldung, 'referer') || str_contains($meldung, 'blocked')) {
             echo "                         -> Der Schlüssel ist auf Websites eingeschränkt.\n";
