@@ -115,7 +115,7 @@ final class ScanController
         return Response::json(['found' => true, 'book' => $data, 'tried' => $outcome['tried']]);
     }
 
-    /** POST /api/buch - store what the lookup found, once confirmed. */
+    /** POST /api/book - store what the lookup found, once confirmed. */
     public function store(Request $request): Response
     {
         $guard = $this->requireSignedInJson();
@@ -277,7 +277,7 @@ final class ScanController
         }
     }
 
-    /** POST /api/cover/loeschen - discard a cover taken moments ago. */
+    /** POST /api/cover/delete - discard a cover taken moments ago. */
     public function deleteCover(Request $request): Response
     {
         $guard = $this->requireSignedInJson();

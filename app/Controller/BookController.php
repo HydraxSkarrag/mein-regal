@@ -172,7 +172,7 @@ final class BookController
 
         $this->app->session->flash(t('edit.saved'), 'ok');
 
-        return Response::redirect('/buch/' . $book['slug']);
+        return Response::redirect('/book/' . $book['slug']);
     }
 
     /**
@@ -262,7 +262,7 @@ final class BookController
 
         $this->app->session->flash(t('cover.removed'), 'ok');
 
-        return Response::redirect('/buch/' . $book['slug'] . '/bearbeiten');
+        return Response::redirect('/book/' . $book['slug'] . '/edit');
     }
 
     /**
@@ -290,7 +290,7 @@ final class BookController
         if ($isbn === null) {
             $this->app->session->flash(t('cover.search.no.isbn'), 'error');
 
-            return Response::redirect('/buch/' . $book['slug'] . '/bearbeiten');
+            return Response::redirect('/book/' . $book['slug'] . '/edit');
         }
 
         $finder = new CoverFinder(
@@ -305,7 +305,7 @@ final class BookController
             $result['stored'] ? 'ok' : 'error'
         );
 
-        return Response::redirect('/buch/' . $book['slug'] . '/bearbeiten');
+        return Response::redirect('/book/' . $book['slug'] . '/edit');
     }
 
     /** Why the file did not arrive, in words the person can act on. */

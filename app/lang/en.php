@@ -9,13 +9,14 @@ declare(strict_types=1);
 
 return [
     'app.shelf'          => 'My Shelf',
-    'app.tagline'        => 'The Bücherhausen library',
+    'app.tagline'        => 'A bookshelf you can browse',
+    'app.credit'         => 'Powered by {app}, by {origin}',
     'app.by'             => 'by',
 
     'nav.shelf'          => 'Shelf',
     'nav.search'         => 'Search',
     'nav.scan'           => 'Scan',
-    'nav.sub'            => 'To read',
+    'nav.unread'         => 'To read',
     'nav.stats'          => 'Statistics',
     'nav.admin'          => 'Admin',
     'nav.blog'           => 'Blog',
@@ -218,6 +219,25 @@ return [
 
     'delete.title'             => 'Remove this book',
     'delete.explain'           => 'Removes the book with its cover, rating and notes. This cannot be undone.',
+    'import.dryrun'      => 'DRY RUN - nothing was written.',
+    'import.done'        => 'Import finished.',
+    'import.rows'        => 'Rows read',
+    'import.imported'    => 'Books imported',
+    'import.duplicates'  => 'Duplicates skipped',
+    'import.authors'     => 'Authors created',
+    'import.tags'        => 'Tags created',
+    'import.noisbn'      => 'Without an ISBN',
+    'import.badisbn'     => 'ISBN unusable',
+    'import.ambiguous'   => 'Author field unclear',
+    'import.pages'       => 'Pages in total',
+    'import.value'       => 'Value recorded',
+    'import.bulk'        => 'Bulk cataloguing days ({count} books marked, so that no chart '
+                            . 'reads them as real acquisitions):',
+    'import.review'      => 'Worth a second look ({count}), row and title:',
+    'import.more'        => '... and {count} more',
+    'import.errors'      => 'ERRORS ({count}):',
+
+    'delete.word'              => 'DELETE',
     'delete.type'              => 'Type {word} to confirm',
     'delete.button'            => 'Remove for good',
     'delete.confirm.missing'   => 'Not removed - the confirmation word did not match.',
@@ -308,4 +328,46 @@ return [
 
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
+
+    'nav.project'        => 'About the project',
+
+    'page.about'         => 'About this shelf',
+    'page.imprint'       => 'Imprint',
+    'page.privacy'       => 'Privacy policy',
+    'page.edit'          => 'Edit {page}',
+    'page.legal.empty'   => 'This text has not been written yet. It has to exist before the site goes live.',
+    'page.only.language' => 'So far this text exists in {language} only.',
+
+    'editor.bold'        => 'Bold',
+    'editor.italic'      => 'Italic',
+    'editor.heading'     => 'Heading',
+    'editor.list'        => 'List',
+    'editor.numbers'     => 'Numbered list',
+    'editor.quote'       => 'Quote',
+    'editor.link'        => 'Link',
+    'editor.preview'     => 'Preview',
+    'editor.hint'        => '**bold**, *italic*, ## heading, - list, > quote, [text](https://…). '
+                            . 'HTML is shown as text, never run.',
+
+    'project.title'      => 'About the project',
+    'project.lead'       => 'Mein Regal is a small, self-hosted application for cataloguing your own '
+                            . 'book collection - with a phone camera, without an account anywhere.',
+    'project.what'       => 'It exists because a book cataloguing service shut down, and three thousand '
+                            . 'catalogued books suddenly existed only as a CSV file. A collection that '
+                            . 'sits on your own web space cannot disappear that way.',
+    'project.origin.heading' => 'Where it comes from',
+    'project.origin'     => 'Written for the bookshelf of {blog} and passed on from there. Every '
+                            . 'installation carries that credit in its footer - that is the whole price.',
+    'project.how.heading' => 'What it does',
+    'project.how.scan'   => 'Scan a barcode with the phone camera, in the browser, without an app.',
+    'project.how.sources' => 'Book data from the German National Library, Google Books and Open Library.',
+    'project.how.covers' => 'Covers are downloaded and served from your own server, never embedded from '
+                            . 'someone else\'s - which is why the site needs no cookie banner.',
+    'project.how.export' => 'Everything exports to CSV and JSON at any time. The way out is part of the design.',
+    'project.self.heading' => 'Install it yourself',
+    'project.self'       => 'It needs PHP and MySQL and nothing else: no Composer, no build step, no shell '
+                            . 'access. That is what lets it run on plain shared hosting. The instructions '
+                            . 'are in the repository.',
+    'project.repository' => 'View the source',
+    'project.licence'    => 'Source under the MIT licence. Logo, covers and book data are not included.',
 ];

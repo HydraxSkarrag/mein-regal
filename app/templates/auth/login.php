@@ -9,7 +9,7 @@ declare(strict_types=1);
   <p class="form-error"><?= e($error) ?></p>
   <?php endif; ?>
 
-  <form method="post" action="/anmelden">
+  <form method="post" action="/login">
     <?= $csrfField ?>
     <div class="field">
       <label for="email"><?= e(t('auth.email')) ?></label>

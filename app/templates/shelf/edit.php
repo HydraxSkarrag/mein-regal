@@ -12,7 +12,7 @@ declare(strict_types=1);
 $value = static fn (?string $v): string => $v ?? '';
 ?>
 <p class="detail-actions">
-  <a href="/buch/<?= e($book['slug']) ?>">&larr; <?= e($book['title']) ?></a>
+  <a href="/book/<?= e($book['slug']) ?>">&larr; <?= e($book['title']) ?></a>
 </p>
 
 <h1><?= e(t('book.edit')) ?></h1>
@@ -21,7 +21,7 @@ $value = static fn (?string $v): string => $v ?? '';
 <p class="form-error"><?= e($error) ?></p>
 <?php endif; ?>
 
-<form method="post" action="/buch/<?= e($book['slug']) ?>/bearbeiten" enctype="multipart/form-data" class="edit-form">
+<form method="post" action="/book/<?= e($book['slug']) ?>/edit" enctype="multipart/form-data" class="edit-form">
   <?= $csrfField ?>
 
   <div class="edit-grid">
@@ -182,15 +182,15 @@ $value = static fn (?string $v): string => $v ?? '';
             <option value=""><?= e(t('book.unrated')) ?></option>
             <?php
               $current = $book['rating'] === null ? null : round((float) $book['rating'] * 2) / 2;
-              // Nicht $value nennen: so heißt oben schon die Escape-Hilfe,
-              // und ein überschriebener Closure ist ein Fehler, der erst beim
-              // nächsten Aufruf auffällt.
+              // Not named $value: that is already the escaping helper above,
+              // and an overwritten closure is a fault that only shows up at
+              // the next call.
               for ($half = 10; $half >= 1; $half--):
                   $stepValue = $half / 2;
                   $parts = App\Core\Formatter::stars($stepValue);
             ?>
             <option value="<?= $stepValue ?>"<?= $current !== null && abs($current - $stepValue) < 0.01 ? ' selected' : '' ?>>
-              <?= str_repeat('★', $parts['full']) . ($parts['half'] ? '⯪' : '') ?> (<?= e($parts['text']) ?>)
+              <?= e(App\Core\Formatter::starsText($stepValue)) ?> (<?= e($parts['text']) ?>)
             </option>
             <?php endfor; ?>
           </select>
@@ -246,18 +246,18 @@ $value = static fn (?string $v): string => $v ?? '';
     <!-- type="button" matters: a bare button inside a form submits it, and
          this one must not save on its way to asking about deleting. -->
     <button class="btn btn--danger" type="button" data-open-delete><?= e(t('delete.title')) ?></button>
-    <a class="btn" href="/buch/<?= e($book['slug']) ?>"><?= e(t('common.cancel')) ?></a>
+    <a class="btn" href="/book/<?= e($book['slug']) ?>"><?= e(t('common.cancel')) ?></a>
   </div>
 </form>
 
 <?php if ($cover !== null): ?>
-<form id="cover-delete" method="post" action="/buch/<?= e($book['slug']) ?>/cover-loeschen" hidden>
+<form id="cover-delete" method="post" action="/book/<?= e($book['slug']) ?>/cover-delete" hidden>
   <?= $csrfField ?>
 </form>
 <?php endif; ?>
 
 <?php if (($book['isbn13'] ?? null) !== null): ?>
-<form id="cover-search" method="post" action="/buch/<?= e($book['slug']) ?>/cover-suchen" hidden>
+<form id="cover-search" method="post" action="/book/<?= e($book['slug']) ?>/cover-find" hidden>
   <?= $csrfField ?>
 </form>
 <?php endif; ?>
@@ -266,12 +266,22 @@ $value = static fn (?string $v): string => $v ?? '';
   <summary><?= e(t('delete.title')) ?></summary>
   <div class="danger-body">
     <p class="note"><?= e(t('delete.explain')) ?></p>
-    <form method="post" action="/buch/<?= e($book['slug']) ?>/loeschen">
+    <form method="post" action="/book/<?= e($book['slug']) ?>/delete">
       <?= $csrfField ?>
       <div class="field">
-        <label for="confirm"><?= e(t('delete.type', ['word' => 'LÖSCHEN'])) ?></label>
+        <?php
+          /*
+           * The word to type comes from the language file: an English reader
+           * was being asked to produce an Ö, which on most keyboards is a
+           * puzzle rather than a confirmation. The pattern still accepts all
+           * three spellings, and so does the controller - being generous
+           * about what is typed costs nothing here, since a person who types
+           * any of them meant it.
+           */
+        ?>
+        <label for="confirm"><?= e(t('delete.type', ['word' => t('delete.word')])) ?></label>
         <input id="confirm" type="text" name="confirm" autocomplete="off" required
-               pattern="LOESCHEN|LÖSCHEN" placeholder="LÖSCHEN">
+               pattern="LOESCHEN|LÖSCHEN|DELETE" placeholder="<?= e(t('delete.word')) ?>">
       </div>
       <button class="btn btn--danger" type="submit"><?= e(t('delete.button')) ?></button>
     </form>

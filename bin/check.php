@@ -1,12 +1,12 @@
 <?php
 /**
- * Prüft, ob die Datenquellen erreichbar sind und der Google-Schlüssel greift.
+ * Are the data sources reachable, and does the Google key work?
  *
  *   php bin/check.php
- *   php bin/check.php --key=AIzaSy...    Schlüssel testen, bevor er in die Konfiguration wandert
+ *   php bin/check.php --key=AIzaSy...    test a key before it goes into config.php
  *
- * Gedacht für zwei Momente: vor dem Livegang, und wenn Cover ausbleiben.
- * Beantwortet die Frage "liegt es an mir oder an denen" ohne Rätselraten.
+ * Meant for two moments: before going live, and when covers stop arriving. It
+ * answers "is it me or is it them" without guesswork.
  */
 declare(strict_types=1);
 
@@ -22,26 +22,26 @@ $key = null;
 $keySource = '';
 if (isset($options['key']) && $options['key'] !== false) {
     $key = (string) $options['key'];
-    $keySource = 'aus dem Aufruf';
+    $keySource = 'from the command line';
 } else {
     try {
         $config = Config::load();
         $key = $config->str('google_books_key') ?: null;
-        $keySource = $key !== null ? 'aus config.php' : '';
+        $keySource = $key !== null ? 'from config.php' : '';
     } catch (Throwable $e) {
-        // Ohne Konfiguration lässt sich trotzdem alles außer dem Schlüssel prüfen.
+        // Without a configuration everything except the key can still be checked.
     }
 }
 
 /**
- * Sieht das nach einem echten Schlüssel aus?
+ * Does this look like a real key?
  *
- * Google-API-Schlüssel beginnen mit "AIza" und sind 39 Zeichen lang. Wer den
- * Platzhalter aus der Anleitung stehen lässt, bekommt sonst "API key not
- * valid" - eine völlig korrekte Antwort, die aber wie ein Problem mit dem
- * Google-Konto aussieht statt wie ein Tippfehler im Aufruf.
+ * Google API keys start with "AIza" and are 39 characters long. Leaving the
+ * placeholder from the instructions in place otherwise produces "API key not
+ * valid" - a perfectly correct answer that reads like a problem with the
+ * Google account rather than a typo in the call.
  */
-function siehtNachSchluesselAus(string $key): bool
+function looksLikeAKey(string $key): bool
 {
     if (preg_match('/^(DEIN|YOUR|MEIN|XXX|AIzaSy\.\.\.)/i', $key) === 1) {
         return false;
@@ -52,103 +52,105 @@ function siehtNachSchluesselAus(string $key): bool
 
 $http = new HttpClient('', 12);
 
-function zeile(string $name, bool $ok, string $hinweis = ''): void
+function line(string $name, bool $ok, string $note = ''): void
 {
-    printf("  %-22s %-6s %s\n", $name, $ok ? 'ok' : 'FEHLT', $hinweis);
+    printf("  %-22s %-6s %s\n", $name, $ok ? 'ok' : 'FAILED', $note);
 }
 
-echo "Prüfe mit ISBN " . $isbn . "\n\n";
+echo 'Checking with ISBN ' . $isbn . "\n\n";
 
-// ---- Deutsche Nationalbibliothek -----------------------------------------
+// ---- German National Library ---------------------------------------------
 $response = $http->get(
     'https://services.dnb.de/sru/dnb?version=1.1&operation=searchRetrieve'
     . '&query=NUM%3D' . $isbn . '&recordSchema=oai_dc&maximumRecords=1'
 );
-$treffer = str_contains($response['body'], '<numberOfRecords>1<');
-zeile('DNB', $response['status'] === 200, $response['status'] === 200
-    ? ($treffer ? 'antwortet, Treffer' : 'antwortet, kein Treffer für diese ISBN')
+$found = str_contains($response['body'], '<numberOfRecords>1<');
+line('DNB', $response['status'] === 200, $response['status'] === 200
+    ? ($found ? 'answers, found it' : 'answers, nothing for this ISBN')
     : 'HTTP ' . $response['status']);
 
 // ---- Open Library ---------------------------------------------------------
 $response = $http->get('https://openlibrary.org/api/books?bibkeys=ISBN:' . $isbn . '&format=json&jscmd=data');
-zeile('Open Library', $response['status'] === 200, 'HTTP ' . $response['status']);
+line('Open Library', $response['status'] === 200, 'HTTP ' . $response['status']);
 
 $response = $http->get('https://covers.openlibrary.org/b/isbn/' . $isbn . '-L.jpg?default=false');
-zeile('Open Library Cover', in_array($response['status'], [200, 404], true),
-    $response['status'] === 200 ? 'Cover vorhanden' : ($response['status'] === 404 ? 'erreichbar, für diese ISBN kein Cover' : 'HTTP ' . $response['status']));
+line('Open Library covers', in_array($response['status'], [200, 404], true),
+    $response['status'] === 200 ? 'has a cover' : ($response['status'] === 404 ? 'reachable, no cover for this ISBN' : 'HTTP ' . $response['status']));
 
 // ---- Google Books ---------------------------------------------------------
 echo "\n";
 $url = 'https://www.googleapis.com/books/v1/volumes?q=isbn:' . $isbn;
-$ohne = $http->get($url);
+$anonymous = $http->get($url);
 
-$platzhalter = $key !== null && !siehtNachSchluesselAus($key);
+$placeholder = $key !== null && !looksLikeAKey($key);
 
-/* Ein frisch angelegter Schlüssel antwortet oft ein paar Minuten lang mit
-   503, bis Google ihn verteilt hat. Einmal wortlos nachfassen erspart den
-   Eindruck, etwas sei kaputt. */
-$mitKey = null;
-$versuche = 0;
-if ($key !== null && !$platzhalter) {
-    for ($versuche = 1; $versuche <= 3; $versuche++) {
-        $mitKey = $http->get($url . '&key=' . urlencode($key));
-        if ($mitKey['status'] !== 503 || $versuche === 3) {
+/* A freshly created key often answers 503 for a few minutes until Google has
+   distributed it. Retrying quietly saves the impression that something is
+   broken. */
+$withKey = null;
+$attempts = 0;
+if ($key !== null && !$placeholder) {
+    for ($attempts = 1; $attempts <= 3; $attempts++) {
+        $withKey = $http->get($url . '&key=' . urlencode($key));
+        if ($withKey['status'] !== 503 || $attempts === 3) {
             break;
         }
         sleep(3);
     }
 }
 
-if ($ohne['status'] === 200) {
-    zeile('Google (ohne Key)', true, 'antwortet - das gemeinsame Kontingent ist gerade frei');
+if ($anonymous['status'] === 200) {
+    line('Google (no key)', true, 'answers - the shared quota happens to be free');
 } else {
-    $grund = '';
-    $daten = json_decode($ohne['body'], true);
-    if (is_array($daten) && isset($daten['error']['message'])) {
-        $grund = str_contains($daten['error']['message'], 'Quota exceeded')
-            ? 'Tageskontingent erschöpft'
-            : substr($daten['error']['message'], 0, 60);
+    $reason = '';
+    $data = json_decode($anonymous['body'], true);
+    if (is_array($data) && isset($data['error']['message'])) {
+        $reason = str_contains($data['error']['message'], 'Quota exceeded')
+            ? 'daily quota exhausted'
+            : substr($data['error']['message'], 0, 60);
     }
-    zeile('Google (ohne Key)', false, 'HTTP ' . $ohne['status'] . ($grund ? ' - ' . $grund : ''));
-    echo "                         Das ist Googles gemeinsames Projekt für alle ohne\n";
-    echo "                         eigenen Schlüssel. Ein eigener behebt das.\n";
+    line('Google (no key)', false, 'HTTP ' . $anonymous['status'] . ($reason ? ' - ' . $reason : ''));
+    echo "                         That is Google's shared project for everyone without\n";
+    echo "                         a key of their own. Your own key fixes it.\n";
 }
 
-if ($platzhalter) {
-    echo "\n  Das war der Platzhalter aus der Anleitung, kein echter Schlüssel.\n";
-    echo "  Ein Google-Schlüssel beginnt mit \"AIza\" und ist 39 Zeichen lang.\n";
-    echo "  Anlegen unter console.cloud.google.com, dann:\n";
+if ($placeholder) {
+    echo "\n  That was the placeholder from the instructions, not a real key.\n";
+    echo "  A Google key starts with \"AIza\" and is 39 characters long.\n";
+    echo "  Create one at console.cloud.google.com, then:\n";
     echo "    php bin/check.php --key=AIzaSy...\n";
 } elseif ($key === null) {
-    echo "\n  Kein Google-Schlüssel hinterlegt.\n";
-    echo "  In config.php unter 'google_books_key' eintragen, oder hier testen:\n";
+    echo "\n  No Google key configured.\n";
+    echo "  Put one in config.php under 'google_books_key', or test it here:\n";
     echo "    php bin/check.php --key=AIzaSy...\n";
 } else {
-    $daten = json_decode($mitKey['body'], true);
-    if ($mitKey['status'] === 200) {
-        zeile('Google (mit Key)', true, sprintf(
-            'Schlüssel %s greift, %d Treffer',
+    $data = json_decode($withKey['body'], true);
+    if ($withKey['status'] === 200) {
+        $results = (int) ($data['totalItems'] ?? 0);
+        line('Google (with key)', true, sprintf(
+            'the key %s works, %d result%s',
             $keySource,
-            (int) ($daten['totalItems'] ?? 0)
+            $results,
+            $results === 1 ? '' : 's'
         ));
     } else {
-        $meldung = is_array($daten) ? ($daten['error']['message'] ?? '') : '';
-        zeile('Google (mit Key)', false, 'HTTP ' . $mitKey['status']
-            . ($versuche > 1 ? ' (nach ' . $versuche . ' Versuchen)' : ''));
-        echo "                         " . substr($meldung, 0, 90) . "\n";
-        if ($mitKey['status'] === 503) {
-            echo "                         -> Der Schlüssel wird akzeptiert, Google antwortet nur\n";
-            echo "                            gerade nicht. Bei einem frisch angelegten Schlüssel\n";
-            echo "                            ist das normal: es dauert einige Minuten, bis er\n";
-            echo "                            überall bekannt ist. In zehn Minuten noch einmal.\n";
-            echo "                            Bleibt es dabei, in der Cloud Console prüfen, ob\n";
-            echo "                            die Books API im richtigen Projekt aktiviert ist.\n";
-        } elseif (str_contains($meldung, 'not been used') || str_contains($meldung, 'disabled')) {
-            echo "                         -> Die Books API ist im Projekt noch nicht aktiviert.\n";
-        } elseif (str_contains($meldung, 'referer') || str_contains($meldung, 'blocked')) {
-            echo "                         -> Der Schlüssel ist auf Websites eingeschränkt.\n";
-            echo "                            Für Serveraufrufe stattdessen auf IP-Adressen\n";
-            echo "                            einschränken, oder die Einschränkung entfernen.\n";
+        $message = is_array($data) ? ($data['error']['message'] ?? '') : '';
+        line('Google (with key)', false, 'HTTP ' . $withKey['status']
+            . ($attempts > 1 ? ' (after ' . $attempts . ' attempts)' : ''));
+        echo '                         ' . substr($message, 0, 90) . "\n";
+        if ($withKey['status'] === 503) {
+            echo "                         -> The key is accepted, Google simply is not\n";
+            echo "                            answering right now. For a newly created key\n";
+            echo "                            that is normal: it takes a few minutes to become\n";
+            echo "                            known everywhere. Try again in ten minutes. If it\n";
+            echo "                            persists, check in the Cloud Console that the\n";
+            echo "                            Books API is enabled in the right project.\n";
+        } elseif (str_contains($message, 'not been used') || str_contains($message, 'disabled')) {
+            echo "                         -> The Books API is not enabled in the project yet.\n";
+        } elseif (str_contains($message, 'referer') || str_contains($message, 'blocked')) {
+            echo "                         -> The key is restricted to websites. For calls made\n";
+            echo "                            by a server, restrict it to IP addresses instead,\n";
+            echo "                            or remove the restriction.\n";
         }
     }
 }

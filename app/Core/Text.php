@@ -218,51 +218,13 @@ final class Text
     /**
      * Render owner-written prose as safe HTML.
      *
-     * Escaped first, then given structure: blank lines become paragraphs and
-     * bare http(s) addresses become links. Nothing the author types can
-     * introduce markup, because the escaping happens before any tag is added -
-     * the alternative, allowing a subset of HTML, means maintaining a filter
-     * forever to keep one person's convenience from becoming everyone's
-     * scripting hole.
+     * Kept as the one name the templates call; the rules live in Markup,
+     * which escapes before it structures so that nothing an author types can
+     * become markup.
      */
     public static function prose(?string $raw): string
     {
-        $raw = trim((string) $raw);
-        if ($raw === '') {
-            return '';
-        }
-
-        $escaped = htmlspecialchars($raw, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        // Escaping turned & into &amp;, so match the escaped form.
-        $linked = preg_replace_callback(
-            '~\bhttps?://[^\s<>"]+~u',
-            static function (array $match): string {
-                $url = rtrim($match[0], '.,;:)');
-                $trailing = substr($match[0], strlen($url));
-                $plain = htmlspecialchars_decode($url, ENT_QUOTES);
-
-                return sprintf(
-                    '<a href="%s" rel="noopener">%s</a>%s',
-                    htmlspecialchars($plain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-                    $url,
-                    $trailing
-                );
-            },
-            $escaped
-        ) ?? $escaped;
-
-        $paragraphs = preg_split('/\R{2,}/u', $linked) ?: [$linked];
-        $html = '';
-        foreach ($paragraphs as $paragraph) {
-            $paragraph = trim($paragraph);
-            if ($paragraph === '') {
-                continue;
-            }
-            $html .= '<p>' . nl2br($paragraph, false) . '</p>';
-        }
-
-        return $html;
+        return Markup::render($raw);
     }
 
     /** Shorten for display without cutting a word in half. */

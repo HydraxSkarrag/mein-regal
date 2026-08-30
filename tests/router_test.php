@@ -9,19 +9,19 @@ Assert::group('Router');
 
 $router = new Router();
 $router->get('/', static fn () => Response::text('shelf'));
-$router->get('/buch/{slug}', static fn ($request, $params) => Response::text('book:' . $params['slug']));
+$router->get('/book/{slug}', static fn ($request, $params) => Response::text('book:' . $params['slug']));
 $router->post('/login', static fn () => Response::text('login'));
 
 Assert::true('the root path matches', $router->match('GET', '/') !== null);
-Assert::same('a parameter is captured', $router->match('GET', '/buch/milla-9783473408061')['params']['slug'], 'milla-9783473408061');
+Assert::same('a parameter is captured', $router->match('GET', '/book/milla-9783473408061')['params']['slug'], 'milla-9783473408061');
 Assert::same('an unknown path does not match', $router->match('GET', '/nope'), null);
 Assert::same('the wrong method does not match', $router->match('GET', '/login'), null);
 Assert::true('the right method does', $router->match('POST', '/login') !== null);
 
 // A slug is one segment: a path with an extra slash must not be swallowed.
-Assert::same('a parameter does not cross a slash', $router->match('GET', '/buch/a/b'), null);
+Assert::same('a parameter does not cross a slash', $router->match('GET', '/book/a/b'), null);
 
-$response = $router->dispatch(new Request('GET', '/buch/test-slug'));
+$response = $router->dispatch(new Request('GET', '/book/test-slug'));
 Assert::same('dispatch runs the handler', $response?->body(), 'book:test-slug');
 
 Assert::group('Request');

@@ -13,12 +13,10 @@ Assert::same(
     Text::prose("Eins\n\nZwei"),
     '<p>Eins</p><p>Zwei</p>'
 );
-// nl2br keeps the newline after the tag, which is correct HTML and keeps
-// the source readable.
 Assert::same(
     'a single newline becomes a line break',
     Text::prose("Eins\nZwei"),
-    "<p>Eins<br>\nZwei</p>"
+    "<p>Eins<br>Zwei</p>"
 );
 
 // Escaping happens before any tag is added, so nothing typed can become markup.

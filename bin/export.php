@@ -90,7 +90,7 @@ fclose($handle);
 
 if ($target !== 'php://stdout') {
     printf(
-        "%d Bücher als %s geschrieben: %s (%s, %.1f s)\n",
+        "%d books written as %s: %s (%s, %.1f s)\n",
         $count,
         $format,
         $target,

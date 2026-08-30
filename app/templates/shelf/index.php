@@ -56,7 +56,7 @@ declare(strict_types=1);
     <h2><?= e(t('filter.author')) ?></h2>
     <ul>
       <?php foreach ($topAuthors as $person): ?>
-      <li><a href="<?= e($urlFor(['autor' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"
+      <li><a href="<?= e($urlFor(['author' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"
              aria-current="<?= ($filters['author'] ?? '') === $person['name'] ? 'true' : 'false' ?>">
         <span><?= e($person['name']) ?></span><span class="n"><?= e($formatter->number((int) $person['book_count'])) ?></span></a></li>
       <?php endforeach; ?>
@@ -104,7 +104,7 @@ declare(strict_types=1);
     <ul class="shelf">
       <?php foreach ($books as $book): ?>
       <li class="book">
-        <a href="/buch/<?= e($book['slug']) ?>">
+        <a href="/book/<?= e($book['slug']) ?>">
           <?= $view->render('partials.cover', [
               'book'       => $book,
               'cover'      => $covers[(int) $book['id']] ?? null,
@@ -131,7 +131,7 @@ declare(strict_types=1);
                     $parts = App\Core\Formatter::stars($book['rating']);
                     $sortValue = $parts === null
                         ? null
-                        : str_repeat('★', $parts['full']) . ($parts['half'] ? '⯪' : '') . ' ' . $parts['text'];
+                        : App\Core\Formatter::starsText($book['rating']) . ' ' . $parts['text'];
                     break;
                 case 'read':
                     $sortValue = $book['finished_at'] !== null ? $formatter->date($book['finished_at']) : null;

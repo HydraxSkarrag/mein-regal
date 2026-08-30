@@ -207,7 +207,7 @@ final class CoverStorage
             $height = imagesy($image);
         }
 
-        if (self::istPlatzhalter($image, $width, $height)) {
+        if (self::looksLikePlaceholder($image, $width, $height)) {
             throw new RuntimeException('placeholder');
         }
 
@@ -244,16 +244,16 @@ final class CoverStorage
      * Ein paar hundert Bildpunkte reichen für die Unterscheidung: ein
      * gedrucktes Cover hat Dutzende Farbwerte, ein Ersatzbild eine Handvoll.
      */
-    private static function istPlatzhalter(\GdImage $image, int $width, int $height): bool
+    private static function looksLikePlaceholder(\GdImage $image, int $width, int $height): bool
     {
-        $schrittX = max(1, (int) ($width / 30));
-        $schrittY = max(1, (int) ($height / 30));
+        $stepX = max(1, (int) ($width / 30));
+        $stepY = max(1, (int) ($height / 30));
 
-        $farben = [];
-        for ($x = 0; $x < $width; $x += $schrittX) {
-            for ($y = 0; $y < $height; $y += $schrittY) {
-                $farben[imagecolorat($image, $x, $y)] = true;
-                if (count($farben) > 24) {
+        $colours = [];
+        for ($x = 0; $x < $width; $x += $stepX) {
+            for ($y = 0; $y < $height; $y += $stepY) {
+                $colours[imagecolorat($image, $x, $y)] = true;
+                if (count($colours) > 24) {
                     return false;
                 }
             }

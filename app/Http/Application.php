@@ -145,6 +145,7 @@ final class Application
         $this->view->share('siteUrl', rtrim($this->config->str('site_url'), '/'));
         $this->view->share('blogUrl', $this->config->str('blog_url'));
         $this->view->share('blogName', $this->config->str('blog_name', 'Bücherhausen'));
+        $this->view->share('publicStats', $this->publicStats());
         $this->view->share('currentPath', $this->request->path);
         $this->view->share('csrfField', $this->csrf->field());
         $this->view->share('assetVersion', $this->assetVersion());
@@ -153,6 +154,20 @@ final class Application
         $this->view->share('current', '');
         $this->view->share('narrow', false);
         $this->view->share('noIndex', false);
+    }
+
+    /**
+     * Whether the statistics page is open to visitors.
+     *
+     * On by default: a shelf that shows its books has already said more than
+     * its statistics do. Turning it off hides the link, drops the page from
+     * the sitemap and puts the page itself behind the login - three places,
+     * which is why the answer lives here rather than being read from the
+     * configuration wherever it is needed.
+     */
+    public function publicStats(): bool
+    {
+        return $this->config->bool('public_stats', true);
     }
 
     /** Cache-busting for CSS and JS; the file's own timestamp is enough. */
@@ -208,6 +223,6 @@ final class Application
         }
         $this->session->flash(t('auth.required'), 'error');
 
-        return Response::redirect('/anmelden?weiter=' . rawurlencode($this->request->path));
+        return Response::redirect('/login?next=' . rawurlencode($this->request->path));
     }
 }

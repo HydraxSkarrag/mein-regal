@@ -65,6 +65,20 @@ final class Config
         return is_scalar($value) ? (string) $value : $default;
     }
 
+    /**
+     * A flag, defaulting to whatever the application does without it.
+     *
+     * An absent key means "not configured", which must land on the default -
+     * so a config.php written before the option existed keeps behaving the
+     * way it did. Only an explicit false turns something off.
+     */
+    public function bool(string $key, bool $default): bool
+    {
+        $value = $this->get($key);
+
+        return $value === null ? $default : (bool) $value;
+    }
+
     /** @return array<string,mixed> */
     public function all(): array
     {

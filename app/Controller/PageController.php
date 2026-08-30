@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Content\DefaultPages;
 use App\Core\Request;
+use App\Core\Text;
 use App\Core\Response;
 use App\Http\Application;
 use App\Core\Translator;
@@ -15,27 +17,52 @@ use App\Repository\PageRepository;
  */
 final class PageController
 {
+    /**
+     * Where this came from.
+     *
+     * Constants, not configuration. The address of the repository and the
+     * blog it was written for are facts about the software; an installation
+     * may rebrand the shelf, but the credit in the footer is not a field to
+     * be edited away. repository_url in config.php exists for forks that
+     * genuinely live somewhere else.
+     */
+    public const SOFTWARE_NAME = 'Mein Regal';
+    public const REPOSITORY  = 'https://github.com/hydrax/mein-regal';
+    public const ORIGIN_NAME = 'Bücherhausen';
+    public const ORIGIN_URL  = 'https://www.buecherhausen.de/';
+
     public function __construct(private readonly Application $app)
     {
     }
 
     /**
-     * The page that says what this shelf is and whose it is.
+     * The prose pages: what this shelf is, the Impressum, the privacy policy.
      *
-     * Its text lives in the database rather than in this template, so a second
-     * installation introduces itself in its own words without anyone editing
-     * the source - and so it can be reworded without a deployment.
+     * All three live in the database rather than in a template. For the about
+     * page that is so a second installation introduces itself in its own
+     * words. For the legal pages the reason is sharper: a privacy policy that
+     * names a hosting company in the source code is false for everyone who
+     * hosts elsewhere, and a text that needs a deployment to correct is a text
+     * that stays wrong.
      */
-    public function about(): Response
+    public function show(string $slug): Response
     {
         $locale = $this->app->translator->locale();
-        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT, $locale);
+        $legal = $slug !== PageRepository::ABOUT;
 
-        $body = $this->app->view->render('pages.about', [
+        // The legal pages fall back to whatever language exists; the about
+        // page does not. See PageRepository::findAnyLocale for why.
+        $page = $legal
+            ? $this->app->pages->findAnyLocale($this->app->ownerId, $slug, $locale)
+            : $this->app->pages->find($this->app->ownerId, $slug, $locale);
+
+        $body = $this->app->view->render('pages.show', [
             'page'      => $page,
+            'slug'      => $slug,
             'locale'    => $locale,
+            'heading'   => $page['title'] ?? t('page.' . $slug),
             'otherWith' => array_values(array_diff(
-                $this->app->pages->localesFor($this->app->ownerId, PageRepository::ABOUT),
+                $this->app->pages->localesFor($this->app->ownerId, $slug),
                 [$locale]
             )),
             'signedIn'  => $this->app->auth->isSignedIn(),
@@ -43,14 +70,14 @@ final class PageController
 
         return Response::html($this->app->view->render('layout.base', [
             'content'         => $body,
-            'title'           => $page['title'] ?? t('about.title'),
+            'title'           => $page['title'] ?? t('page.' . $slug),
             'narrow'          => true,
-            'canonical'       => $this->app->url('/ueber'),
+            'canonical'       => $this->app->url('/' . $slug),
             'metaDescription' => $this->summarise($page['body'] ?? null),
         ]));
     }
 
-    public function editAbout(Request $request): Response
+    public function edit(string $slug, Request $request): Response
     {
         $guard = $this->app->requireSignIn();
         if ($guard !== null) {
@@ -60,53 +87,103 @@ final class PageController
         // Which language is being edited comes from the address, so both can
         // be written without switching the whole interface back and forth.
         $locale = Translator::normalizeLocale(
-            $request->query('sprache') ?: $this->app->translator->locale()
+            $request->query('lang') ?: $this->app->translator->locale()
         );
-        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT, $locale);
+        $page = $this->app->pages->find($this->app->ownerId, $slug, $locale);
 
         if ($request->isPost()) {
             if (!$this->app->csrf->isValid($request->allPost())) {
-                return $this->aboutForm($page, $locale, t('error.csrf'));
+                return $this->form($slug, $page, $locale, t('error.csrf'));
             }
             $title = trim($request->post('title'));
             if ($title === '') {
-                return $this->aboutForm($page, $locale, t('edit.title.required'));
+                return $this->form($slug, $page, $locale, t('edit.title.required'));
             }
 
             $this->app->pages->save(
                 $this->app->ownerId,
-                PageRepository::ABOUT,
+                $slug,
                 $locale,
                 mb_substr($title, 0, 200),
                 mb_substr(trim($request->post('body')), 0, 20000) ?: null
             );
             $this->app->session->flash(t('edit.saved'), 'ok');
 
-            return Response::redirect('/ueber');
+            return Response::redirect('/' . $slug);
         }
 
-        return $this->aboutForm($page, $locale);
+        return $this->form($slug, $page, $locale);
     }
 
-    private function aboutForm(?array $page, string $locale, string $error = ''): Response
+    /**
+     * Render the markup subset the way the page itself will.
+     *
+     * The preview goes through the same renderer as the page rather than a
+     * copy of it in JavaScript. Two implementations of the same syntax drift,
+     * and the one that drifts unnoticed is the preview - which is exactly the
+     * one people trust before they publish.
+     */
+    public function preview(Request $request): Response
     {
-        $body = $this->app->view->render('pages.about_edit', [
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return Response::json(['error' => 'auth'], 403);
+        }
+        if (!$this->app->csrf->isValid($request->allPost())) {
+            return Response::json(['error' => 'csrf'], 419);
+        }
+
+        return Response::json([
+            'html' => Text::prose(mb_substr((string) $request->post('body'), 0, 20000)),
+        ]);
+    }
+
+    private function form(string $slug, ?array $page, string $locale, string $error = ''): Response
+    {
+        /*
+         * An unwritten legal page opens with the standard text already in the
+         * box, rather than an empty one.
+         *
+         * A fresh installation gets these at setup. This covers the two cases
+         * that misses: an installation upgrading from when the texts were
+         * templates, and one where the seeding failed. Nothing is published
+         * by this - someone still has to read it and press save, which is the
+         * right order of events for a legal text.
+         */
+        if ($page === null && $slug !== PageRepository::ABOUT) {
+            $default = DefaultPages::all($this->app->config)[$slug] ?? null;
+            if ($default !== null) {
+                $page = [
+                    'title'      => $default['title'],
+                    'body'       => $default['body'],
+                    'locale'     => $locale,
+                    'updated_at' => '',
+                ];
+            }
+        }
+
+        $body = $this->app->view->render('pages.edit', [
             'page'      => $page,
+            'slug'      => $slug,
             'locale'    => $locale,
-            'written'   => $this->app->pages->localesFor($this->app->ownerId, PageRepository::ABOUT),
+            'written'   => $this->app->pages->localesFor($this->app->ownerId, $slug),
             'error'     => $error,
             'csrfField' => $this->app->csrf->field(),
-            'suggested' => t('about.suggested', [
-                'owner' => $this->app->config->str('legal.operator'),
-                'blog'  => $this->app->config->str('blog_name'),
-            ]),
+            'heading'   => t('page.' . $slug),
+            'suggested' => $slug === PageRepository::ABOUT
+                ? t('about.suggested', [
+                    'owner' => $this->app->config->str('legal.operator'),
+                    'blog'  => $this->app->config->str('blog_name'),
+                ])
+                : '',
         ]);
 
         return Response::html($this->app->view->render('layout.base', [
             'content' => $body,
-            'title'   => t('about.edit'),
+            'title'   => t('page.edit', ['page' => t('page.' . $slug)]),
             'narrow'  => true,
             'noIndex' => true,
+            'scripts' => ['/js/editor.js'],
         ]), $error === '' ? 200 : 422)->noIndex();
     }
 
@@ -115,31 +192,30 @@ final class PageController
     {
         $text = trim(preg_replace('/\s+/u', ' ', (string) $body) ?? '');
 
-        return $text === '' ? t('app.tagline') : \App\Core\Text::truncate($text, 155);
+        return $text === '' ? t('app.tagline') : Text::truncate($text, 155);
     }
 
-    public function imprint(): Response
+    /**
+     * What this software is, where it comes from and where to get it.
+     *
+     * Not editable, and not in the database: it describes the application
+     * rather than the collection, so it should read the same on every
+     * installation and stay correct without anyone maintaining it.
+     */
+    public function project(): Response
     {
-        return $this->legal('imprint', t('legal.imprint'));
-    }
-
-    public function privacy(): Response
-    {
-        return $this->legal('privacy', t('legal.privacy'));
-    }
-
-    private function legal(string $template, string $title): Response
-    {
-        $body = $this->app->view->render('legal.' . $template, [
-            'legal'   => $this->app->config->get('legal', []),
-            'siteUrl' => $this->app->url('/'),
+        $body = $this->app->view->render('pages.project', [
+            'repository' => $this->app->config->str('repository_url', self::REPOSITORY),
+            'originName' => self::ORIGIN_NAME,
+            'originUrl'  => self::ORIGIN_URL,
         ]);
 
         return Response::html($this->app->view->render('layout.base', [
-            'content'   => $body,
-            'title'     => $title,
-            'narrow'    => true,
-            'canonical' => $this->app->url('/' . ($template === 'imprint' ? 'impressum' : 'datenschutz')),
+            'content'         => $body,
+            'title'           => t('project.title'),
+            'narrow'          => true,
+            'canonical'       => $this->app->url('/project'),
+            'metaDescription' => t('project.lead'),
         ]));
     }
 
@@ -148,15 +224,18 @@ final class PageController
         $lines = [
             'User-agent: *',
             'Allow: /',
-            'Disallow: /anmelden',
-            'Disallow: /abmelden',
-            'Disallow: /erfassen',
-            'Disallow: /verwaltung',
+            'Disallow: /login',
+            'Disallow: /logout',
+            'Disallow: /scan',
+            'Disallow: /admin',
             'Disallow: /api/',
+            // Kept out of the index when it is not public; the page itself
+            // still redirects to the login, this only stops crawlers asking.
+            ...($this->app->publicStats() ? [] : ['Disallow: /stats']),
             // Filter and sort combinations would otherwise pile thousands of
             // near-identical pages into the index.
             'Disallow: /*?*sort=',
-            'Disallow: /*?*seite=',
+            'Disallow: /*?*page=',
             'Disallow: /*?*binding=',
             '',
             'Sitemap: ' . $this->app->url('/sitemap.xml'),
@@ -178,12 +257,16 @@ final class PageController
 
         $xml = ['<?xml version="1.0" encoding="UTF-8"?>'];
         $xml[] = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
-        foreach ([['/', '1.0'], ['/sub', '0.6'], ['/statistik', '0.6']] as [$path, $priority]) {
+        $pages = [['/', '1.0'], ['/unread', '0.6'], ['/about', '0.4'], ['/project', '0.3']];
+        if ($this->app->publicStats()) {
+            $pages[] = ['/stats', '0.6'];
+        }
+        foreach ($pages as [$path, $priority]) {
             $xml[] = '  <url><loc>' . e($this->app->url($path)) . '</loc>'
                 . '<changefreq>weekly</changefreq><priority>' . $priority . '</priority></url>';
         }
         foreach ($statement->fetchAll() as $row) {
-            $xml[] = '  <url><loc>' . e($this->app->url('/buch/' . $row['slug'])) . '</loc>'
+            $xml[] = '  <url><loc>' . e($this->app->url('/book/' . $row['slug'])) . '</loc>'
                 . '<lastmod>' . e(substr((string) $row['updated_at'], 0, 10)) . '</lastmod>'
                 . '<changefreq>yearly</changefreq><priority>0.5</priority></url>';
         }
@@ -217,7 +300,7 @@ final class PageController
             ],
             'shortcuts' => [[
                 'name' => t('nav.scan'),
-                'url'  => '/erfassen',
+                'url'  => '/scan',
             ]],
         ])->withHeader('Content-Type', 'application/manifest+json; charset=utf-8');
     }

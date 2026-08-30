@@ -1,28 +1,26 @@
-name: Deploy zu all-inkl
+name: Deploy
 
-# Läuft NICHT automatisch bei Commits, sondern nur von Hand:
-# GitHub → Tab "Actions" → "Deploy zu all-inkl" → "Run workflow".
+# Does NOT run automatically on commits, only by hand:
+# GitHub → "Actions" tab → "Deploy" → "Run workflow".
 #
-# Wichtiger Unterschied zum Bookaholic-Workflow: dort wird public/ IN den
-# Dokumentenstamm geladen. Hier liegt der Anwendungscode bewusst ÜBER dem
-# Dokumentenstamm, also wird das Repo-Wurzelverzeichnis in den Projektordner
-# geladen. Der Dokumentenstamm der Subdomain muss im KAS auf dessen
-# Unterordner public/ zeigen.
+# The application code deliberately sits ABOVE the document root, so what gets
+# uploaded is the repository root into the project folder - not public/ into
+# the document root. The subdomain's document root then has to point at the
+# public/ subfolder of that.
 #
-#   /regal/            <- server_dir, hierhin wird geladen
+#   /regal/            <- server_dir, everything is uploaded here
 #     app/  migrations/  schema.sql
-#     config.php        <- liegt nur auf dem Server, wird nie angefasst
-#     public/           <- Dokumentenstamm der Subdomain im KAS
+#     config.php        <- exists only on the server, never touched
+#     public/           <- the subdomain's document root
 #
-# Zeigt der Dokumentenstamm versehentlich auf /regal/ statt /regal/public/,
-# ist der komplette Quellcode über HTTP abrufbar. Das ist der eine Handgriff,
-# der beim Einrichten stimmen muss.
+# If the document root points at /regal/ instead of /regal/public/, the whole
+# source is readable over HTTP. That is the one setting that has to be right.
 
 on:
   workflow_dispatch:
     inputs:
       server_dir:
-        description: "Projektordner auf dem Server (NICHT der Dokumentenstamm, sondern die Ebene darüber)"
+        description: "Project folder on the server (NOT the document root, the level above it)"
         required: true
         default: "/regal/"
 
@@ -34,35 +32,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: PHP bereitstellen
+      - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
           coverage: none
 
-      # Ein Tippfehler in einer PHP-Datei nimmt die Seite sonst erst auf dem
-      # Server hoch, und zurück geht es nur über einen zweiten Deploy.
-      - name: Syntax aller PHP-Dateien prüfen
+      # Otherwise a typo in a PHP file takes the site down on the server, and
+      # the only way back is a second deploy.
+      - name: Check the syntax of every PHP file
         run: |
           set -e
           find app bin public tests -name '*.php' -print0 \
             | xargs -0 -n1 -P4 php -l > /dev/null
-          echo "Syntax in Ordnung."
+          echo "Syntax is fine."
 
       - name: Tests
         run: php tests/run.php
 
-      - name: Zielordner prüfen
+      - name: Check the target folder
         run: |
           case "${{ github.event.inputs.server_dir }}" in
             */public/|*/public)
-              echo "::error::server_dir zeigt auf den Dokumentenstamm."
-              echo "::error::Erwartet wird die Ebene DARÜBER, z.B. /regal/ statt /regal/public/."
+              echo "::error::server_dir points at the document root."
+              echo "::error::The level ABOVE it is expected, e.g. /regal/ rather than /regal/public/."
               exit 1 ;;
           esac
-          echo "Zielordner: ${{ github.event.inputs.server_dir }}"
+          echo "Target folder: ${{ github.event.inputs.server_dir }}"
 
-      - name: Per FTPS hochladen
+      - name: Upload over FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -72,12 +70,12 @@ jobs:
           port: 21
           local-dir: ./
           server-dir: ${{ github.event.inputs.server_dir }}
-          # Kein dangerous-clean-slate: es wird nichts gelöscht.
+          # No dangerous-clean-slate: nothing is deleted.
           #
-          # Ausgeschlossen wird alles, was auf dem Server entsteht oder dort
-          # nichts zu suchen hat. public/covers/ steht ganz oben auf der
-          # Liste: das sind die selbst aufgenommenen Coverfotos, die es nur
-          # dort gibt und die kein Deploy überschreiben darf.
+          # Excluded is everything that is created on the server or has no
+          # business being there. public/covers/ is top of the list: those are
+          # the cover photographs, which exist only there and which no deploy
+          # may overwrite.
           exclude: |
             **/.git*
             **/.git*/**

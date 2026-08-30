@@ -1,7 +1,7 @@
--- Die Über-Seite braucht je Sprache einen eigenen Text. Bisher gab es einen
--- für beide, was auf Englisch dann einfach Deutsch war.
+-- The about page needs its own text per language. There was one text for
+-- both, which meant the English page was simply German.
 --
--- Der bestehende Text wird der deutschen Fassung zugeordnet.
+-- The existing text becomes the German version.
 
 ALTER TABLE pages ADD COLUMN locale VARCHAR(5) NOT NULL DEFAULT 'de' AFTER slug;
 

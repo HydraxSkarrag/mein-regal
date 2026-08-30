@@ -43,6 +43,7 @@ use App\Core\Config;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
+use App\Repository\PageRepository;
 
 $request = Request::fromGlobals();
 
@@ -68,51 +69,60 @@ $data  = new MaintenanceController($app);
 
 // Public
 $app->router->get('/', $shelf->index(...));
-$app->router->get('/sub', $shelf->unread(...));
-$app->router->get('/suche', $shelf->index(...));
-$app->router->get('/buch/{slug}', $shelf->detail(...));
-$app->router->get('/statistik', $stats->page(...));
-$app->router->get('/ueber', $pages->about(...));
-$app->router->get('/impressum', $pages->imprint(...));
-$app->router->get('/datenschutz', $pages->privacy(...));
+$app->router->get('/unread', $shelf->unread(...));
+$app->router->get('/search', $shelf->index(...));
+$app->router->get('/book/{slug}', $shelf->detail(...));
+$app->router->get('/stats', $stats->page(...));
+$app->router->get('/project', $pages->project(...));
 $app->router->get('/robots.txt', $pages->robots(...));
 $app->router->get('/sitemap.xml', $pages->sitemap(...));
 $app->router->get('/manifest.webmanifest', $pages->manifest(...));
 
+/*
+ * About, Impressum and privacy policy. One loop rather than nine lines,
+ * because the three behave identically: public to read, owner to write, one
+ * text per language. PageRepository::EDITABLE is the only place the list
+ * lives, so the navigation, the routes and the editor cannot disagree.
+ */
+foreach (PageRepository::EDITABLE as $slug) {
+    $app->router->get('/' . $slug, static fn (): Response => $pages->show($slug));
+    $app->router->get('/' . $slug . '/edit', static fn (Request $r): Response => $pages->edit($slug, $r));
+    $app->router->post('/' . $slug . '/edit', static fn (Request $r): Response => $pages->edit($slug, $r));
+}
+
 // Language switch - a preference, stored in a cookie and on the account.
-$app->router->get('/sprache/{locale}', $auth->setLanguage(...));
+$app->router->get('/language/{locale}', $auth->setLanguage(...));
 
 // First run. Only answers while no account exists; afterwards it is a 404
 // like any other unknown address.
-$app->router->get('/einrichten', $setup->form(...));
-$app->router->post('/einrichten', $setup->submit(...));
+$app->router->get('/setup', $setup->form(...));
+$app->router->post('/setup', $setup->submit(...));
 
 // Sign in and out
-$app->router->get('/anmelden', $auth->form(...));
-$app->router->post('/anmelden', $auth->submit(...));
-$app->router->get('/abmelden', $auth->confirmSignOut(...));
-$app->router->post('/abmelden', $auth->signOut(...));
+$app->router->get('/login', $auth->form(...));
+$app->router->post('/login', $auth->submit(...));
+$app->router->get('/logout', $auth->confirmSignOut(...));
+$app->router->post('/logout', $auth->signOut(...));
 
 // Behind the login
-$app->router->get('/erfassen', $scan->page(...));
-$app->router->get('/verwaltung', $stats->dashboard(...));
-$app->router->get('/verwaltung/daten', $data->page(...));
-$app->router->post('/verwaltung/import', $data->import(...));
-$app->router->get('/verwaltung/export/{format}', $data->export(...));
-$app->router->get('/ueber/bearbeiten', $pages->editAbout(...));
-$app->router->post('/ueber/bearbeiten', $pages->editAbout(...));
-$app->router->get('/buch/{slug}/bearbeiten', $books->form(...));
-$app->router->post('/buch/{slug}/bearbeiten', $books->save(...));
-$app->router->post('/buch/{slug}/loeschen', $books->delete(...));
-$app->router->post('/buch/{slug}/cover-loeschen', $books->deleteCover(...));
-$app->router->post('/buch/{slug}/cover-suchen', $books->findCover(...));
+$app->router->get('/scan', $scan->page(...));
+$app->router->get('/admin', $stats->dashboard(...));
+$app->router->get('/admin/data', $data->page(...));
+$app->router->post('/admin/import', $data->import(...));
+$app->router->get('/admin/export/{format}', $data->export(...));
+$app->router->post('/api/preview', $pages->preview(...));
+$app->router->get('/book/{slug}/edit', $books->form(...));
+$app->router->post('/book/{slug}/edit', $books->save(...));
+$app->router->post('/book/{slug}/delete', $books->delete(...));
+$app->router->post('/book/{slug}/cover-delete', $books->deleteCover(...));
+$app->router->post('/book/{slug}/cover-find', $books->findCover(...));
 
 // Scheduled work. all-inkl's scheduler calls a URL, so the nightly job needs
 // an address; it is guarded by cron_secret from config.php.
 $app->router->get('/cron', $cron->run(...));
 $app->router->post('/api/lookup', $scan->lookup(...));
-$app->router->post('/api/buch', $scan->store(...));
+$app->router->post('/api/book', $scan->store(...));
 $app->router->post('/api/cover', $scan->uploadCover(...));
-$app->router->post('/api/cover-loeschen', $scan->deleteCover(...));
+$app->router->post('/api/cover-delete', $scan->deleteCover(...));
 
 $app->run();

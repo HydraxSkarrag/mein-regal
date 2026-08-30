@@ -63,3 +63,115 @@ Assert::same('written with a comma', $half['text'], '4,5');
 Assert::same('a stray value rounds to the nearest half', App\Core\Formatter::stars(3.3)['text'], '3,5');
 Assert::same('and cannot exceed five', App\Core\Formatter::stars(9)['full'], 5);
 Assert::same('a string from the database works too', App\Core\Formatter::stars('2.5')['text'], '2,5');
+
+Assert::group('Legal pages fall back to whichever language exists');
+
+/*
+ * The about page says "not written yet" when a language is missing, and that
+ * is right: a German paragraph under an English heading reads like a fault.
+ * An Impressum cannot do that. Missing because the interface happens to be in
+ * English is still missing, so the legal pages show the one language they
+ * have and say which it is.
+ */
+$pages->save(1, PageRepository::IMPRINT, 'de', 'Impressum', 'Angaben gemäß § 5 DDG.');
+
+$fallback = $pages->findAnyLocale(1, PageRepository::IMPRINT, 'en');
+Assert::same('an English reader still gets the Impressum', $fallback['title'] ?? null, 'Impressum');
+Assert::same('and is told which language it is in', $fallback['locale'] ?? null, 'de');
+
+$pages->save(1, PageRepository::IMPRINT, 'en', 'Imprint', 'Operator details.');
+Assert::same(
+    'once translated, the asked-for language wins',
+    $pages->findAnyLocale(1, PageRepository::IMPRINT, 'en')['title'],
+    'Imprint'
+);
+
+Assert::same(
+    'a page nobody has written at all is still null',
+    $pages->findAnyLocale(1, PageRepository::PRIVACY, 'en'),
+    null
+);
+
+// An emptied body must not be offered as a fallback; that would show a blank
+// page instead of the notice saying the text is missing.
+$pages->save(1, PageRepository::PRIVACY, 'de', 'Datenschutz', null);
+Assert::same(
+    'an empty body does not count as written',
+    $pages->findAnyLocale(1, PageRepository::PRIVACY, 'en'),
+    null
+);
+
+Assert::group('The seeded legal texts');
+
+$config = new App\Core\Config([
+    'site_name' => 'Testregal',
+    'legal'     => [
+        'operator' => 'Erika Mustermann',
+        'street'   => 'Musterweg 1',
+        'city'     => '12345 Musterstadt',
+        'email'    => 'post@example.org',
+        'host'     => 'Beispielhoster GmbH, Musterstadt',
+    ],
+]);
+$seeded = App\Content\DefaultPages::all($config);
+
+Assert::same('both legal pages are seeded', array_keys($seeded), ['imprint', 'privacy']);
+Assert::true(
+    'the operator lands in the Impressum',
+    str_contains($seeded['imprint']['body'], 'Erika Mustermann')
+);
+Assert::true(
+    'the host lands in the privacy policy',
+    str_contains($seeded['privacy']['body'], 'Beispielhoster GmbH')
+);
+
+// The whole reason these moved out of the templates: no hosting company may
+// be named in the source, or every installation publishes a false statement.
+foreach ($seeded as $slug => $page) {
+    Assert::same(
+        'no hosting company is baked into ' . $slug,
+        stripos($page['body'], 'all-inkl'),
+        false
+    );
+}
+
+// A detail nobody filled in must be visible as a gap, not as a blank line.
+$empty = App\Content\DefaultPages::all(new App\Core\Config([]));
+Assert::true(
+    'a missing operator is marked, not silently blank',
+    str_contains($empty['imprint']['body'], '⚠')
+);
+
+// The seeds are markup source, not HTML, and have to survive the renderer.
+$rendered = App\Core\Text::prose($seeded['privacy']['body']);
+Assert::true('the seeded privacy policy renders headings', str_contains($rendered, '<h2>'));
+Assert::true('and its list of cookies', str_contains($rendered, '<ul>'));
+Assert::same('with no stray markup characters left', str_contains($rendered, '##'), false);
+
+// A hard-wrapped source line inside a paragraph would arrive in the editor
+// already broken at eighty columns, and render with a line break at every
+// one of them. The address is the exception, and keeps its breaks.
+Assert::true(
+    'paragraphs arrive as one line',
+    str_contains($seeded['imprint']['body'], 'nach den allgemeinen Gesetzen verantwortlich')
+);
+Assert::true(
+    'but the address keeps its line breaks',
+    str_contains($seeded['imprint']['body'], "Erika Mustermann\nMusterweg 1")
+);
+Assert::true(
+    'and list items stay on their own lines',
+    str_contains($seeded['privacy']['body'], "\n- **Sprach-Cookie**")
+);
+
+Assert::group('The public statistics switch');
+
+/*
+ * On unless somebody says otherwise, and an old config.php that predates the
+ * option must keep behaving as it did.
+ */
+Assert::true('absent means on', (new App\Core\Config([]))->bool('public_stats', true));
+Assert::true('explicitly on', (new App\Core\Config(['public_stats' => true]))->bool('public_stats', true));
+Assert::same('explicitly off', (new App\Core\Config(['public_stats' => false]))->bool('public_stats', true), false);
+// A default of false must not be flipped by an absent key either.
+Assert::same('an absent key never overrides the default', (new App\Core\Config([]))->bool('nothing', false), false);

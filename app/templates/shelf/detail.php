@@ -15,7 +15,7 @@ declare(strict_types=1);
 <p class="detail-actions">
   <a href="/">&larr; <?= e(t('book.back')) ?></a>
   <?php if ($signedIn): ?>
-  <a href="/buch/<?= e($book['slug']) ?>/bearbeiten"><?= e(t('book.edit')) ?></a>
+  <a href="/book/<?= e($book['slug']) ?>/edit"><?= e(t('book.edit')) ?></a>
   <?php endif; ?>
 </p>
 
@@ -47,7 +47,7 @@ declare(strict_types=1);
     <?php if ($contributors !== []): ?>
     <p style="margin:6px 0 18px">
       <?php foreach ($contributors as $index => $person): ?>
-        <?= $index > 0 ? ' · ' : '' ?><a href="/?autor=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a><?php if ($person['role'] !== 'author'): ?><span style="color:var(--muted)"> (<?= e(t('role.' . $person['role'])) ?>)</span><?php endif; ?>
+        <?= $index > 0 ? ' · ' : '' ?><a href="/?author=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a><?php if ($person['role'] !== 'author'): ?><span style="color:var(--muted)"> (<?= e(t('role.' . $person['role'])) ?>)</span><?php endif; ?>
       <?php endforeach; ?>
     </p>
     <?php endif; ?>

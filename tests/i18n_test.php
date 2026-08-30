@@ -65,3 +65,33 @@ foreach ($deMessages as $key => $german) {
     }
 }
 Assert::same('placeholders match across languages', $mismatched, []);
+
+Assert::group('Half stars survive the font');
+
+/*
+ * The obvious character for a half star, U+2BEA, is missing from most system
+ * fonts and arrived on the page as a question mark. The detail page draws its
+ * half with CSS, but a dropdown option and an escaped label cannot hold
+ * markup, so those get plain text instead.
+ */
+Assert::same('a whole rating', Formatter::starsText(4), '★★★★');
+Assert::same('a half one', Formatter::starsText(3.5), '★★★½');
+Assert::same('rounded to the nearest half', Formatter::starsText(3.7), '★★★½');
+Assert::same('and 3.8 rounds up to four', Formatter::starsText(3.8), '★★★★');
+Assert::same('the top of the scale', Formatter::starsText(5), '★★★★★');
+Assert::same('unrated is null, not an empty row of stars', Formatter::starsText(null), null);
+Assert::same('and so is zero', Formatter::starsText(0), null);
+
+// The character that caused the report must not come back anywhere.
+foreach (['app/templates', 'public/js', 'public/css'] as $directory) {
+    $found = [];
+    $walk = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(dirname(__DIR__) . '/' . $directory)
+    );
+    foreach ($walk as $file) {
+        if ($file->isFile() && str_contains((string) file_get_contents($file->getPathname()), "\u{2BEA}")) {
+            $found[] = $file->getBasename();
+        }
+    }
+    Assert::same('no unrenderable half star in ' . $directory, $found, []);
+}

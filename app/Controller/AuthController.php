@@ -44,9 +44,9 @@ final class AuthController
             return $this->render($message, $request->post('email'));
         }
 
-        // Only relative paths, so ?weiter= cannot bounce a signed-in visitor
+        // Only relative paths, so ?next= cannot bounce a signed-in visitor
         // to somebody else's site.
-        $next = $request->query('weiter');
+        $next = $request->query('next');
         $target = str_starts_with($next, '/') && !str_starts_with($next, '//') ? $next : '/';
 
         return Response::redirect($target);
@@ -61,7 +61,7 @@ final class AuthController
         return Response::redirect('/');
     }
 
-    /** GET /abmelden is a courtesy for the header link; it asks first. */
+    /** GET /logout is a courtesy for the header link; it asks first. */
     public function confirmSignOut(): Response
     {
         $this->app->auth->signOut();
@@ -82,7 +82,7 @@ final class AuthController
         // choice to survive, which is why no banner is needed for it.
         $this->app->cookies->set('regal_lang', $locale, time() + 365 * 86400);
 
-        $back = $request->query('zurueck', '/');
+        $back = $request->query('back', '/');
         $target = str_starts_with($back, '/') && !str_starts_with($back, '//') ? $back : '/';
 
         return Response::redirect($target);

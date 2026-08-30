@@ -16,7 +16,7 @@ declare(strict_types=1);
   <p class="form-error"><?= e($error) ?></p>
   <?php endif; ?>
 
-  <form method="post" action="/einrichten">
+  <form method="post" action="/setup">
     <?= $csrfField ?>
     <div class="field">
       <label for="name"><?= e(t('setup.name')) ?></label>

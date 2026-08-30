@@ -53,7 +53,7 @@ if (isset($options['sqlite']) && $options['sqlite'] !== false) {
     $pdo = Database::connect(Config::load());
     $tables = $pdo->query("SHOW TABLES LIKE 'books'")->fetchAll();
     if ($tables === []) {
-        fwrite(STDERR, "Die Tabellen fehlen. schema.sql zuerst im KAS über phpMyAdmin ausführen.\n");
+        fwrite(STDERR, "The tables are missing. Load schema.sql first, e.g. through phpMyAdmin.\n");
         exit(1);
     }
 }
@@ -69,5 +69,5 @@ $id = $users->create($email, $password, $name, (string) ($options['locale'] ?? '
 printf("Konto angelegt (id %d): %s\n", $id, $email);
 if ($generated !== null) {
     printf("Passwort: %s\n", $generated);
-    echo "Notiere es jetzt - es wird nur als Hash gespeichert und ist nicht wieder auslesbar.\n";
+    echo "Write it down now - only its hash is stored, and it cannot be read back.\n";
 }

@@ -86,7 +86,7 @@ final class Importer
                 $authors = $row->authors();
                 if ($authors['ambiguous']) {
                     $report->ambiguousAuthors++;
-                    $report->flag($number, $title, 'Autorenfeld unklar: ' . ($raw['Autor(en)'] ?? ''));
+                    $report->flag($number, $title, 'author field unclear: ' . ($raw['Autor(en)'] ?? ''));
                 }
 
                 $report->pages += $row->pageCount() ?? 0;
@@ -128,7 +128,7 @@ final class Importer
                 }
 
                 if ($row->genreIsIdentifier()) {
-                    $report->flag($number, $title, 'Genre ist eine Kennung, nicht übernommen: ' . ($raw['Genre'] ?? ''));
+                    $report->flag($number, $title, 'genre is an identifier, not imported: ' . ($raw['Genre'] ?? ''));
                 }
 
                 $genre = $row->genre();

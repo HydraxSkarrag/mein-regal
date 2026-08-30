@@ -314,7 +314,7 @@
         afterSaveBox.innerHTML = '';
         var row = document.createElement('div');
         row.className = 'scanner-actions';
-        row.innerHTML = '<a class="btn" style="flex:1" href="/buch/' + esc(known.slug) + '">' +
+        row.innerHTML = '<a class="btn" style="flex:1" href="/book/' + esc(known.slug) + '">' +
           esc(known.title || text.openBook) + '</a>';
         afterSaveBox.appendChild(row);
       }
@@ -405,7 +405,7 @@
 
     var reply;
     try {
-      reply = await post('/api/buch', body);
+      reply = await post('/api/book', body);
     } catch (error) {
       say(text.error, 'error');
       button.disabled = false;
@@ -457,7 +457,7 @@
       '<label class="btn"' + (stream ? '' : ' style="flex:1"') + '>' + esc(text.photo) +
         '<input type="file" accept="image/*" capture="environment" hidden>' +
       '</label>' +
-      '<a class="btn" href="/buch/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
+      '<a class="btn" href="/book/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
 
     afterSaveBox.innerHTML = '';
     afterSaveBox.appendChild(wrapper);
@@ -560,14 +560,14 @@
     done.innerHTML =
       '<img src="' + esc(reply.data.url) + '" alt="" class="shot-thumb">' +
       '<button class="btn" type="button" data-drop>' + esc(text.dropCover) + '</button>' +
-      '<a class="btn" href="/buch/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
+      '<a class="btn" href="/book/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
     afterSaveBox.appendChild(done);
 
     done.querySelector('[data-drop]').addEventListener('click', async function () {
       var drop = new FormData();
       drop.append('book_id', String(bookId));
       try {
-        await post('/api/cover-loeschen', drop);
+        await post('/api/cover-delete', drop);
         offerCoverPhoto(bookId, slug);
       } catch (error) { /* leave it as it is */ }
     });

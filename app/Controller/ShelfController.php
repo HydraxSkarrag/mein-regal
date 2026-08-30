@@ -25,7 +25,7 @@ final class ShelfController
             'search'   => $request->query('q'),
             'status'   => $this->oneOf($request->query('status'), ['read', 'unread', 'abandoned', 'reading']),
             'tag'      => $request->query('tag'),
-            'author'   => $request->query('autor'),
+            'author'   => $request->query('author'),
             'binding'  => $this->oneOf($request->query('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
@@ -49,13 +49,13 @@ final class ShelfController
             'sort'   => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read'], 'recent'),
         ];
 
-        return $this->renderShelf($request, $filters, t('nav.sub'), 'sub');
+        return $this->renderShelf($request, $filters, t('nav.unread'), 'unread');
     }
 
     /** @param array<string,string> $filters */
     private function renderShelf(Request $request, array $filters, string $heading, string $current): Response
     {
-        $page = max(1, $request->queryInt('seite', 1));
+        $page = max(1, $request->queryInt('page', 1));
         $offset = ($page - 1) * self::PER_PAGE;
 
         $result = $this->app->books->search($this->app->ownerId, $filters, self::PER_PAGE, $offset);
@@ -70,14 +70,14 @@ final class ShelfController
                 array_merge($query, $changes),
                 static fn ($value): bool => $value !== '' && $value !== null
             );
-            unset($next['seite']);
+            unset($next['page']);
 
             return $next === [] ? '/' : '/?' . http_build_query($next);
         };
 
         $nextUrl = null;
         if ($offset + count($books) < $result['total']) {
-            $nextUrl = '/?' . http_build_query(array_merge(array_filter($query), ['seite' => $page + 1]));
+            $nextUrl = '/?' . http_build_query(array_merge(array_filter($query), ['page' => $page + 1]));
         }
 
         $body = $this->app->view->render('shelf.index', [
@@ -104,7 +104,7 @@ final class ShelfController
             'content'   => $body,
             'title'     => $heading,
             'current'   => $current,
-            'canonical' => $this->app->url($current === 'sub' ? '/sub' : '/'),
+            'canonical' => $this->app->url($current === 'unread' ? '/unread' : '/'),
             'jsonLd'    => $this->collectionJsonLd($result['total']),
         ]));
     }
@@ -142,7 +142,7 @@ final class ShelfController
             'content'         => $body,
             'title'           => (string) $book['title'],
             'current'         => 'shelf',
-            'canonical'       => $this->app->url('/buch/' . $book['slug']),
+            'canonical'       => $this->app->url('/book/' . $book['slug']),
             'metaDescription' => $this->description($book, $authorLine),
             'ogType'          => 'book',
             'ogImage'         => $this->publicOgImage($bookId),
@@ -259,7 +259,7 @@ final class ShelfController
             '@context' => 'https://schema.org',
             '@type'    => 'Book',
             'name'     => $book['title'],
-            'url'      => $this->app->url('/buch/' . $book['slug']),
+            'url'      => $this->app->url('/book/' . $book['slug']),
         ];
         if ($book['isbn13'] !== null) {
             $data['isbn'] = Isbn::format((string) $book['isbn13']);

@@ -161,9 +161,8 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         /* Die echte Konfiguration, wenn es sie gibt: --sqlite soll nur die
-           Datenbank ersetzen, nicht den Google-Schlüssel wegwerfen. Genau das
-           tat es und die Anreicherung lief dann ohne Google, ohne dass etwas
-           darauf hingewiesen hätte. */
+           database, not to throw the Google key away. It did exactly that,
+           and enrichment then ran without Google, with nothing to say so. */
         try {
             $config = Config::load();
         } catch (Throwable $e) {
@@ -178,7 +177,7 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
     $stats = enrich($pdo, $config, $limit, $ownerId, !isset($options['quiet']), $budget);
 
     printf(
-        "\nAbgefragt %d | Cover %d | Metadaten ergänzt %d | ohne Treffer %d | %.1f s%s\n",
+        "\nLooked up %d | covers %d | details filled in %d | no match %d | %.1f s%s\n",
         $stats['looked_up'],
         $stats['covers'],
         $stats['metadata'],

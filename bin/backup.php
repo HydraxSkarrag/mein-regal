@@ -72,7 +72,7 @@ function backup(PDO $pdo, string $directory, int $keepDays, bool $verbose = true
     fclose($handle);
     $files[] = $csvPath;
     if ($verbose) {
-        printf("  %-44s %7d Bücher\n", basename($csvPath), $books);
+        printf("  %-44s %7d books\n", basename($csvPath), $books);
     }
 
     // ---- the covers -----------------------------------------------------
@@ -114,12 +114,12 @@ function dumpDatabase(PDO $pdo, string $path): int
             ->fetchAll(PDO::FETCH_COLUMN)
         : $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 
-    fwrite($handle, "-- Bücherregal, Sicherung vom " . date('c') . "\n");
+    fwrite($handle, "-- Mein Regal, backup taken " . date('c') . "\n");
     fwrite($handle, "-- Einspielen: in phpMyAdmin importieren.\n");
     fwrite($handle, "--\n");
-    fwrite($handle, "-- Hinweis: Notizen und Seitentexte dürfen Zeilenumbrüche enthalten,\n");
-    fwrite($handle, "-- eine INSERT-Anweisung kann sich also über mehrere Zeilen erstrecken.\n");
-    fwrite($handle, "-- Das ist gültiges SQL; ein zeilenweises Einlesen scheitert daran.\n");
+    fwrite($handle, "-- Note: notes and page texts may contain line breaks, so a single\n");
+    fwrite($handle, "-- INSERT statement can span several lines. That is valid SQL; reading\n");
+    fwrite($handle, "-- the file line by line will not work.\n");
     fwrite($handle, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
 
     $total = 0;

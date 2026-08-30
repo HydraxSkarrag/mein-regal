@@ -1,222 +1,243 @@
 # Mein Regal
 
-Ein Bücherregal zum Selbsthosten: Barcode scannen, Buchdaten holen, katalogisieren.
-Läuft auf gewöhnlichem PHP-Webspace ohne Shell-Zugang.
+A self-hosted bookshelf: scan a barcode, fetch the book's details, catalogue it.
+Runs on ordinary PHP web space with no shell access.
 
-Entstanden, weil [bookstats.de](https://bookstats.de) den Betrieb eingestellt hat und
-eine über Jahre gewachsene Sammlung von 3.042 Büchern sonst nur noch als CSV-Datei
-existiert hätte.
+It exists because [bookstats.de](https://bookstats.de) shut down, and a collection
+of 3,042 books grown over years would otherwise have survived only as a CSV file.
 
-## Was es kann
+Written for the bookshelf of [Bücherhausen](https://www.buecherhausen.de/) and
+passed on from there. Every installation keeps a line in its footer saying so;
+that is the whole price.
 
-- **Barcode scannen** direkt im Browser, am Handy wie am Rechner. Nutzt die
-  eingebaute Erkennung, wo es sie gibt, und lädt sonst eine mitgelieferte
-  Bibliothek nach.
-- **Buchdaten automatisch holen** von der Deutschen Nationalbibliothek, Google Books
-  und Open Library — in der Reihenfolge, die zur ISBN passt.
-- **Cover** aus den freien Quellen oder selbst fotografiert.
-- **Regal** mit Suche, Filtern und Sortierung; öffentlich sichtbar, Verwaltung hinter
-  dem Login.
-- **Statistik** öffentlich, **Dashboard** mit Datenqualität und Aufgabenliste privat.
-- **Export** in drei Formaten und **Sicherung** von Datenbank, Katalog und Covern.
-- Oberfläche auf Deutsch und Englisch.
+## What it does
 
-## Voraussetzungen
+- **Scan barcodes** in the browser, on a phone or a desktop. Uses the browser's
+  own detector where there is one and falls back to a bundled library.
+- **Fetch book data** from the German National Library, Google Books and Open
+  Library, in whichever order the ISBN suggests.
+- **Covers** from the free sources, or photographed yourself.
+- **The shelf** with search, filters and sorting; public to read, editing behind
+  the login.
+- **Statistics** in public — `'public_stats' => false` keeps them to yourself —
+  and a **dashboard** with data quality and a to-do list in private.
+- **Export** in three formats and a **backup** of database, catalogue and covers.
+- Interface in German and English; about, imprint and privacy policy are written
+  in the browser, one text per language.
 
-PHP 8.1 oder neuer mit `pdo_mysql`, `gd`, `mbstring`, `curl` und `simplexml`.
-MySQL oder MariaDB. HTTPS ist Pflicht — ohne verschlüsselte Verbindung gibt kein
-Browser die Kamera frei.
+## Requirements
 
-Getestet auf all-inkl Privat+ (PHP 8.3, kein SSH). `intl` wird genutzt, wenn
-vorhanden, ist aber nicht erforderlich.
+PHP 8.1 or newer with `pdo_mysql`, `gd`, `mbstring`, `curl` and `simplexml`.
+MySQL or MariaDB. HTTPS is not optional — no browser grants camera access over an
+unencrypted connection.
 
-## Einrichten
+Tested on all-inkl Privat+ (PHP 8.3, no SSH), which is also what CI runs. `intl`
+is used when present but is not required.
 
-### 1. Dateien hochladen
+## Setting it up
 
-Der Anwendungscode gehört **über** den Dokumentenstamm, nicht hinein:
+### 1. Upload the files
+
+The application code belongs **above** the document root, not inside it:
 
 ```
 regal/
   app/  bin/  migrations/  schema.sql
-  config.php          <- Zugangsdaten, nur auf dem Server
-  storage/            <- Logs und Sicherungen
-  public/             <- hierauf zeigt der Dokumentenstamm
+  config.php          <- credentials, on the server only
+  storage/            <- logs and backups
+  public/             <- the document root points here
 ```
 
-Im all-inkl-KAS unter *Domain → Subdomain* den Dokumentenstamm auf `regal/public/`
-setzen. **Zeigt er auf `regal/` statt auf `regal/public/`, ist der komplette
-Quellcode über HTTP abrufbar.** Das ist der eine Handgriff, der stimmen muss.
+With all-inkl, set the subdomain's document root to `regal/public/` under
+*Domain → Subdomain*. **If it points at `regal/` instead, the entire source is
+readable over HTTP.** That is the one setting that has to be right.
 
-### 2. Datenbank anlegen
+### 2. Create the database
 
-`schema.sql` einmalig über phpMyAdmin einspielen. Spätere Änderungen liegen als
-datierte Dateien in `migrations/` und werden genauso eingespielt.
+Load `schema.sql` once through phpMyAdmin. Later changes are dated files in
+`migrations/`, applied the same way.
 
-### 3. Konfigurieren
+### 3. Configure
 
-`config.sample.php` nach `config.php` kopieren und ausfüllen: Zugangsdaten,
-Seitenname, Adressen für Impressum und Datenschutz, `cron_secret`. Die Datei
-gehört neben `app/`, nicht in `public/`, und niemals ins Repository.
+Copy `config.sample.php` to `config.php` and fill it in: credentials, site name,
+the contact details for the imprint and privacy policy, `cron_secret`. The file
+belongs next to `app/`, never inside `public/`, and never in the repository.
 
-### 4. Konto anlegen
+Leaving `blog_url` and `blog_name` empty is fine — the link to a blog then simply
+does not appear. A shelf does not have to belong to one.
 
-`https://deine-adresse/einrichten` aufrufen und das erste Konto anlegen. Die Seite
-antwortet nur, solange es noch kein Konto gibt — danach ist sie nicht mehr
-erreichbar.
+### 4. Create an account
 
-Mit Shell-Zugang geht es auch so:
+Open `https://your-address/setup` and create the first account. The page answers
+only while no account exists; afterwards it is a 404 like any unknown address.
+
+Creating the account also writes a German imprint and privacy policy into the
+database, filled in from `config.php`. **Read both before going live.** They
+describe an installation with no analytics, no CDN and no embedded images,
+because that is what this application is — but the details are yours, and the
+text is not legal advice. Both are edited under `/imprint` and `/privacy`.
+
+With shell access:
 
 ```bash
-php bin/setup.php --email=du@example.org --name="Dein Name"
+php bin/setup.php --email=you@example.org --name="Your Name"
 ```
 
-Ohne `--password` wird eines erzeugt und einmalig ausgegeben. Danach ist es nur
-noch als Hash gespeichert.
+Without `--password` one is generated and printed once. After that only its hash
+is stored.
 
-### 5. Bestand importieren
+### 5. Import an existing collection
 
-Unter *Verwaltung → Daten* die CSV-Datei hochladen. Erst **ohne** den Haken
-„Wirklich schreiben" — dann kommt nur der Bericht, der Dubletten, fehlende ISBNs
-und unklare Autorenfelder nennt. Erst danach mit Haken.
+Upload the CSV under *Admin → Data*. First **without** the "really write" box —
+that produces only the report naming duplicates, missing ISBNs and ambiguous
+author fields. Then with it.
 
-Für dreitausend Bücher sind das rund 23.000 Datenbankabfragen, also je nach Server
-fünf bis zwanzig Sekunden. Der Vorgang läuft in einer Transaktion: bricht er ab,
-bleibt nichts halb Importiertes zurück.
+Three thousand books are roughly 23,000 database statements, so five to twenty
+seconds depending on the server. It runs in one transaction: if it fails, nothing
+half-imported is left behind.
 
-Mit Shell-Zugang:
+With shell access:
 
 ```bash
-php bin/import.php --file=Buecher.csv            # Trockenlauf, schreibt nichts
-php bin/import.php --file=Buecher.csv --commit
+php bin/import.php --file=books.csv            # dry run, writes nothing
+php bin/import.php --file=books.csv --commit
 ```
 
-### 6. Nächtlichen Cronjob einrichten
+### 6. Set up the nightly cron job
 
-all-inkl ruft für Cronjobs eine Adresse auf, keine Datei. Im KAS unter *Tools →
-Cronjobs* eintragen:
+all-inkl's scheduler calls a URL rather than running a script. Under
+*Tools → Cronjobs*:
 
 ```
-https://regal.example.org/cron?key=DEIN_CRON_SECRET
+https://regal.example.org/cron?key=YOUR_CRON_SECRET
 ```
 
-Der Auftrag sichert zuerst Datenbank, Katalog und Cover, sucht dann fehlende Cover
-und Angaben nach und räumt abgelaufene Anmeldetoken weg.
+The job backs up the database, catalogue and covers, then looks for missing
+covers and details, then clears out expired sign-in tokens.
 
-Die Nachsuche arbeitet gegen ein **Zeitbudget** statt gegen eine Stückzahl:
-Standard sind 120 Sekunden, danach bricht sie ab und macht in der nächsten Nacht
-dort weiter. Sie wartet bewusst zwischen den Abfragen, um die freien Datenquellen
-nicht zu überlasten — für dreitausend Bücher wären das Stunden, die kein Cronjob
-durchhält. Anpassbar über `&budget=180`.
+The lookup runs against a **time budget** rather than a number of books: 120
+seconds by default, after which it stops and continues the next night. It waits
+between requests on purpose, so as not to lean on the free data sources — for
+three thousand books that would be hours, which no cron job survives. Adjust with
+`&budget=180` (clamped to between 20 and 240 seconds).
 
-## Werkzeuge
+## Tools
 
 ```bash
-php bin/export.php --format=bookstats     # Originalformat, liest sich zurück
-php bin/export.php --format=full          # alle Spalten, UTF-8
-php bin/export.php --format=json          # alles, inklusive Beteiligter und Tags
-php bin/backup.php --keep=30              # Datenbank, Katalog und Cover
-php bin/enrich.php --limit=100            # Cover und Angaben nachtragen
-php bin/check.php                        # sind die Datenquellen erreichbar?
-php tests/run.php                         # Tests
+php bin/export.php --format=bookstats     # the original format, reads back in
+php bin/export.php --format=full          # every column, UTF-8
+php bin/export.php --format=json          # everything, contributors and tags too
+php bin/backup.php --keep=30              # database, catalogue and covers
+php bin/enrich.php --limit=100            # fill in missing covers and details
+php bin/check.php                         # are the data sources reachable?
+php tests/run.php                         # the tests
 ```
 
-Alle Skripte nehmen `--sqlite=/pfad/zur/datei` und laufen dann ohne `config.php`
-gegen eine Wegwerf-Datenbank — so entsteht auch die Entwicklungsumgebung.
-`REGAL_CONFIG=/pfad/zur/config.php` überschreibt den Pfad zur Konfiguration.
+Every script that touches the database takes `--sqlite=/path/to/file` and then
+runs against a throwaway database without a `config.php` — which is also how the
+development environment works. `REGAL_CONFIG=/path/to/config.php` overrides where
+the configuration is read from.
 
-### Ohne Shell-Zugang
+### Without shell access
 
-Auf all-inkl gibt es SSH erst ab dem Premium-Tarif. Alles, was für den Betrieb
-nötig ist, geht deshalb auch über den Browser:
+all-inkl offers SSH only from the Premium plan up. Everything needed to run the
+site therefore works through the browser as well:
 
-| Aufgabe | Weg ohne Shell | Warum |
+| Task | Without a shell | Why |
 |---|---|---|
-| Konto anlegen | `/einrichten` | einmalig, sofort |
-| Bestand importieren | Verwaltung → Daten | einmalig, Sekunden |
-| Export herunterladen | Verwaltung → Daten | wenige Abfragen |
-| Sicherung | nächtlicher Cronjob | Sekunden |
-| Cover nachtragen | **nur** Cronjob | wartet je Buch, dauert Stunden |
+| Create an account | `/setup` | once, immediate |
+| Import a collection | Admin → Data | once, seconds |
+| Download an export | Admin → Data | a handful of queries |
+| Backup | nightly cron job | seconds |
+| Fill in covers | **cron job only** | waits between books, takes hours |
 
-Die Nachsuche ist bewusst nicht über den Browser erreichbar. Sie ist die einzige
-Aufgabe, die länger läuft als jedes vernünftige Zeitlimit.
+The lookup is deliberately not reachable from the browser. It is the one task
+that runs longer than any sensible time limit.
 
-## Entwickeln
+## Developing
 
 ```bash
-php bin/setup.php --sqlite=/tmp/regal.sqlite --email=du@example.org --name="Du"
-php bin/import.php --file=Buecher.csv --sqlite=/tmp/regal.sqlite --commit
-php -S localhost:8931 -t public router.dev.php
+./dev.sh
 ```
 
-`config.php` mit `'db_dsn' => 'sqlite:/tmp/regal.sqlite'` anlegen.
+That writes a `config.dev.php`, creates an SQLite database, adds a local account,
+imports a CSV if one is next to it, and starts the server. Or by hand:
 
-Es gibt keinen Build-Schritt und keine Abhängigkeiten zur Laufzeit. Das ist kein
-Purismus, sondern folgt aus dem Hosting: ohne Shell-Zugang gibt es keinen Composer
-auf dem Server. Was an Bibliotheken gebraucht wird, liegt fertig in `public/js/`.
+```bash
+php bin/setup.php --sqlite=/tmp/regal.sqlite --email=you@example.org --name="You"
+php bin/import.php --file=books.csv --sqlite=/tmp/regal.sqlite --commit
+REGAL_CONFIG=$PWD/config.dev.php php -S localhost:8931 -t public router.dev.php
+```
 
-### Was beim Ändern zu beachten ist
+There is no build step and no runtime dependency. That is not purism, it follows
+from the hosting: with no shell there is no Composer on the server. What is needed
+in the way of libraries sits ready in `public/js/`.
 
-- **Nichts von fremden Servern nachladen.** Keine CDN, keine Web-Fonts, keine
-  Analyse. Daran hängt mehr als Geschmack: die strenge Content-Security-Policy und
-  die Tatsache, dass die Seite ohne Cookie-Banner auskommt. Die erste externe
-  Ressource kostet beides.
-- **Sämtlicher Datenbankzugriff gehört in `app/Repository/`.** Templates enthalten
-  keine Logik über Schleifen hinaus.
-- **`owner_id` filtert immer mit**, auch solange es nur eine Sammlung gibt.
+### What to keep in mind when changing things
+
+- **Load nothing from anyone else's server.** No CDN, no web fonts, no analytics.
+  More hangs on this than taste: the strict Content-Security-Policy and the fact
+  that the site needs no cookie banner. The first external resource costs both.
+- **All database access belongs in `app/Repository/`.** Templates hold no logic
+  beyond loops and conditionals.
+- **`owner_id` is always part of the filter**, even while there is one collection.
+- **Source and comments in English.** German belongs in the interface translations
+  and in the legal texts, which are content rather than code.
+- **Owner-written text is never HTML.** It is stored as typed and rendered by
+  `App\Core\Markup`, which escapes everything before it writes a single tag. If
+  you find yourself adding an HTML filter, something has gone wrong.
 
 ## Deployment
 
-Über GitHub Actions (*Actions → Deploy zu all-inkl → Run workflow*), nicht
-automatisch bei jedem Commit. Nötige Secrets: `FTP_SERVER`, `FTP_USERNAME`,
-`FTP_PASSWORD`.
+Through GitHub Actions (*Actions → Deploy → Run workflow*), not automatically on
+every commit. Required secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`.
 
-Hochgeladen wird das Repo-Wurzelverzeichnis in den Projektordner. Nie angefasst
-werden `config.php`, `storage/` und `public/covers/` — das sind die selbst
-aufgenommenen Coverfotos, die es nur auf dem Server gibt.
+The repository root is uploaded into the project folder. Never touched:
+`config.php`, `storage/` and `public/covers/` — the cover photographs, which exist
+only on the server.
 
-## Datenquellen
+## Data sources
 
-| Quelle | Wofür | Bedingungen |
+| Source | For | Terms |
 |---|---|---|
-| [DNB](https://services.dnb.de/sru/dnb) | deutsche Titel | Metadaten CC0, kein Schlüssel nötig |
-| [Google Books](https://developers.google.com/books) | englische Titel, Cover | eigener Schlüssel nötig, kostenlos, ~1.000 Abfragen am Tag |
-| [Open Library](https://openlibrary.org/developers/api) | englische Titel, Cover | offen, Rücklink erwünscht |
+| [DNB](https://services.dnb.de/sru/dnb) | German titles | metadata CC0, no key needed |
+| [Google Books](https://developers.google.com/books) | English titles, covers | own key needed, free, ~1,000 requests a day |
+| [Open Library](https://openlibrary.org/developers/api) | English titles, covers | open, backlink appreciated |
 
-### Google-Schlüssel einrichten
+Covers are **downloaded and served from your own server**, not embedded. Looking
+at the shelf therefore opens no connection to anyone else. Source and backlink are
+stored and shown per image.
 
-Ohne eigenen Schlüssel fällt Google Books praktisch aus: alle anonymen Anfragen
-teilen sich ein gemeinsames Tageskontingent, das üblicherweise erschöpft ist. Die
-Antwort lautet dann `429 Quota exceeded` mit einer fremden Projektnummer.
+### Setting up a Google key
 
-1. [console.cloud.google.com](https://console.cloud.google.com) öffnen und ein
-   Projekt anlegen (Name egal).
-2. Unter *APIs & Dienste → Bibliothek* nach **Books API** suchen und aktivieren.
-   Ohne diesen Schritt lehnt jeder Schlüssel mit „has not been used" ab.
-3. Unter *APIs & Dienste → Anmeldedaten* → *Anmeldedaten erstellen* → **API-Schlüssel**.
-4. Den Schlüssel einschränken: unter *API-Einschränkungen* auf **Books API** begrenzen.
-   Bei *Anwendungseinschränkungen* **IP-Adressen** wählen und die Server-IP eintragen —
-   nicht „HTTP-Verweis-URLs", denn die Abfragen kommen vom Server, nicht aus dem Browser.
-5. In `config.php` unter `google_books_key` eintragen.
+Without your own key Google Books is effectively unavailable: anonymous requests
+share one daily quota, which is usually exhausted. The answer is then
+`429 Quota exceeded`, citing a project number that is not yours.
 
-Die Books API ist kostenlos und verlangt keine Zahlungsdaten.
+1. Open [console.cloud.google.com](https://console.cloud.google.com) and create a
+   project (the name does not matter).
+2. Under *APIs & Services → Library*, find **Books API** and enable it. Without
+   this step every key is rejected with "has not been used".
+3. Under *APIs & Services → Credentials* → *Create credentials* → **API key**.
+4. Restrict it: under *API restrictions* limit it to **Books API**. Under
+   *Application restrictions* choose **IP addresses** and enter the server's — not
+   "HTTP referrers", because the requests come from the server, not the browser.
+5. Enter it in `config.php` under `google_books_key`.
 
-Ob es greift:
+The Books API is free and asks for no payment details. A newly created key answers
+with `503` for a few minutes; that passes.
+
+To find out whether it works:
 
 ```bash
 php bin/check.php --key=AIzaSy...
 ```
 
-Das Skript prüft alle drei Quellen und nennt bei Google den Grund im Klartext —
-ob das Kontingent erschöpft ist, die API nicht aktiviert wurde oder der Schlüssel
-falsch eingeschränkt ist.
+The script checks all three sources and, for Google, says plainly which it is —
+quota exhausted, API not enabled, or the key restricted to the wrong thing.
 
-Cover werden **heruntergeladen und selbst ausgeliefert**, nicht eingebettet. So
-entsteht beim Betrachten des Regals keine Verbindung zu Dritten. Quelle und
-Rücklink werden je Bild gespeichert und angezeigt.
+## Licence
 
-## Lizenz
-
-Quellcode MIT. Logo, Schriften und Coverbilder sind ausgenommen und gehören ihren
-Rechteinhabern — siehe [LICENSE](LICENSE). Wer eine eigene Installation betreibt,
-sollte die Dateien in `public/assets/` durch eigene ersetzen.
+Source under MIT. The logo, the fonts and the cover images are excluded and belong
+to their rights holders — see [LICENSE](LICENSE). Anyone running their own
+installation should replace the files in `public/assets/` with their own.

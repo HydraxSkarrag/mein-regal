@@ -4,7 +4,7 @@
  */
 declare(strict_types=1);
 ?>
-<p class="detail-actions"><a href="/verwaltung">&larr; <?= e(t('nav.admin')) ?></a></p>
+<p class="detail-actions"><a href="/admin">&larr; <?= e(t('nav.admin')) ?></a></p>
 
 <h1><?= e(t('maintenance.title')) ?></h1>
 
@@ -24,15 +24,15 @@ declare(strict_types=1);
   <p class="note" style="margin-top:0"><?= e(t('maintenance.export.hint')) ?></p>
   <ul class="download-list">
     <li>
-      <a href="/verwaltung/export/bookstats"><?= e(t('maintenance.export.bookstats')) ?></a>
+      <a href="/admin/export/bookstats"><?= e(t('maintenance.export.bookstats')) ?></a>
       <span class="note"><?= e(t('maintenance.export.bookstats.hint')) ?></span>
     </li>
     <li>
-      <a href="/verwaltung/export/full"><?= e(t('maintenance.export.full')) ?></a>
+      <a href="/admin/export/full"><?= e(t('maintenance.export.full')) ?></a>
       <span class="note"><?= e(t('maintenance.export.full.hint')) ?></span>
     </li>
     <li>
-      <a href="/verwaltung/export/json"><?= e(t('maintenance.export.json')) ?></a>
+      <a href="/admin/export/json"><?= e(t('maintenance.export.json')) ?></a>
       <span class="note"><?= e(t('maintenance.export.json.hint')) ?></span>
     </li>
   </ul>
@@ -48,7 +48,7 @@ declare(strict_types=1);
   </p>
   <?php endif; ?>
 
-  <form method="post" action="/verwaltung/import" enctype="multipart/form-data">
+  <form method="post" action="/admin/import" enctype="multipart/form-data">
     <?= $csrfField ?>
     <div class="field">
       <label for="csv"><?= e(t('maintenance.import.file')) ?></label>

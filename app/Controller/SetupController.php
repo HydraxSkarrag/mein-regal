@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Content\DefaultPages;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
@@ -76,6 +77,8 @@ final class SetupController
             return $this->render(t('error.500.title'), $email, $name);
         }
 
+        $this->seedPages($userId);
+
         // Straight in, rather than sending someone who just chose a password
         // to a form asking for it again.
         $user = $this->app->users->findById($userId);
@@ -84,7 +87,39 @@ final class SetupController
         }
         $this->app->session->flash(t('setup.done'), 'ok');
 
-        return Response::redirect('/verwaltung');
+        return Response::redirect('/admin');
+    }
+
+    /**
+     * Give the new installation its legal pages.
+     *
+     * Only a starting point, and only in German - see DefaultPages for why
+     * that is deliberate rather than lazy. From here on the texts belong to
+     * the operator and are edited in the browser, which is the only way a
+     * legal text ever gets corrected.
+     *
+     * A failure here must not lose the account that was just created: an
+     * installation with no Impressum is a job to finish, an installation with
+     * no owner is one to start over.
+     */
+    private function seedPages(int $userId): void
+    {
+        try {
+            foreach (DefaultPages::all($this->app->config) as $slug => $page) {
+                if ($this->app->pages->find($userId, $slug, DefaultPages::SEEDED_LOCALE) !== null) {
+                    continue;
+                }
+                $this->app->pages->save(
+                    $userId,
+                    $slug,
+                    DefaultPages::SEEDED_LOCALE,
+                    $page['title'],
+                    $page['body']
+                );
+            }
+        } catch (Throwable $e) {
+            error_log('[regal] seeding the legal pages failed: ' . $e->getMessage());
+        }
     }
 
     /**

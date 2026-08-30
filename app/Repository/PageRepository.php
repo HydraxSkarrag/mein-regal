@@ -14,7 +14,20 @@ use PDO;
  */
 final class PageRepository
 {
-    public const ABOUT = 'ueber';
+    public const ABOUT   = 'about';
+    public const IMPRINT = 'imprint';
+    public const PRIVACY = 'privacy';
+
+    /**
+     * The pages the owner may write, and the order they appear in.
+     *
+     * A fixed list rather than an open slug: a page whose address anyone can
+     * invent is a page anyone can create, and these three are the ones the
+     * navigation links to.
+     *
+     * @var list<string>
+     */
+    public const EDITABLE = [self::ABOUT, self::IMPRINT, self::PRIVACY];
 
     public function __construct(private readonly PDO $pdo)
     {
@@ -36,6 +49,36 @@ final class PageRepository
               WHERE owner_id = ? AND slug = ? AND locale = ?'
         );
         $statement->execute([$ownerId, $slug, $locale]);
+        $row = $statement->fetch();
+
+        return $row === false ? null : $row;
+    }
+
+    /**
+     * The page in the asked-for language, or in whatever language it exists.
+     *
+     * Only for the legal pages. There, showing nothing is not an option -
+     * an Impressum that is missing because the interface happens to be in
+     * English is still a missing Impressum - so the German original stands in
+     * until someone writes a translation. The about page deliberately does
+     * not do this: a German paragraph under an English heading reads like a
+     * fault, and saying "not written yet" is more honest.
+     *
+     * @return array{title: string, body: ?string, locale: string, updated_at: string}|null
+     */
+    public function findAnyLocale(int $ownerId, string $slug, string $preferred): ?array
+    {
+        $page = $this->find($ownerId, $slug, $preferred);
+        if ($page !== null) {
+            return $page;
+        }
+
+        $statement = $this->pdo->prepare(
+            'SELECT title, body, locale, updated_at FROM pages
+              WHERE owner_id = ? AND slug = ? AND body IS NOT NULL AND body <> \'\'
+              ORDER BY locale LIMIT 1'
+        );
+        $statement->execute([$ownerId, $slug]);
         $row = $statement->fetch();
 
         return $row === false ? null : $row;

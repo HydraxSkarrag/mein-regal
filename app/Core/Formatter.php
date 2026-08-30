@@ -127,6 +127,24 @@ final class Formatter
         ];
     }
 
+    /**
+     * The same rating as plain text, for places that cannot hold markup.
+     *
+     * A dropdown option and an escaped label have no room for a span, and the
+     * obvious character for the job - U+2BEA, star with left half black - is
+     * missing from most system fonts, so it arrived as a question mark. The
+     * vulgar fraction has been in every font since Latin-1.
+     */
+    public static function starsText(int|float|string|null $rating): ?string
+    {
+        $parts = self::stars($rating);
+        if ($parts === null) {
+            return null;
+        }
+
+        return str_repeat('★', $parts['full']) . ($parts['half'] ? '½' : '');
+    }
+
     /** For <time datetime="..."> and anywhere a machine reads the value. */
     public function iso(?string $isoDate): string
     {

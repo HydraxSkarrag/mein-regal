@@ -60,7 +60,7 @@ $two = new BookstatsRow(['Titel' => 'X', 'Autor(en)' => 'Flessner, Bernd, Schill
 Assert::same('two authors split', $two->authors()['names'], ['Bernd Flessner', 'Peter Schilling']);
 
 $untitled = new BookstatsRow(['Titel' => '']);
-Assert::same('an empty title still gets one', $untitled->title(), '(ohne Titel)');
+Assert::same('an empty title still gets one', $untitled->title(), '(untitled)');
 
 Assert::group('BookstatsRow: machine identifiers in the genre column');
 

@@ -9,13 +9,14 @@ declare(strict_types=1);
 
 return [
     'app.shelf'          => 'Mein Regal',
-    'app.tagline'        => 'Die Bibliothek von Bücherhausen',
+    'app.tagline'        => 'Ein Bücherregal zum Durchblättern',
     'app.by'             => 'von',
+    'app.credit'         => 'Läuft mit {app}, von {origin}',
 
     'nav.shelf'          => 'Regal',
     'nav.search'         => 'Suche',
     'nav.scan'           => 'Scannen',
-    'nav.sub'            => 'SuB',
+    'nav.unread'         => 'SuB',
     'nav.stats'          => 'Statistik',
     'nav.admin'          => 'Verwaltung',
     'nav.blog'           => 'Blog',
@@ -218,6 +219,25 @@ return [
 
     'delete.title'             => 'Buch entfernen',
     'delete.explain'           => 'Entfernt das Buch samt Cover, Bewertung und Notizen. Das lässt sich nicht rückgängig machen.',
+    'import.dryrun'      => 'TROCKENLAUF - es wurde nichts geschrieben.',
+    'import.done'        => 'Import abgeschlossen.',
+    'import.rows'        => 'Zeilen gelesen',
+    'import.imported'    => 'Bücher importiert',
+    'import.duplicates'  => 'Dubletten übersprungen',
+    'import.authors'     => 'Autor:innen angelegt',
+    'import.tags'        => 'Tags angelegt',
+    'import.noisbn'      => 'Ohne ISBN',
+    'import.badisbn'     => 'ISBN unbrauchbar',
+    'import.ambiguous'   => 'Autorenfeld unklar',
+    'import.pages'       => 'Seiten gesamt',
+    'import.value'       => 'Erfasster Wert',
+    'import.bulk'        => 'Sammel-Erfassungstage ({count} Bücher markiert, damit keine '
+                            . 'Statistik sie als echte Zugänge liest):',
+    'import.review'      => 'Zur Nachkontrolle ({count}), Zeile und Titel:',
+    'import.more'        => '... und {count} weitere',
+    'import.errors'      => 'FEHLER ({count}):',
+
+    'delete.word'              => 'LÖSCHEN',
     'delete.type'              => 'Zum Bestätigen {word} eintippen',
     'delete.button'            => 'Endgültig entfernen',
     'delete.confirm.missing'   => 'Nicht entfernt – das Bestätigungswort stimmte nicht.',
@@ -308,4 +328,49 @@ return [
 
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
+
+    'nav.project'        => 'Über das Projekt',
+
+    // The three prose pages. The key is the address, so the navigation, the
+    // routes and the editor cannot drift apart.
+    'page.about'         => 'Über dieses Regal',
+    'page.imprint'       => 'Impressum',
+    'page.privacy'       => 'Datenschutzerklärung',
+    'page.edit'          => '{page} bearbeiten',
+    'page.legal.empty'   => 'Dieser Text fehlt noch. Vor dem Livegang muss er geschrieben werden.',
+    'page.only.language' => 'Dieser Text liegt bisher nur auf {language} vor.',
+
+    'editor.bold'        => 'Fett',
+    'editor.italic'      => 'Kursiv',
+    'editor.heading'     => 'Überschrift',
+    'editor.list'        => 'Aufzählung',
+    'editor.numbers'     => 'Nummerierung',
+    'editor.quote'       => 'Zitat',
+    'editor.link'        => 'Link',
+    'editor.preview'     => 'Vorschau',
+    'editor.hint'        => '**fett**, *kursiv*, ## Überschrift, - Aufzählung, > Zitat, [Text](https://…). '
+                            . 'HTML wird nicht ausgeführt, sondern als Text angezeigt.',
+
+    'project.title'      => 'Über das Projekt',
+    'project.lead'       => 'Mein Regal ist eine kleine, selbst gehostete Anwendung, um die eigene '
+                            . 'Büchersammlung zu erfassen – mit der Handykamera, ohne Konto bei irgendwem.',
+    'project.what'       => 'Sie ist entstanden, weil ein Dienst zum Katalogisieren von Büchern seinen '
+                            . 'Betrieb eingestellt hat und über dreitausend erfasste Bücher plötzlich nur '
+                            . 'noch als CSV-Datei existierten. Eine Sammlung, die auf dem eigenen '
+                            . 'Webspace liegt, kann so nicht verschwinden.',
+    'project.origin.heading' => 'Herkunft',
+    'project.origin'     => 'Geschrieben für das Bücherregal von {blog} und von dort weitergegeben. '
+                            . 'Jede Installation trägt diesen Hinweis im Fuß – das ist der ganze Preis.',
+    'project.how.heading' => 'Was sie kann',
+    'project.how.scan'   => 'Barcode mit der Handykamera scannen, direkt im Browser, ohne App.',
+    'project.how.sources' => 'Buchdaten von der Deutschen Nationalbibliothek, Google Books und Open Library.',
+    'project.how.covers' => 'Cover werden heruntergeladen und selbst ausgeliefert, nie von fremden Servern '
+                            . 'eingebunden – deshalb braucht die Seite kein Cookie-Banner.',
+    'project.how.export' => 'Jederzeit vollständig exportierbar als CSV und JSON. Der Ausgang ist Teil des Entwurfs.',
+    'project.self.heading' => 'Selbst installieren',
+    'project.self'       => 'Es braucht PHP und MySQL, sonst nichts: kein Composer, kein Build, kein '
+                            . 'Shell-Zugang. Damit läuft es auch auf einfachen Webhosting-Tarifen. Die '
+                            . 'Anleitung liegt im Repository.',
+    'project.repository' => 'Zum Quellcode',
+    'project.licence'    => 'Quellcode unter MIT-Lizenz. Logo, Cover und Buchdaten gehören nicht dazu.',
 ];

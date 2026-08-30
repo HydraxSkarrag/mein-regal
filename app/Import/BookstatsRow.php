@@ -62,7 +62,7 @@ final class BookstatsRow
     {
         $title = trim($this->raw['Titel'] ?? '');
 
-        return $title !== '' ? $title : '(ohne Titel)';
+        return $title !== '' ? $title : '(untitled)';
     }
 
     public function isbn13(): ?string

@@ -1,6 +1,6 @@
-/* Bücherregal - stylesheet
+/* Mein Regal - stylesheet
  *
- * The design tokens come from bookaholic.buecherhausen.de so the two sites
+ * The design tokens come from the blog this was written for, so the two sites
  * read as one family. One deliberate departure: bookaholic caps its content
  * at 640px, which is right for a quiz and wrong for a shelf. Prose stays
  * narrow; the cover grid gets the full width.
@@ -715,6 +715,79 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 .prose { max-width: 62ch; }
 .prose p { margin: 0 0 1.1em; }
+.prose h2 { font-size: 1.15rem; margin: 1.8em 0 0.6em; }
+.prose h3 { font-size: 1rem; margin: 1.5em 0 0.5em; }
+.prose ul, .prose ol { margin: 0 0 1.1em; padding-left: 1.4em; }
+.prose li { margin: 0 0 0.35em; }
+.prose blockquote {
+  margin: 0 0 1.1em;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+.prose code {
+  font-size: 0.9em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.prose hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
+
+/* ---- The markup editor ----------------------------------------------
+ *
+ * The toolbar writes characters into the textarea; the preview is rendered
+ * by the server. Both are absent without JavaScript, which is why nothing
+ * here is required for the form to work.
+ */
+
+.editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.editor-bar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.editor-tool {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.editor-tool:hover { border-color: var(--border); background: var(--surface); }
+.editor-tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.editor-tool--right { margin-left: auto; font-size: 0.82rem; color: var(--muted); }
+.editor-tool[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.editor .field textarea,
+.editor textarea {
+  border: 0;
+  border-radius: 0;
+  width: 100%;
+  display: block;
+}
+.editor textarea:focus { outline: 0; box-shadow: none; }
+.editor-preview {
+  max-width: none;
+  padding: 16px;
+  border-top: 1px dashed var(--border);
+  background: var(--bg);
+}
 
 /* ---- Editing -------------------------------------------------------- */
 
@@ -959,6 +1032,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   max-width: var(--maxw-wide);
   margin: 0 auto;
 }
+/* The one line every installation keeps. Quiet, but always there. */
+.site-credit { margin: 14px 0 0; font-size: 0.78rem; color: var(--muted); }
+.site-credit a { color: var(--muted); text-decoration: underline; }
+
 @media (max-width: 720px) { .site-footer { margin-bottom: var(--nav-height); } }
 
 @media (prefers-reduced-motion: reduce) {

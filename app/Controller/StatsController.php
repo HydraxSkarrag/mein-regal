@@ -10,11 +10,11 @@ use App\Http\Application;
 /**
  * Two separate pages, deliberately.
  *
- * /statistik is public and shows the same thing to everyone. A page that
+ * /stats is public and shows the same thing to everyone. A page that
  * quietly grows extra sections once you are signed in is disorienting - you
  * cannot tell whether a number is missing or hidden.
  *
- * /verwaltung is the owner's dashboard: the full figures, how complete the
+ * /admin is the owner's dashboard: the full figures, how complete the
  * records are, and what is still worth doing.
  *
  * Charts are drawn server-side as inline SVG. That is a constraint about
@@ -32,6 +32,20 @@ final class StatsController
     /** The public page: the shape of the collection, identical for everyone. */
     public function page(Request $request): Response
     {
+        /*
+         * Openable, and open by default.
+         *
+         * Somebody who does not want the figures published should not have to
+         * settle for a hidden link, so the page itself asks for a sign-in
+         * rather than merely disappearing from the navigation.
+         */
+        if (!$this->app->publicStats()) {
+            $guard = $this->app->requireSignIn();
+            if ($guard !== null) {
+                return $guard;
+            }
+        }
+
         $owner = $this->app->ownerId;
         $ratings = $this->app->books->countBy($owner, 'rating');
         unset($ratings['']);
@@ -52,7 +66,7 @@ final class StatsController
             'content'   => $body,
             'title'     => t('stats.title'),
             'current'   => 'stats',
-            'canonical' => $this->app->url('/statistik'),
+            'canonical' => $this->app->url('/stats'),
         ]));
     }
 

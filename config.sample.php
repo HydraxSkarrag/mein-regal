@@ -21,21 +21,39 @@ return [
     'db_dsn' => '',
 
     // Branding. Kept out of the code so a second installation only edits this file.
-    'site_name'    => 'Mein Regal',
-    'site_url'     => 'https://regal.buecherhausen.de',
-    'blog_url'     => 'https://www.buecherhausen.de/',
-    'blog_name'    => 'Bücherhausen',
-    'locale'       => 'de',
+    'site_name' => 'Mein Regal',
+    'site_url'  => 'https://example.org',
+    'locale'    => 'de',
 
-    // Contact details for the legal pages (Impressum / privacy policy).
+    // A blog or homepage this shelf belongs to. Both empty means no such link
+    // is shown anywhere - a shelf does not have to belong to a blog.
+    'blog_url'  => '',
+    'blog_name' => '',
+
+    // Fill in before going live. These are written into the Impressum and the
+    // privacy policy when the first account is created; afterwards both texts
+    // are edited in the browser under /imprint and /privacy, and changing them
+    // here has no further effect.
     'legal' => [
         'operator' => '',
         'street'   => '',
         'city'     => '',
         'email'    => '',
+        // Who hosts the site, as it should read in the privacy policy, e.g.
+        // 'ALL-INKL.COM - Neue Medien Münnich, Hauptstraße 68, 02742 Friedersdorf'.
+        'host'     => '',
         // Responsible party under section 18 (2) MStV, if editorial content is shown.
         'mstv_responsible' => '',
     ],
+
+    // The statistics page at /stats, visible to anyone. Set to false to keep
+    // the figures to yourself; the owner's dashboard under /admin is
+    // unaffected either way.
+    'public_stats' => true,
+
+    // Only for a fork that lives at its own address. The /project page links
+    // here; left empty it points at the original repository.
+    'repository_url' => '',
 
     // Optional Google Books API key. Without one the shared per-IP quota applies.
     'google_books_key' => '',
