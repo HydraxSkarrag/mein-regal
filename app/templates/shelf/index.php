@@ -44,6 +44,15 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
+    <h2><?= e(t('filter.author')) ?></h2>
+    <ul>
+      <?php foreach ($topAuthors as $person): ?>
+      <li><a href="<?= e($urlFor(['autor' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"
+             aria-current="<?= ($filters['author'] ?? '') === $person['name'] ? 'true' : 'false' ?>">
+        <span><?= e($person['name']) ?></span><span class="n"><?= e($formatter->number((int) $person['book_count'])) ?></span></a></li>
+      <?php endforeach; ?>
+    </ul>
+
     <h2><?= e(t('filter.genre')) ?></h2>
     <ul>
       <?php foreach ($tags as $tag): ?>
@@ -119,9 +128,10 @@ declare(strict_types=1);
                     $sortValue = $book['published_year'] !== null ? (string) $book['published_year'] : null;
                     break;
                 case 'rating':
-                    $sortValue = $book['rating'] !== null
-                        ? str_repeat('★', (int) $book['rating']) . str_repeat('☆', 5 - (int) $book['rating'])
-                        : null;
+                    $parts = App\Core\Formatter::stars($book['rating']);
+                    $sortValue = $parts === null
+                        ? null
+                        : str_repeat('★', $parts['full']) . ($parts['half'] ? '⯪' : '') . ' ' . $parts['text'];
                     break;
                 case 'read':
                     $sortValue = $book['finished_at'] !== null ? $formatter->date($book['finished_at']) : null;

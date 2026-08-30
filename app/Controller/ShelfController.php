@@ -25,13 +25,18 @@ final class ShelfController
             'search'   => $request->query('q'),
             'status'   => $this->oneOf($request->query('status'), ['read', 'unread', 'abandoned', 'reading']),
             'tag'      => $request->query('tag'),
+            'author'   => $request->query('autor'),
             'binding'  => $this->oneOf($request->query('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
             'sort'     => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read'], 'recent'),
         ];
 
-        return $this->renderShelf($request, $filters, t('shelf.title'), 'shelf');
+        $heading = $filters['author'] !== ''
+            ? $this->authorName($filters['author'])
+            : t('shelf.title');
+
+        return $this->renderShelf($request, $filters, $heading, 'shelf');
     }
 
     /** The pile of unread books - its own view because it is looked at often. */
@@ -83,6 +88,7 @@ final class ShelfController
             'covers'        => $this->app->covers->bestForMany($ids, $signedIn),
             'authorLines'   => $this->authorLines($ids),
             'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, 14),
+            'topAuthors'    => $this->app->authors->listWithCounts($this->app->ownerId, 12),
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
             'bindingCounts' => $this->app->books->countBy($this->app->ownerId, 'binding'),
             'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
@@ -157,6 +163,21 @@ final class ShelfController
         }
 
         return $this->app->url('/covers/' . $cover['path']);
+    }
+
+    /**
+     * The stored spelling of a name, so the heading shows what she wrote
+     * rather than whatever spelling happened to be in the link.
+     */
+    private function authorName(string $name): string
+    {
+        $statement = $this->app->pdo->prepare(
+            'SELECT name FROM authors WHERE owner_id = ? AND match_key = ? LIMIT 1'
+        );
+        $statement->execute([$this->app->ownerId, \App\Core\Text::authorMatchKey($name)]);
+        $found = $statement->fetchColumn();
+
+        return $found === false ? $name : (string) $found;
     }
 
     /** @return array<int,string> book id => "Author, Author" */

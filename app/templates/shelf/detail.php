@@ -47,14 +47,16 @@ declare(strict_types=1);
     <?php if ($contributors !== []): ?>
     <p style="margin:6px 0 18px">
       <?php foreach ($contributors as $index => $person): ?>
-        <?= $index > 0 ? ' · ' : '' ?><?= e($person['name']) ?><?php if ($person['role'] !== 'author'): ?><span style="color:var(--muted)"> (<?= e(t('role.' . $person['role'])) ?>)</span><?php endif; ?>
+        <?= $index > 0 ? ' · ' : '' ?><a href="/?autor=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a><?php if ($person['role'] !== 'author'): ?><span style="color:var(--muted)"> (<?= e(t('role.' . $person['role'])) ?>)</span><?php endif; ?>
       <?php endforeach; ?>
     </p>
     <?php endif; ?>
 
-    <?php if ($book['rating'] !== null): ?>
-    <p class="stars" aria-label="<?= e(t('book.rating')) ?>: <?= (int) $book['rating'] ?>/5">
-      <?php for ($star = 1; $star <= 5; $star++): ?><span<?= $star > (int) $book['rating'] ? ' class="off"' : '' ?>>&#9733;</span><?php endfor; ?>
+    <?php $stars = App\Core\Formatter::stars($book['rating']); ?>
+    <?php if ($stars !== null): ?>
+    <p class="stars" aria-label="<?= e(t('book.rating')) ?>: <?= e($stars['text']) ?> / 5">
+      <?= str_repeat('★', $stars['full']) ?><?php if ($stars['half']): ?><span class="half">★</span><?php endif; ?><span class="off"><?= str_repeat('★', $stars['empty']) ?></span>
+      <span class="stars-text"><?= e($stars['text']) ?></span>
     </p>
     <?php endif; ?>
 
@@ -89,7 +91,7 @@ declare(strict_types=1);
       <?php if ($book['isbn13'] !== null): ?>
       <tr><th><?= e(t('book.isbn')) ?></th><td><?= e($isbnFormatted) ?></td></tr>
       <?php endif; ?>
-      <tr><th><?= e(t('book.rating')) ?></th><td><?= $book['rating'] === null ? e(t('book.unrated')) : e((string) $book['rating']) . ' / 5' ?></td></tr>
+      <tr><th><?= e(t('book.rating')) ?></th><td><?= $stars === null ? e(t('book.unrated')) : e($stars['text']) . ' / 5' ?></td></tr>
       <?php if ($book['started_at'] !== null): ?>
       <tr><th><?= e(t('book.started')) ?></th><td><time datetime="<?= e($formatter->iso($book['started_at'])) ?>"><?= e($formatter->date($book['started_at'])) ?></time></td></tr>
       <?php endif; ?>

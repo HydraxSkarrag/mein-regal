@@ -213,7 +213,7 @@ final class BookRepository
     /**
      * The shelf listing.
      *
-     * @param array{search?: string, status?: string, tag?: string, binding?: string, rating?: int, language?: string, cover?: string, isbn?: string, sort?: string} $filters
+     * @param array{search?: string, status?: string, tag?: string, author?: string, binding?: string, rating?: int, language?: string, cover?: string, isbn?: string, sort?: string} $filters
      * @return array{rows: list<array<string,mixed>>, total: int}
      */
     public function search(int $ownerId, array $filters = [], int $limit = 60, int $offset = 0): array
@@ -273,6 +273,14 @@ final class BookRepository
         if ((int) ($filters['rating'] ?? 0) > 0) {
             $conditions[] = 'b.rating >= ?';
             $parameters[] = (int) $filters['rating'];
+        }
+        // Everything by one person. Matched on the folded key rather than
+        // the name, so "Flechsig, Dorothea" and "Dorothea Flechsig" - which
+        // are one person in the database - stay one person in the URL too.
+        if (($filters['author'] ?? '') !== '') {
+            $conditions[] = 'EXISTS (SELECT 1 FROM book_authors ba3 JOIN authors a3 ON a3.id = ba3.author_id'
+                . '            WHERE ba3.book_id = b.id AND a3.match_key = ?)';
+            $parameters[] = Text::authorMatchKey((string) $filters['author']);
         }
         if (($filters['tag'] ?? '') !== '') {
             $join = 'JOIN book_tags bt ON bt.book_id = b.id JOIN tags t ON t.id = bt.tag_id';

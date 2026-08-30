@@ -391,6 +391,14 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 .stars { color: var(--accent); letter-spacing: 2px; }
 .stars .off { color: var(--border); }
+/* Ein halber Stern: derselbe Buchstabe, zur Hälfte in der Akzentfarbe. */
+.stars .half {
+  background: linear-gradient(90deg, var(--accent) 50%, var(--border) 50%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.stars-text { color: var(--muted); font-size: 0.85rem; letter-spacing: 0; margin-left: 6px; }
 
 .attribution { font-size: 0.72rem; color: var(--muted); margin-top: 6px; }
 

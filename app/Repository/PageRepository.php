@@ -20,38 +20,59 @@ final class PageRepository
     {
     }
 
-    /** @return array{title: string, body: ?string, updated_at: string}|null */
-    public function find(int $ownerId, string $slug): ?array
+    /**
+     * The page in one language.
+     *
+     * No falling back to another language: a German paragraph appearing under
+     * an English heading looks like a fault, and the empty state at least says
+     * plainly that nothing has been written yet.
+     *
+     * @return array{title: string, body: ?string, locale: string, updated_at: string}|null
+     */
+    public function find(int $ownerId, string $slug, string $locale): ?array
     {
         $statement = $this->pdo->prepare(
-            'SELECT title, body, updated_at FROM pages WHERE owner_id = ? AND slug = ?'
+            'SELECT title, body, locale, updated_at FROM pages
+              WHERE owner_id = ? AND slug = ? AND locale = ?'
         );
-        $statement->execute([$ownerId, $slug]);
+        $statement->execute([$ownerId, $slug, $locale]);
         $row = $statement->fetch();
 
         return $row === false ? null : $row;
     }
 
-    public function save(int $ownerId, string $slug, string $title, ?string $body): void
+    /** Which languages this page has been written in. @return list<string> */
+    public function localesFor(int $ownerId, string $slug): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT locale FROM pages WHERE owner_id = ? AND slug = ? AND body IS NOT NULL AND body <> \'\' ORDER BY locale'
+        );
+        $statement->execute([$ownerId, $slug]);
+
+        return $statement->fetchAll(\PDO::FETCH_COLUMN);
+    }
+
+    public function save(int $ownerId, string $slug, string $locale, string $title, ?string $body): void
     {
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
 
         $update = $this->pdo->prepare(
-            'UPDATE pages SET title = ?, body = ?, updated_at = ? WHERE owner_id = ? AND slug = ?'
+            'UPDATE pages SET title = ?, body = ?, updated_at = ?
+              WHERE owner_id = ? AND slug = ? AND locale = ?'
         );
-        $update->execute([$title, $body, $now, $ownerId, $slug]);
+        $update->execute([$title, $body, $now, $ownerId, $slug, $locale]);
 
         if ($update->rowCount() > 0) {
             return;
         }
-        // Nothing to update, or the text was saved unchanged - either way, make
-        // sure a row exists before giving up.
-        if ($this->find($ownerId, $slug) !== null) {
+        // Nothing changed, or nothing was there - only the second needs an
+        // insert, and rowCount cannot tell the two apart.
+        if ($this->find($ownerId, $slug, $locale) !== null) {
             return;
         }
 
         $this->pdo->prepare(
-            'INSERT INTO pages (owner_id, slug, title, body, updated_at) VALUES (?, ?, ?, ?, ?)'
-        )->execute([$ownerId, $slug, $title, $body, $now]);
+            'INSERT INTO pages (owner_id, slug, locale, title, body, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
+        )->execute([$ownerId, $slug, $locale, $title, $body, $now]);
     }
 }

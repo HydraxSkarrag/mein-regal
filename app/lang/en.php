@@ -297,6 +297,15 @@ return [
 
     'edit.isbn.notabook'  => 'That barcode does not belong to a book - book ISBNs start with 978 or 979.',
 
+    'edit.cover.toolarge' => 'That image is too large for the server. A phone photo can be scaled down before uploading.',
+
+    'filter.author'       => 'Authors',
+
+    'edit.cover.partial'  => 'The image only arrived in part. Please try again.',
+
+    'about.perlanguage'        => 'Each language has its own text. The tick shows which are written.',
+    'about.other.language'     => 'Something has been written here in another language.',
+
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
 ];

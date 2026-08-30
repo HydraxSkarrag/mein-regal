@@ -6,6 +6,7 @@ namespace App\Controller;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
+use App\Core\Translator;
 use App\Repository\PageRepository;
 
 /**
@@ -27,11 +28,17 @@ final class PageController
      */
     public function about(): Response
     {
-        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT);
+        $locale = $this->app->translator->locale();
+        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT, $locale);
 
         $body = $this->app->view->render('pages.about', [
-            'page'     => $page,
-            'signedIn' => $this->app->auth->isSignedIn(),
+            'page'      => $page,
+            'locale'    => $locale,
+            'otherWith' => array_values(array_diff(
+                $this->app->pages->localesFor($this->app->ownerId, PageRepository::ABOUT),
+                [$locale]
+            )),
+            'signedIn'  => $this->app->auth->isSignedIn(),
         ]);
 
         return Response::html($this->app->view->render('layout.base', [
@@ -50,20 +57,26 @@ final class PageController
             return $guard;
         }
 
-        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT);
+        // Which language is being edited comes from the address, so both can
+        // be written without switching the whole interface back and forth.
+        $locale = Translator::normalizeLocale(
+            $request->query('sprache') ?: $this->app->translator->locale()
+        );
+        $page = $this->app->pages->find($this->app->ownerId, PageRepository::ABOUT, $locale);
 
         if ($request->isPost()) {
             if (!$this->app->csrf->isValid($request->allPost())) {
-                return $this->aboutForm($page, t('error.csrf'));
+                return $this->aboutForm($page, $locale, t('error.csrf'));
             }
             $title = trim($request->post('title'));
             if ($title === '') {
-                return $this->aboutForm($page, t('edit.title.required'));
+                return $this->aboutForm($page, $locale, t('edit.title.required'));
             }
 
             $this->app->pages->save(
                 $this->app->ownerId,
                 PageRepository::ABOUT,
+                $locale,
                 mb_substr($title, 0, 200),
                 mb_substr(trim($request->post('body')), 0, 20000) ?: null
             );
@@ -72,13 +85,15 @@ final class PageController
             return Response::redirect('/ueber');
         }
 
-        return $this->aboutForm($page);
+        return $this->aboutForm($page, $locale);
     }
 
-    private function aboutForm(?array $page, string $error = ''): Response
+    private function aboutForm(?array $page, string $locale, string $error = ''): Response
     {
         $body = $this->app->view->render('pages.about_edit', [
             'page'      => $page,
+            'locale'    => $locale,
+            'written'   => $this->app->pages->localesFor($this->app->ownerId, PageRepository::ABOUT),
             'error'     => $error,
             'csrfField' => $this->app->csrf->field(),
             'suggested' => t('about.suggested', [

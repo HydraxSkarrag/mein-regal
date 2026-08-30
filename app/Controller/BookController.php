@@ -62,7 +62,13 @@ final class BookController
             return $this->app->notFound();
         }
         if (!$this->app->csrf->isValid($request->allPost())) {
-            return $this->render($book, t('error.csrf'));
+            /* An upload larger than post_max_size makes PHP discard the whole
+               body, token included. Saying "the form went stale" would send
+               someone to try the same oversized picture again. */
+            $tooBig = $request->allPost() === []
+                && ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0;
+
+            return $this->render($book, $tooBig ? t('edit.cover.toolarge') : t('error.csrf'));
         }
 
         $title = trim($request->post('title'));
@@ -117,7 +123,7 @@ final class BookController
                 'reading_status'   => $this->oneOf($request->post('reading_status'), self::STATUSES) ?? 'unread',
                 'started_at'       => $this->dateOrNull($request->post('started_at')),
                 'finished_at'      => $this->dateOrNull($request->post('finished_at')),
-                'rating'           => $this->intOrNull($request->post('rating'), 1, 5),
+                'rating'           => $this->ratingOrNull($request->post('rating')),
                 'notes'            => $this->orNull($request->post('notes'), 65535),
                 'review_url'       => $this->urlOrNull($request->post('review_url')),
             ]);
@@ -146,11 +152,22 @@ final class BookController
             return $this->render($book, t('error.500.title'));
         }
 
-        // A cover uploaded alongside the edit. Handled after the commit so a
-        // bad image cannot undo a good edit.
+        /* A cover uploaded alongside the edit. Handled after the commit so a
+           bad image cannot undo a good edit.
+           
+           Every outcome except "no file was chosen" has to say something.
+           Skipping quietly on an error code is how a three-megabyte photo
+           came to vanish without a word: PHP rejects it before any of this
+           runs, and the page then reported a successful save. */
         $upload = $request->file('cover');
-        if ($upload !== null && (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+        $uploadError = $upload === null
+            ? UPLOAD_ERR_NO_FILE
+            : (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+
+        if ($uploadError === UPLOAD_ERR_OK) {
             $this->storeCover($bookId, $upload, (string) ($book['isbn13'] ?? $book['slug']));
+        } elseif ($uploadError !== UPLOAD_ERR_NO_FILE) {
+            $this->app->session->flash($this->uploadMessage($uploadError), 'error');
         }
 
         $this->app->session->flash(t('edit.saved'), 'ok');
@@ -291,11 +308,23 @@ final class BookController
         return Response::redirect('/buch/' . $book['slug'] . '/bearbeiten');
     }
 
+    /** Why the file did not arrive, in words the person can act on. */
+    private function uploadMessage(int $error): string
+    {
+        return match ($error) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => t('edit.cover.toolarge'),
+            UPLOAD_ERR_PARTIAL                        => t('edit.cover.partial'),
+            UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE, UPLOAD_ERR_EXTENSION
+                                                      => t('edit.cover.failed'),
+            default                                   => t('edit.cover.failed'),
+        };
+    }
+
     private function storeCover(int $bookId, array $upload, string $key): void
     {
         try {
             $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
-            $stored = $storage->storeUpload($upload, $key);
+            $stored = $storage->storeUpload($upload, $key . '-own');
             $this->app->covers->save(
                 $bookId,
                 CoverRepository::SOURCE_OWN,
@@ -307,7 +336,12 @@ final class BookController
             );
         } catch (Throwable $e) {
             error_log('[regal] cover upload during edit failed: ' . $e->getMessage());
-            $this->app->session->flash(t('edit.cover.failed'), 'error');
+            $this->app->session->flash(
+                $e->getMessage() === 'too_large'
+                    ? t('edit.cover.toolarge')
+                    : t('edit.cover.failed'),
+                'error'
+            );
         }
     }
 
@@ -424,6 +458,18 @@ final class BookController
         $scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
 
         return in_array($scheme, ['http', 'https'], true) ? mb_substr($value, 0, 500) : null;
+    }
+
+    /** Half steps from 0.5 to 5.0; anything else is discarded. */
+    private function ratingOrNull(string $value): ?float
+    {
+        $value = str_replace(',', '.', trim($value));
+        if ($value === '' || !is_numeric($value)) {
+            return null;
+        }
+        $rating = round((float) $value * 2) / 2;
+
+        return $rating >= 0.5 && $rating <= 5.0 ? $rating : null;
     }
 
     private function intOrNull(string $value, int $min, int $max): ?int

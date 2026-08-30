@@ -36,7 +36,16 @@ final class CoverStorage
     {
         $error = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
         if ($error !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('Upload failed with code ' . $error);
+            /* A photograph off a phone is several megabytes, and PHP's own
+               limit is often two. It rejects the file before any of this code
+               runs, so the distinct codes are worth naming - "it did not
+               work" sends someone trying the same picture again. */
+            throw new RuntimeException(match ($error) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'too_large',
+                UPLOAD_ERR_PARTIAL                        => 'incomplete',
+                UPLOAD_ERR_NO_FILE                        => 'no_file',
+                default                                   => 'upload_failed_' . $error,
+            });
         }
         $temporary = (string) ($upload['tmp_name'] ?? '');
         if ($temporary === '' || !is_uploaded_file($temporary)) {
@@ -272,10 +281,20 @@ final class CoverStorage
         return substr(sha1($key !== '' ? $key : 'leer'), 0, 2);
     }
 
-    /** The stored name is derived from the ISBN, never from the upload. */
+    /**
+     * The stored name, derived from the caller's key and never from the
+     * upload's own filename.
+     *
+     * The key has to distinguish the source as well as the book. Naming files
+     * after the ISBN alone meant a photograph and a downloaded cover for the
+     * same book landed on the same path: the second silently overwrote the
+     * first, and both database rows then pointed at one file - so deleting
+     * either took the other's picture with it.
+     */
     private function safeKey(string $key): string
     {
-        $clean = preg_replace('/[^A-Za-z0-9]/', '', $key) ?? '';
+        $clean = preg_replace('/[^A-Za-z0-9-]/', '', $key) ?? '';
+        $clean = trim($clean, '-');
 
         return $clean !== '' ? $clean : bin2hex(random_bytes(8));
     }

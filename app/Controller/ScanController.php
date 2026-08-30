@@ -229,7 +229,7 @@ final class ScanController
             $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
             $stored = $storage->storeUpload(
                 $upload,
-                (string) ($book['isbn13'] ?? $book['slug'])
+                (string) ($book['isbn13'] ?? $book['slug']) . '-own'
             );
         } catch (Throwable $e) {
             error_log('[regal] cover upload failed: ' . $e->getMessage());
@@ -262,7 +262,7 @@ final class ScanController
     {
         try {
             $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
-            $stored = $storage->storeRemote($url, (string) ($isbn ?? $bookId));
+            $stored = $storage->storeRemote($url, (string) ($isbn ?? $bookId) . '-' . $source);
             $this->app->covers->save(
                 $bookId,
                 $source,

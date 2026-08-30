@@ -95,6 +95,38 @@ final class Formatter
             : number_format((float) $value, 2, ',', '.') . ' €';
     }
 
+    /**
+     * A rating as stars, halves included.
+     *
+     * Returns the pieces rather than markup, so the shelf tile and the detail
+     * page can present them differently without agreeing on a class name.
+     *
+     * @return array{full: int, half: bool, empty: int, text: string}
+     */
+    public static function stars(int|float|string|null $rating): ?array
+    {
+        if ($rating === null || $rating === '') {
+            return null;
+        }
+        $value = round((float) $rating * 2) / 2;
+        if ($value <= 0) {
+            return null;
+        }
+        $value = min(5.0, $value);
+
+        $full = (int) floor($value);
+        $half = ($value - $full) >= 0.5;
+
+        return [
+            'full'  => $full,
+            'half'  => $half,
+            'empty' => 5 - $full - ($half ? 1 : 0),
+            // "4,5" reads better than "4.5" in German and the formatter
+            // already knows which is which.
+            'text'  => rtrim(rtrim(number_format($value, 1, ',', ''), '0'), ','),
+        ];
+    }
+
     /** For <time datetime="..."> and anywhere a machine reads the value. */
     public function iso(?string $isoDate): string
     {

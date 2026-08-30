@@ -17,12 +17,15 @@ use App\Core\Text;
 <?php else: ?>
 <p class="empty">
   <?= e(t('about.empty')) ?>
+  <?php if ($otherWith !== []): ?>
+  <br><span class="note"><?= e(t('about.other.language')) ?></span>
+  <?php endif; ?>
   <?php if ($signedIn): ?>
-  <br><a href="/ueber/bearbeiten"><?= e(t('about.write')) ?></a>
+  <br><a href="/ueber/bearbeiten?sprache=<?= e($locale) ?>"><?= e(t('about.write')) ?></a>
   <?php endif; ?>
 </p>
 <?php endif; ?>
 
 <?php if ($signedIn): ?>
-<p style="margin-top:28px"><a href="/ueber/bearbeiten"><?= e(t('book.edit')) ?></a></p>
+<p style="margin-top:28px"><a href="/ueber/bearbeiten?sprache=<?= e($locale) ?>"><?= e(t('book.edit')) ?></a></p>
 <?php endif; ?>

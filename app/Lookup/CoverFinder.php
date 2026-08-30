@@ -35,7 +35,7 @@ final class CoverFinder
     {
         foreach ($this->candidates($isbn13, $known) as [$url, $source, $attribution]) {
             try {
-                $stored = $this->storage->storeRemote($url, $isbn13);
+                $stored = $this->storage->storeRemote($url, $isbn13 . '-' . $source);
             } catch (Throwable $e) {
                 // A 404 from a cover service is the normal case, not a fault.
                 continue;

@@ -6,11 +6,21 @@ declare(strict_types=1);
 
 <h1><?= e(t('about.edit')) ?></h1>
 
+<div class="chips" style="margin-bottom:18px">
+  <?php foreach (App\Core\Translator::SUPPORTED as $option): ?>
+  <a class="chip" href="/ueber/bearbeiten?sprache=<?= e($option) ?>"
+     aria-current="<?= $option === $locale ? 'true' : 'false' ?>">
+    <?= e(t('lang.' . $option)) ?><?= in_array($option, $written, true) ? ' ✓' : '' ?>
+  </a>
+  <?php endforeach; ?>
+</div>
+<p class="note" style="margin-top:-8px"><?= e(t('about.perlanguage')) ?></p>
+
 <?php if (($error ?? '') !== ''): ?>
 <p class="form-error"><?= e($error) ?></p>
 <?php endif; ?>
 
-<form method="post" action="/ueber/bearbeiten">
+<form method="post" action="/ueber/bearbeiten?sprache=<?= e($locale) ?>">
   <?= $csrfField ?>
 
   <div class="field">

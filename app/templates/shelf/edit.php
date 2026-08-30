@@ -180,9 +180,17 @@ $value = static fn (?string $v): string => $v ?? '';
           <label for="rating"><?= e(t('book.rating')) ?></label>
           <select id="rating" name="rating">
             <option value=""><?= e(t('book.unrated')) ?></option>
-            <?php for ($stars = 5; $stars >= 1; $stars--): ?>
-            <option value="<?= $stars ?>"<?= (int) ($book['rating'] ?? 0) === $stars ? ' selected' : '' ?>>
-              <?= str_repeat('★', $stars) ?> (<?= $stars ?>)
+            <?php
+              $current = $book['rating'] === null ? null : round((float) $book['rating'] * 2) / 2;
+              // Nicht $value nennen: so heißt oben schon die Escape-Hilfe,
+              // und ein überschriebener Closure ist ein Fehler, der erst beim
+              // nächsten Aufruf auffällt.
+              for ($half = 10; $half >= 1; $half--):
+                  $stepValue = $half / 2;
+                  $parts = App\Core\Formatter::stars($stepValue);
+            ?>
+            <option value="<?= $stepValue ?>"<?= $current !== null && abs($current - $stepValue) < 0.01 ? ' selected' : '' ?>>
+              <?= str_repeat('★', $parts['full']) . ($parts['half'] ? '⯪' : '') ?> (<?= e($parts['text']) ?>)
             </option>
             <?php endfor; ?>
           </select>

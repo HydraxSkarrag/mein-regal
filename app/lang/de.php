@@ -297,6 +297,15 @@ return [
 
     'edit.isbn.notabook'  => 'Dieser Strichcode gehört zu keinem Buch – Buch-ISBNs beginnen mit 978 oder 979.',
 
+    'edit.cover.toolarge' => 'Das Bild ist zu groß für den Server. Ein Handyfoto lässt sich vor dem Hochladen verkleinern.',
+
+    'filter.author'       => 'Autor:innen',
+
+    'edit.cover.partial'  => 'Das Bild kam nur teilweise an. Bitte noch einmal versuchen.',
+
+    'about.perlanguage'        => 'Jede Sprache hat einen eigenen Text. Das Häkchen zeigt, welche schon geschrieben sind.',
+    'about.other.language'     => 'In einer anderen Sprache steht hier schon etwas.',
+
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
 ];

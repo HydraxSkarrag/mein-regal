@@ -90,7 +90,9 @@ CREATE TABLE IF NOT EXISTS books (
     reading_status VARCHAR(20) NOT NULL DEFAULT 'unread',
     started_at     DATE         NULL,
     finished_at    DATE         NULL,
-    rating         TINYINT UNSIGNED NULL,
+    -- Half steps: 0.5 to 5.0. A whole number was too blunt a distinction
+    -- for someone who reads three hundred books a year.
+    rating         DECIMAL(2,1) NULL,
 
     notes         TEXT NULL,
     audio_minutes SMALLINT UNSIGNED NULL,
@@ -210,11 +212,14 @@ CREATE TABLE IF NOT EXISTS pages (
     id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
     owner_id   INT UNSIGNED NOT NULL,
     slug       VARCHAR(60)  NOT NULL,
+    -- One text per language. A single text shown to both meant the English
+    -- interface introduced itself in German.
+    locale     VARCHAR(5)   NOT NULL DEFAULT 'de',
     title      VARCHAR(200) NOT NULL,
     body       TEXT         NULL,
     updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uniq_pages_owner_slug (owner_id, slug)
+    UNIQUE KEY uniq_pages_owner_slug_locale (owner_id, slug, locale)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Throttling for the ISBN lookup endpoint, so nobody uses this server as a
