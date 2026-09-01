@@ -23,7 +23,17 @@ return [
     // Branding. Kept out of the code so a second installation only edits this file.
     'site_name' => 'Mein Regal',
     'site_url'  => 'https://example.org',
+
+    // Interface language. With the switch below turned off this is the one
+    // the site speaks; with it on it is the fallback for missing translations.
     'locale'    => 'de',
+
+    // The EN/DE switch in the header. Turn it off for a shelf that is only
+    // ever read in one language: the header link disappears, /language/... is
+    // answered with a 404, and the browser's Accept-Language no longer
+    // decides anything. Book titles are unaffected either way - they always
+    // stay in the language they were entered.
+    'language_switcher' => true,
 
     // A blog or homepage this shelf belongs to. Both empty means no such link
     // is shown anywhere - a shelf does not have to belong to a blog.

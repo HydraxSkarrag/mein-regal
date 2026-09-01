@@ -22,8 +22,9 @@ that is the whole price.
 - **Statistics** in public — `'public_stats' => false` keeps them to yourself —
   and a **dashboard** with data quality and a to-do list in private.
 - **Export** in three formats and a **backup** of database, catalogue and covers.
-- Interface in German and English; about, imprint and privacy policy are written
-  in the browser, one text per language.
+- Interface in German and English — `'language_switcher' => false` drops the
+  switch for a shelf that is only read in one — and about, imprint and privacy
+  policy are written in the browser, one text per language.
 
 ## Requirements
 

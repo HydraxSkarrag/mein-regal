@@ -90,8 +90,10 @@ $current = $current ?? '';
       <a class="nav-desktop-only" href="/scan"<?= $current === 'scan' ? ' aria-current="page"' : '' ?>><?= e(t('nav.scan')) ?></a>
       <a class="nav-desktop-only" href="/admin"<?= $current === 'admin' ? ' aria-current="page"' : '' ?>><?= e(t('nav.admin')) ?></a>
       <?php endif; ?>
+      <?php if ($multilingual): ?>
       <a href="/language/<?= $locale === 'de' ? 'en' : 'de' ?>?back=<?= e(rawurlencode($currentPath ?? '/')) ?>"
          hreflang="<?= $locale === 'de' ? 'en' : 'de' ?>"><?= e($locale === 'de' ? 'EN' : 'DE') ?></a>
+      <?php endif; ?>
       <?php if ($signedIn): ?>
       <a href="/logout"><?= e(t('auth.signout')) ?></a>
       <?php else: ?>

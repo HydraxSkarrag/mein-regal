@@ -95,3 +95,39 @@ foreach (['app/templates', 'public/js', 'public/css'] as $directory) {
     }
     Assert::same('no unrenderable half star in ' . $directory, $found, []);
 }
+
+Assert::group('The language switch is optional');
+
+/*
+ * A shelf read in one language has no use for an EN/DE link. The flag is
+ * absent from every config.php written before it existed, so its absence has
+ * to mean "as before" - the switch stays on unless it is explicitly turned
+ * off.
+ */
+Assert::true('absent means on', (new App\Core\Config([]))->bool('language_switcher', true));
+Assert::true('true means on', (new App\Core\Config(['language_switcher' => true]))->bool('language_switcher', true));
+Assert::same('false means off', (new App\Core\Config(['language_switcher' => false]))->bool('language_switcher', true), false);
+
+// With the switch off the configured locale is what everyone gets, so it has
+// to survive normalisation - a typo there must not silently become German.
+Assert::same('the configured locale is used as is', Translator::normalizeLocale('en'), 'en');
+Assert::same('a regional configured locale is shortened', Translator::normalizeLocale('de-AT'), 'de');
+
+$base = file_get_contents(dirname(__DIR__) . '/app/templates/layout/base.php') ?: '';
+$switch = strpos($base, '/language/');
+$guard = strpos($base, 'if ($multilingual)');
+Assert::true('the header link is present', $switch !== false);
+Assert::true('and sits behind the flag', $guard !== false && $guard < $switch);
+
+// Hiding the link is not enough on its own: the address it pointed at has to
+// stop working too, or a bookmark still switches the language.
+$controller = file_get_contents(dirname(__DIR__) . '/app/Controller/AuthController.php') ?: '';
+Assert::true(
+    'the route refuses when the switch is off',
+    str_contains($controller, 'if (!$this->app->multilingual())')
+);
+
+// The sample config has to document the flag, or a second installation never
+// learns it exists.
+$sample = file_get_contents(dirname(__DIR__) . '/config.sample.php') ?: '';
+Assert::true('the sample config offers it', str_contains($sample, "'language_switcher'"));

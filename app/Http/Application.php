@@ -108,9 +108,16 @@ final class Application
     /**
      * Interface language: the signed-in owner's stored choice wins, then a
      * cookie set by the language switch, then the browser's preference.
+     *
+     * With the switch turned off none of that applies - the site speaks the
+     * one language the configuration names, to everyone.
      */
     private function resolveLocale(): string
     {
+        if (!$this->multilingual()) {
+            return Translator::normalizeLocale($this->config->str('locale', Translator::DEFAULT_LOCALE));
+        }
+
         $user = $this->auth->user();
         if ($user !== null && isset($user['locale'])) {
             return Translator::normalizeLocale((string) $user['locale']);
@@ -151,6 +158,7 @@ final class Application
         $this->view->share('blogName', $this->config->str('blog_name'));
         $this->view->share('brand', $this->brand);
         $this->view->share('publicStats', $this->publicStats());
+        $this->view->share('multilingual', $this->multilingual());
         $this->view->share('currentPath', $this->request->path);
         $this->view->share('csrfField', $this->csrf->field());
         $this->view->share('assetVersion', $this->assetVersion());
@@ -173,6 +181,20 @@ final class Application
     public function publicStats(): bool
     {
         return $this->config->bool('public_stats', true);
+    }
+
+    /**
+     * Whether the interface offers a choice of language.
+     *
+     * On by default, because a shelf that is handed to someone else may well
+     * be read in either language. An installation with one reader has no use
+     * for the switch, and hiding it is not only cosmetic: it also stops a
+     * browser sending Accept-Language from serving that reader a language
+     * they never asked for.
+     */
+    public function multilingual(): bool
+    {
+        return $this->config->bool('language_switcher', true);
     }
 
     /** Cache-busting for CSS and JS; the file's own timestamp is enough. */

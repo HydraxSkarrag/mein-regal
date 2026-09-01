@@ -69,9 +69,19 @@ final class AuthController
         return Response::redirect('/');
     }
 
-    /** Switch the interface language and remember the choice. */
+    /**
+     * Switch the interface language and remember the choice.
+     *
+     * The route stays registered when the switch is turned off, but answers
+     * like any other unknown address - hiding the link alone would leave the
+     * address working for anyone who had bookmarked it.
+     */
     public function setLanguage(Request $request, array $params): Response
     {
+        if (!$this->app->multilingual()) {
+            return $this->app->notFound();
+        }
+
         $locale = Translator::normalizeLocale($params['locale'] ?? '');
 
         $user = $this->app->auth->user();
