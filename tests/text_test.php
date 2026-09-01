@@ -117,3 +117,36 @@ Assert::same(
     Text::splitAuthors('von Bredow-Werndl, Jessica, Szillat, Antje')['names'],
     ['Jessica von Bredow-Werndl', 'Antje Szillat']
 );
+
+Assert::group('Text::sortName ignores a role marker');
+
+// The Bookstats export puts the role in the author field. Eleven names came
+// through that way, and every one of them filed under a bracket rather than
+// under its own initial - invisible on an alphabetical list, which is where
+// somebody would go looking for them.
+Assert::same('illustrator marker dropped', Text::sortName('Eva Gebhardt (Ill.)'), 'Gebhardt, Eva');
+Assert::same('long form too', Text::sortName('Katharina Staar (Illustratorin)'), 'Staar, Katharina');
+Assert::same('author marker dropped', Text::sortName('Alexandra Haag (Aut.)'), 'Haag, Alexandra');
+Assert::same('hyphenated given name survives', Text::sortName('Karl-Heinz Appelmann (Illustr.)'), 'Appelmann, Karl-Heinz');
+Assert::same('a plain name is unchanged', Text::sortName('Bernd Flessner'), 'Flessner, Bernd');
+Assert::same('an inverted name is left alone', Text::sortName('Flechsig, Dorothea'), 'Flechsig, Dorothea');
+Assert::same('a mononym is left alone', Text::sortName('Cher'), 'Cher');
+
+// The export uses both bracket shapes for the same idea. Knowing only round
+// ones filed Bruno Horst Bull under "Bull, Bruno Horst [Hrsg.]".
+Assert::same('square brackets too', Text::sortName('Bruno Horst [Hrsg.] Bull'), 'Bull, Bruno Horst');
+Assert::same('and mid-name', Text::sortName('Hans-Jörg (Hrsg.) Uther'), 'Uther, Hans-Jörg');
+Assert::same('an expanded initial is an aside as well', Text::sortName('A. A. (Alan Alexander) Milne'), 'Milne, A. A.');
+
+// The sort name and the match key have to agree about what a name is, or the
+// same person sorts in one place and merges in another.
+Assert::same(
+    'sort name and match key see the same person',
+    Text::authorMatchKey('Eva Gebhardt (Ill.)'),
+    Text::authorMatchKey('Eva Gebhardt')
+);
+Assert::same(
+    'and so do their sort names',
+    Text::sortName('Eva Gebhardt (Ill.)'),
+    Text::sortName('Eva Gebhardt')
+);

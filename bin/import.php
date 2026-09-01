@@ -41,6 +41,7 @@ if (isset($options['sqlite']) && $options['sqlite'] !== false) {
     $path = (string) $options['sqlite'];
     $fresh = !is_file($path);
     $pdo = new PDO('sqlite:' . $path);
+    Database::sqliteDefaults($pdo);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     if ($fresh) {

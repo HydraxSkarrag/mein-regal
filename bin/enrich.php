@@ -203,6 +203,7 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
 
     if (isset($options['sqlite']) && $options['sqlite'] !== false) {
         $pdo = new PDO('sqlite:' . $options['sqlite']);
+        Database::sqliteDefaults($pdo);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         /* The real configuration, where there is one: --sqlite is meant to

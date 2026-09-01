@@ -47,9 +47,26 @@ final class Database
 
         if (self::driver($pdo) === 'sqlite') {
             $pdo->exec('PRAGMA foreign_keys = ON');
+            self::sqliteDefaults($pdo);
         }
 
         return $pdo;
+    }
+
+    /**
+     * SQLite allows one writer, and by default gives up on a busy file at
+     * once. That is fine for a request and wrong for anything long: the
+     * nightly enrichment writes every few seconds for hours, and a backup or
+     * a maintenance script touching the same file would end it with "database
+     * is locked" - after the work was done, with no way to tell how far it
+     * got. Waiting is almost always the right answer instead.
+     *
+     * MySQL, which is what a server runs, has its own lock waiting and needs
+     * none of this.
+     */
+    public static function sqliteDefaults(PDO $pdo): void
+    {
+        $pdo->exec('PRAGMA busy_timeout = 20000');
     }
 
     public static function driver(PDO $pdo): string

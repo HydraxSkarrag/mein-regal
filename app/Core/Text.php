@@ -179,9 +179,18 @@ final class Text
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
 
+    /**
+     * Drop bracketed asides: role markers, and expansions of an initial.
+     *
+     * Both bracket shapes, because the export uses both - "(Ill.)" and
+     * "[Hrsg.]" are the same idea written two ways, and a rule that knew only
+     * one of them filed Bruno Horst Bull under "Bull, Bruno Horst [Hrsg.]".
+     */
     private static function stripParenthetical(string $value): string
     {
-        return trim(preg_replace('/\([^)]*\)/u', '', $value) ?? $value);
+        $stripped = preg_replace('/\([^)]*\)|\[[^\]]*\]/u', ' ', $value) ?? $value;
+
+        return trim(preg_replace('/\s{2,}/u', ' ', $stripped) ?? $stripped);
     }
 
     /**
@@ -199,10 +208,19 @@ final class Text
         return implode(' ', $tokens);
     }
 
-    /** "Bernd Flessner" -> "Flessner, Bernd", for alphabetical listing. */
+    /**
+     * "Bernd Flessner" -> "Flessner, Bernd", for alphabetical listing.
+     *
+     * A trailing role marker is dropped first, the same way authorMatchKey
+     * already drops it. Without that, the last token of "Eva Gebhardt (Ill.)"
+     * is the marker, so she sorted as "(Ill.), Eva Gebhardt" - filed under a
+     * bracket instead of under G. Eleven names came out of the Bookstats
+     * import that way; the export writes the role into the author field, and
+     * nothing here was looking for it.
+     */
     public static function sortName(string $name): string
     {
-        $name = self::tidyName($name);
+        $name = self::tidyName(self::stripParenthetical($name));
         if (str_contains($name, ',')) {
             return $name;
         }

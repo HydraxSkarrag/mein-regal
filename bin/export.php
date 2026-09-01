@@ -39,6 +39,7 @@ $ownerId = (int) ($options['owner'] ?? 1);
 
 if (isset($options['sqlite']) && $options['sqlite'] !== false) {
     $pdo = new PDO('sqlite:' . $options['sqlite']);
+    Database::sqliteDefaults($pdo);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } else {
