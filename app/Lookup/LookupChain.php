@@ -91,6 +91,29 @@ final class LookupChain
     }
 
     /**
+     * What an empty result means, in one word.
+     *
+     * 'quota'       a source has nothing left until tomorrow
+     * 'unreachable' a source could not be asked at all
+     * 'none'        every source answered, and none has this book
+     *
+     * The difference matters to whoever pressed the button: two of the three
+     * are worth trying again, and only one of them means the book is not to
+     * be found. Which words carry that is the caller's business - this says
+     * which of the three happened.
+     *
+     * @param array<string, LookupUnavailable> $failures
+     */
+    public static function verdict(array $failures): string
+    {
+        if ($failures === []) {
+            return 'none';
+        }
+
+        return self::quotaExhausted($failures) !== null ? 'quota' : 'unreachable';
+    }
+
+    /**
      * Did a source say that waiting until tomorrow is the only way forward?
      *
      * @param array<string, LookupUnavailable> $failures

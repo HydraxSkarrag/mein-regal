@@ -10,6 +10,7 @@ use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
 use App\Lookup\CoverFinder;
+use App\Lookup\LookupChain;
 use App\Repository\CoverRepository;
 use Throwable;
 
@@ -300,10 +301,18 @@ final class BookController
         );
         $result = $finder->findFor((int) $book['id'], (string) $isbn);
 
-        $this->app->session->flash(
-            $result['stored'] ? t('cover.search.found') : t('cover.search.none'),
-            $result['stored'] ? 'ok' : 'error'
-        );
+        if ($result['stored']) {
+            $this->app->session->flash(t('cover.search.found'), 'ok');
+
+            return Response::redirect('/book/' . $book['slug'] . '/edit');
+        }
+
+        // "No cover found" is only true when every source was actually asked.
+        $this->app->session->flash(match (LookupChain::verdict($result['failures'])) {
+            'quota'       => t('cover.search.quota'),
+            'unreachable' => t('cover.search.unreachable'),
+            default       => t('cover.search.none'),
+        }, 'error');
 
         return Response::redirect('/book/' . $book['slug'] . '/edit');
     }

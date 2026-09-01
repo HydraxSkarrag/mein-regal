@@ -104,6 +104,8 @@ return [
     'scan.searching'     => 'Looking it up …',
     'scan.found.via'     => 'Found via {source}',
     'scan.nothing'       => 'Nothing found for this ISBN. You can enter the book by hand.',
+    'scan.quota'         => 'Google Books is used up for today, and the other sources do not know this ISBN. Try again tomorrow, or enter the book by hand.',
+    'scan.unreachable'   => 'A source could not be reached. Try again, or enter the book by hand.',
     'scan.save'          => 'Add to shelf',
     'scan.photo'         => 'Choose a file',
     'scan.again'         => 'Next book',
@@ -279,6 +281,8 @@ return [
     'cover.search.hint'        => 'Asks Open Library and Google Books for this ISBN. A cover that turns up is stored here, not embedded.',
     'cover.search.found'       => 'Cover found and stored.',
     'cover.search.none'        => 'No cover was found for this ISBN.',
+    'cover.search.quota'      => 'Google Books is used up for today. The other sources had no cover - worth trying again tomorrow.',
+    'cover.search.unreachable' => 'A source could not be reached, so not everywhere was searched. A second attempt may help.',
     'cover.search.no.isbn'     => 'Without an ISBN there is nothing to search by - you can still upload an image.',
 
     'setup.title'                => 'Set up the shelf',

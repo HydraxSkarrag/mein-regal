@@ -104,6 +104,8 @@ return [
     'scan.searching'     => 'Wird gesucht …',
     'scan.found.via'     => 'Gefunden über {source}',
     'scan.nothing'       => 'Zu dieser ISBN wurde nichts gefunden. Du kannst das Buch von Hand erfassen.',
+    'scan.quota'         => 'Google Books ist für heute ausgeschöpft; die übrigen Quellen kennen diese ISBN nicht. Morgen noch einmal – oder von Hand erfassen.',
+    'scan.unreachable'   => 'Eine Quelle war nicht erreichbar. Noch einmal versuchen, oder das Buch von Hand erfassen.',
     'scan.save'          => 'Ins Regal',
     'scan.photo'         => 'Bild wählen',
     'scan.again'         => 'Nächstes Buch',
@@ -279,6 +281,8 @@ return [
     'cover.search.hint'        => 'Fragt Open Library und Google Books nach dieser ISBN. Gefundene Bilder werden hier gespeichert, nicht eingebettet.',
     'cover.search.found'       => 'Cover gefunden und gespeichert.',
     'cover.search.none'        => 'Zu dieser ISBN wurde kein Cover gefunden.',
+    'cover.search.quota'      => 'Google Books ist für heute ausgeschöpft. Die anderen Quellen hatten kein Cover – morgen noch einmal versuchen.',
+    'cover.search.unreachable' => 'Eine Quelle war nicht erreichbar, gesucht wurde also nicht überall. Ein zweiter Versuch kann helfen.',
     'cover.search.no.isbn'     => 'Ohne ISBN lässt sich nicht suchen – ein Bild lässt sich aber hochladen.',
 
     'setup.title'                => 'Regal einrichten',

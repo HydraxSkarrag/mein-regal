@@ -104,3 +104,27 @@ $quota = LookupChain::quotaExhausted($outcome['failures']);
 Assert::true('a quota failure is recognised as its own kind', $quota instanceof LookupUnavailable);
 Assert::same('and names the source', $quota?->source, 'google');
 Assert::true('and says waiting will not help today', $quota?->quotaExhausted === true);
+
+Assert::group('An empty result says which kind of empty it is');
+
+/*
+ * The button on the edit page said "no cover was found for this ISBN"
+ * whatever had happened - including when Google had simply run out of
+ * allowance and was never asked. One of those sentences means "give up", the
+ * other means "try tomorrow", and they were the same sentence.
+ */
+Assert::same('nothing failed: the book is genuinely not there', LookupChain::verdict([]), 'none');
+
+$quota = LookupUnavailable::quota('google');
+$unreachable = LookupUnavailable::unreachable('dnb', 'connection timed out');
+
+Assert::same('a used-up quota says so', LookupChain::verdict(['google' => $quota]), 'quota');
+Assert::same('an unreachable source says so', LookupChain::verdict(['dnb' => $unreachable]), 'unreachable');
+
+// Both at once is still worth reporting as the quota: that one has a known
+// end - tomorrow - while "unreachable" leaves nothing to wait for.
+Assert::same(
+    'a quota outranks a wobble',
+    LookupChain::verdict(['dnb' => $unreachable, 'google' => $quota]),
+    'quota'
+);

@@ -29,7 +29,7 @@ final class CoverFinder
 
     /**
      * @param  ?BookData $known a lookup result already in hand, to save a round trip
-     * @return array{stored: bool, source: ?string, path: ?string}
+     * @return array{stored: bool, source: ?string, path: ?string, failures: array<string, LookupUnavailable>}
      */
     public function findFor(int $bookId, string $isbn13, ?BookData $known = null): array
     {
@@ -37,7 +37,9 @@ final class CoverFinder
         // so the book still gets a chance at a right image from another one.
         $rejected = $this->covers->rejectedSources($bookId);
 
-        foreach ($this->candidates($isbn13, $known) as [$url, $source, $attribution]) {
+        [$candidates, $failures] = $this->candidates($isbn13, $known);
+
+        foreach ($candidates as [$url, $source, $attribution]) {
             if (in_array($source, $rejected, true)) {
                 continue;
             }
@@ -59,10 +61,14 @@ final class CoverFinder
                 $stored['height']
             );
 
-            return ['stored' => true, 'source' => $source, 'path' => $stored['path']];
+            return ['stored' => true, 'source' => $source, 'path' => $stored['path'], 'failures' => $failures];
         }
 
-        return ['stored' => false, 'source' => null, 'path' => null];
+        /* Which sources could not be asked travels back with the empty
+         * result. Without it the only thing left to say is "no cover found",
+         * which is a different sentence from "Google is out of quota until
+         * tomorrow" - and only one of the two is worth trying again. */
+        return ['stored' => false, 'source' => null, 'path' => null, 'failures' => $failures];
     }
 
     /**
@@ -74,11 +80,18 @@ final class CoverFinder
      * mention one, and the DNB - the best source for German titles - has no
      * cover images at all.
      *
-     * @return list<array{0: string, 1: string, 2: ?string}>
+     * @return array{0: list<array{0: string, 1: string, 2: ?string}>, 1: array<string, LookupUnavailable>}
      */
     private function candidates(string $isbn13, ?BookData $known): array
     {
-        $found = $known ?? $this->chain->find($isbn13)['result'];
+        $failures = [];
+        if ($known === null) {
+            $outcome = $this->chain->find($isbn13);
+            $found = $outcome['result'];
+            $failures = $outcome['failures'];
+        } else {
+            $found = $known;
+        }
 
         $candidates = [];
         if ($found !== null && $found->coverUrl !== null) {
@@ -94,6 +107,6 @@ final class CoverFinder
             'Cover: Open Library',
         ];
 
-        return $candidates;
+        return [$candidates, $failures];
     }
 }

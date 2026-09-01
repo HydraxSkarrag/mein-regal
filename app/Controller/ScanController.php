@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
+use App\Lookup\LookupChain;
 use App\Lookup\OpenLibraryLookup;
 use App\Repository\CoverRepository;
 use Throwable;
@@ -89,7 +90,11 @@ final class ScanController
             return Response::json([
                 'found'   => false,
                 'isbn'    => $isbn,
-                'message' => t('scan.nothing'),
+                'message' => match (LookupChain::verdict($outcome['failures'])) {
+                    'quota'       => t('scan.quota'),
+                    'unreachable' => t('scan.unreachable'),
+                    default       => t('scan.nothing'),
+                },
                 'tried'   => $outcome['tried'],
             ]);
         }
