@@ -396,13 +396,13 @@ function prune(PDO $pdo, string $directory, bool $commit, bool $all): void
         $commit ? '' : ' (--commit to delete them)'
     );
 
-    $lookup = $pdo->prepare(
-        'SELECT b.title, c.path, c.source, c.width, c.rejected_at
-           FROM books b
-      LEFT JOIN covers c ON c.book_id = b.id
-          WHERE b.isbn13 = ?
-       ORDER BY c.rejected_at IS NULL DESC'
-    );
+    /* Which cover a book shows is decided in one place - by the repository,
+     * from provenance and size. Working it out again here from a query would
+     * be a second answer to the same question, and this one was already wrong
+     * once: it named the Google thumbnail while the shelf had long been
+     * showing a larger Open Library scan. */
+    $covers = new CoverRepository($pdo);
+    $lookup = $pdo->prepare('SELECT id, title FROM books WHERE isbn13 = ?');
 
     $tally = [];
     $verdicts = [];
@@ -414,13 +414,17 @@ function prune(PDO $pdo, string $directory, bool $commit, bool $all): void
         // The file name starts with the ISBN it was stored under, which is
         // what makes it possible to say whose cover this was.
         preg_match('/^(\d{10,13})/', $base, $match);
-        $rows = [];
+        $book = null;
+        $current = null;
         if ($match !== []) {
             $lookup->execute([$match[1]]);
-            $rows = $lookup->fetchAll();
+            $book = $lookup->fetch() ?: null;
+        }
+        if ($book !== null) {
+            $current = $covers->bestFor((int) $book['id'], true);
         }
 
-        [$verdict, $line] = explain($rows, $files[0], $directory);
+        [$verdict, $line] = explain($book, $current, $files[0], $directory);
         $tally[$verdict] = ($tally[$verdict] ?? 0) + 1;
         $totalBytes += $bytes;
         $verdicts[$base] = $verdict;
@@ -479,25 +483,19 @@ function prune(PDO $pdo, string $directory, bool $commit, bool $all): void
  * what the book already displays is the easy case, and it is worth saying so
  * rather than leaving it to be guessed.
  *
- * @param  list<array<string,mixed>> $rows the book and its covers, if found
+ * @param  ?array<string,mixed> $book    the book this file was stored for
+ * @param  ?array<string,mixed> $current the cover it shows now
  * @return array{0: string, 1: string} what kind of leftover, and the line
  */
-function explain(array $rows, string $file, string $directory): array
+function explain(?array $book, ?array $current, string $file, string $directory): array
 {
-    if ($rows === []) {
+    if ($book === null) {
         return ['unknown', 'no book with this ISBN - left over from a book that was deleted'];
     }
 
-    $title = mb_substr((string) $rows[0]['title'], 0, 44);
-    $current = null;
-    foreach ($rows as $row) {
-        if ($row['path'] !== null && $row['rejected_at'] === null) {
-            $current = $row;
-            break;
-        }
-    }
+    $title = mb_substr((string) $book['title'], 0, 44);
 
-    if ($current === null) {
+    if ($current === null || $current['path'] === null) {
         return ['removed', $title . ' - has no cover now (thrown out by hand)'];
     }
 
