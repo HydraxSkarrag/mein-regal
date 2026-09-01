@@ -71,9 +71,9 @@ final class DnbLookup implements LookupSource
             'maximumRecords' => 1,
         ]);
 
-        $response = $this->http->get($url);
+        $response = $this->http->getRetrying($url);
         if ($response['status'] !== 200 || $response['body'] === '') {
-            return null;
+            throw LookupUnavailable::unreachable($this->name(), 'HTTP ' . $response['status']);
         }
 
         $book = $this->parse($response['body'], $isbn13);
@@ -146,7 +146,9 @@ final class DnbLookup implements LookupSource
             'maximumRecords' => 1,
         ]);
 
-        $response = $this->http->get($url);
+        // Deliberately quiet: this second request only fills in fields the
+        // first one left, so losing it costs a detail rather than the record.
+        $response = $this->http->getRetrying($url, 2);
         if ($response['status'] !== 200 || $response['body'] === '') {
             return null;
         }

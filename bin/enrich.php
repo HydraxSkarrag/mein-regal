@@ -48,26 +48,50 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
     $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
     $finder = new CoverFinder($chain, $covers, $storage);
 
-    // Books with no cover at all come first; among those, the ones missing the
-    // most metadata. Anything already tried today is skipped, so a nightly run
-    // moves forward instead of retrying the same failures.
+    /* What still wants asking about.
+     *
+     * The condition used to be "has no cover", which is the right worklist for
+     * a job whose point is clearing a cover backlog - and the wrong one for
+     * ever finishing. A book that gained a cover left the list permanently,
+     * however many blanks it still carried, so its publisher and page count
+     * were never filled by anything but hand.
+     *
+     * Now: no usable cover OR a hole in the fields a lookup can fill. A
+     * rejected cover does not count as a cover - the point of throwing one out
+     * is to be offered another.
+     *
+     * Anything tried in the last thirty days is skipped, so consecutive runs
+     * move forward rather than grinding over the same failures.
+     */
     $statement = $pdo->prepare(
         'SELECT b.id, b.isbn13, b.title, b.publisher, b.published_year, b.page_count, b.language
            FROM books b
           WHERE b.owner_id = ?
             AND b.isbn13 IS NOT NULL
-            AND NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id)
+            AND (
+                  NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id AND c.rejected_at IS NULL)
+                  OR b.publisher IS NULL
+                  OR b.published_year IS NULL
+                  OR b.page_count IS NULL
+                  OR b.language IS NULL
+                )
             AND NOT EXISTS (
                   SELECT 1 FROM isbn_cache ic
                    WHERE ic.isbn = b.isbn13 AND ic.fetched_at > ?
                 )
-          ORDER BY b.id ASC
+          ORDER BY
+            CASE WHEN EXISTS (SELECT 1 FROM covers c2 WHERE c2.book_id = b.id AND c2.rejected_at IS NULL)
+                 THEN 1 ELSE 0 END ASC,
+            b.id ASC
           LIMIT ' . (int) $limit
     );
     $statement->execute([$ownerId, (new DateTimeImmutable('-30 days'))->format('Y-m-d H:i:s')]);
     $books = $statement->fetchAll();
 
-    $stats = ['looked_up' => 0, 'covers' => 0, 'metadata' => 0, 'misses' => 0, 'stopped_early' => false];
+    $stats = [
+        'looked_up' => 0, 'covers' => 0, 'metadata' => 0, 'misses' => 0,
+        'unavailable' => 0, 'stopped_early' => false, 'stopped_quota' => null,
+    ];
     $deadline = $budgetSeconds > 0 ? microtime(true) + $budgetSeconds : null;
 
     foreach ($books as $book) {
@@ -87,22 +111,43 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
 
         $outcome = $chain->find($isbn);
         $found = $outcome['result'];
+        $failures = $outcome['failures'];
 
-        // Record the attempt either way, so a book with no record anywhere is
-        // not asked about again every single night.
-        $remember = $pdo->prepare(
-            'INSERT INTO isbn_cache (isbn, source, http_status, found, payload)
-             VALUES (?, ?, ?, ?, ?)'
-        );
-        try {
-            $remember->execute([$isbn, 'chain', 200, $found !== null ? 1 : 0, null]);
-        } catch (PDOException) {
-            $pdo->prepare('UPDATE isbn_cache SET fetched_at = ?, found = ? WHERE isbn = ? AND source = ?')
-                ->execute([(new DateTimeImmutable())->format('Y-m-d H:i:s'), $found !== null ? 1 : 0, $isbn, 'chain']);
+        /* Out of quota is the one failure that waiting cannot fix. Stop the
+         * run rather than spend the rest of it asking sources that are no
+         * longer answering - and stop before recording anything about this
+         * book, which was never actually looked at. */
+        $quota = LookupChain::quotaExhausted($failures);
+        if ($quota !== null) {
+            $stats['stopped_quota'] = $quota->getMessage();
+            break;
+        }
+
+        /* Record the attempt, so a book with no record anywhere is not asked
+         * about again every single night - but ONLY when the sources actually
+         * answered. A miss caused by a source that was down is not a fact
+         * about the book, and writing it down here is what used to lock the
+         * book out for thirty days over a hiccup that lasted two seconds. */
+        if ($found !== null || $failures === []) {
+            $remember = $pdo->prepare(
+                'INSERT INTO isbn_cache (isbn, source, http_status, found, payload)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            try {
+                $remember->execute([$isbn, 'chain', 200, $found !== null ? 1 : 0, null]);
+            } catch (PDOException) {
+                $pdo->prepare('UPDATE isbn_cache SET fetched_at = ?, found = ? WHERE isbn = ? AND source = ?')
+                    ->execute([(new DateTimeImmutable())->format('Y-m-d H:i:s'), $found !== null ? 1 : 0, $isbn, 'chain']);
+            }
         }
 
         if ($found === null) {
-            $stats['misses']++;
+            $stats[$failures === [] ? 'misses' : 'unavailable']++;
+            if ($verbose && $failures !== []) {
+                foreach ($failures as $failure) {
+                    printf("  %-14s %-44s %s\n", $isbn, '', $failure->getMessage());
+                }
+            }
             usleep(400000);
             continue;
         }
@@ -177,12 +222,19 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
     $stats = enrich($pdo, $config, $limit, $ownerId, !isset($options['quiet']), $budget);
 
     printf(
-        "\nLooked up %d | covers %d | details filled in %d | no match %d | %.1f s%s\n",
+        "\nLooked up %d | covers %d | details filled in %d | no match %d | source unavailable %d | %.1f s\n",
         $stats['looked_up'],
         $stats['covers'],
         $stats['metadata'],
         $stats['misses'],
-        microtime(true) - $started,
-        $stats['stopped_early'] ? ' (Zeitbudget erreicht)' : ''
+        $stats['unavailable'],
+        microtime(true) - $started
     );
+
+    if ($stats['stopped_quota'] !== null) {
+        echo "\nStopped: " . $stats['stopped_quota'] . "\n";
+        echo "Nothing was recorded for the book it stopped on. Run again tomorrow.\n";
+    } elseif ($stats['stopped_early']) {
+        echo "\nStopped: time budget reached. The next run continues where this one left off.\n";
+    }
 }

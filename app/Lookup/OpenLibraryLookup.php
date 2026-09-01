@@ -37,9 +37,9 @@ final class OpenLibraryLookup implements LookupSource
             'jscmd'   => 'data',
         ]);
 
-        $response = $this->http->get($url);
+        $response = $this->http->getRetrying($url);
         if ($response['status'] !== 200) {
-            return null;
+            throw LookupUnavailable::unreachable($this->name(), 'HTTP ' . $response['status']);
         }
 
         return $this->parse($response['body'], $isbn13);

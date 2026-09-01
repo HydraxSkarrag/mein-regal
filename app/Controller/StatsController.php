@@ -149,7 +149,7 @@ final class StatsController
     {
         $withoutCover = $this->app->pdo->prepare(
             'SELECT COUNT(*) FROM books b
-              WHERE b.owner_id = ? AND NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id)'
+              WHERE b.owner_id = ? AND NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id AND c.rejected_at IS NULL)'
         );
         $withoutCover->execute([$owner]);
 

@@ -49,11 +49,12 @@ final class LookupChain
 
     /**
      * @param  bool $fillGaps keep asking after a hit, to complete the record
-     * @return array{result: ?BookData, tried: list<string>}
+     * @return array{result: ?BookData, tried: list<string>, failures: array<string, LookupUnavailable>}
      */
     public function find(string $isbn13, bool $fillGaps = true): array
     {
         $tried = [];
+        $failures = [];
         $result = null;
 
         foreach ($this->orderFor($isbn13) as $name) {
@@ -63,7 +64,22 @@ final class LookupChain
             }
 
             $tried[] = $name;
-            $found = $this->sources[$name]->find($isbn13);
+
+            /* A source that cannot answer is not a source that says no.
+             *
+             * The chain carries on to the next one either way - a silent
+             * Google should not cost the DNB's answer - but it hands the
+             * failure back, so the caller can tell an empty result that means
+             * "nowhere has this book" from one that means "we could not ask".
+             * Recording the second as the first is what locks a book out of
+             * the nightly job for a month. */
+            try {
+                $found = $this->sources[$name]->find($isbn13);
+            } catch (LookupUnavailable $e) {
+                $failures[$name] = $e;
+                continue;
+            }
+
             if ($found === null || !$found->isUsable()) {
                 continue;
             }
@@ -71,7 +87,23 @@ final class LookupChain
             $result = $result === null ? $found : $result->mergeMissingFrom($found);
         }
 
-        return ['result' => $result, 'tried' => $tried];
+        return ['result' => $result, 'tried' => $tried, 'failures' => $failures];
+    }
+
+    /**
+     * Did a source say that waiting until tomorrow is the only way forward?
+     *
+     * @param array<string, LookupUnavailable> $failures
+     */
+    public static function quotaExhausted(array $failures): ?LookupUnavailable
+    {
+        foreach ($failures as $failure) {
+            if ($failure->quotaExhausted) {
+                return $failure;
+            }
+        }
+
+        return null;
     }
 
     /**

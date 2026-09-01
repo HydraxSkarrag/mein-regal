@@ -38,12 +38,35 @@ final class GoogleBooksLookup implements LookupSource
             $query['key'] = $this->apiKey;
         }
 
-        $response = $this->http->get(self::ENDPOINT . '?' . http_build_query($query));
+        $response = $this->http->getRetrying(self::ENDPOINT . '?' . http_build_query($query));
+
+        /* A non-answer is not an answer of "no".
+         *
+         * Returning null here for every status was the bug: null is the
+         * contract's way of saying "no record for this ISBN", so a throttled
+         * or stumbling Google was written down as a settled miss and the book
+         * was left alone for a month. */
+        if ($response['status'] === 429) {
+            throw LookupUnavailable::quota($this->name(), self::reason($response['body']));
+        }
         if ($response['status'] !== 200) {
-            return null;
+            throw LookupUnavailable::unreachable(
+                $this->name(),
+                'HTTP ' . $response['status']
+                    . ($response['attempts'] > 1 ? ' after ' . $response['attempts'] . ' attempts' : '')
+            );
         }
 
         return $this->parse($response['body'], $isbn13);
+    }
+
+    /** Google states the reason in the body; it is worth passing on. */
+    private static function reason(string $body): string
+    {
+        $data = json_decode($body, true);
+        $message = is_array($data) ? (string) ($data['error']['message'] ?? '') : '';
+
+        return $message === '' ? '' : '(' . mb_substr($message, 0, 80) . ')';
     }
 
     public function parse(string $json, string $isbn13): ?BookData

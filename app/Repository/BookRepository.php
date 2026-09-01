@@ -308,9 +308,9 @@ final class BookRepository
         // Covers arrive gradually, so "show me the ones that have one" and
         // "show me what still needs one" are both worth asking for.
         if (($filters['cover'] ?? '') === 'yes') {
-            $conditions[] = 'EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id)';
+            $conditions[] = 'EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id AND c.rejected_at IS NULL)';
         } elseif (($filters['cover'] ?? '') === 'no') {
-            $conditions[] = 'NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id)';
+            $conditions[] = 'NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id AND c.rejected_at IS NULL)';
         }
 
         return [['sql' => implode(' AND ', $conditions), 'join' => $join], $parameters];
@@ -357,8 +357,8 @@ final class BookRepository
     {
         $statement = $this->pdo->prepare(
             'SELECT
-                 SUM(CASE WHEN EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id) THEN 1 ELSE 0 END) AS with_cover,
-                 SUM(CASE WHEN EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id) THEN 0 ELSE 1 END) AS without_cover
+                 SUM(CASE WHEN EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id AND c.rejected_at IS NULL) THEN 1 ELSE 0 END) AS with_cover,
+                 SUM(CASE WHEN EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id AND c.rejected_at IS NULL) THEN 0 ELSE 1 END) AS without_cover
                FROM books b WHERE b.owner_id = ?'
         );
         $statement->execute([$ownerId]);

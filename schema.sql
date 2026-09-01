@@ -173,6 +173,10 @@ CREATE TABLE IF NOT EXISTS covers (
     width        SMALLINT UNSIGNED NULL,
     height       SMALLINT UNSIGNED NULL,
     is_public    TINYINT(1) NOT NULL DEFAULT 0,
+    -- Set when this cover was thrown out by hand. The row stays so the same
+    -- source is not fetched again the next night; the book still counts as
+    -- having no cover, so another source may still be tried.
+    rejected_at  DATETIME   NULL,
     created_at   DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uniq_covers_book_source (book_id, source),

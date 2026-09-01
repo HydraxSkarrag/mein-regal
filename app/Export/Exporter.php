@@ -241,7 +241,7 @@ final class Exporter
         $statement = $this->pdo->prepare(
             'SELECT c.book_id, c.source FROM covers c
                JOIN books b ON b.id = c.book_id
-              WHERE b.owner_id = ?'
+              WHERE b.owner_id = ? AND c.rejected_at IS NULL'
         );
         $statement->execute([$ownerId]);
 

@@ -61,11 +61,15 @@ final class CoverRepository
         ?int $width = null,
         ?int $height = null,
     ): void {
+        /* rejected_at is written as NULL and listed among the updated
+         * columns on purpose: saving a cover is a deliberate act, and it
+         * lifts an earlier rejection of the same source. Only the automatic
+         * path consults the rejection before it gets this far. */
         $sql = $this->dialect->upsert(
             'covers',
-            ['book_id', 'source', 'path', 'external_url', 'attribution', 'width', 'height', 'is_public'],
+            ['book_id', 'source', 'path', 'external_url', 'attribution', 'width', 'height', 'is_public', 'rejected_at'],
             ['book_id', 'source'],
-            ['path', 'external_url', 'attribution', 'width', 'height', 'is_public']
+            ['path', 'external_url', 'attribution', 'width', 'height', 'is_public', 'rejected_at']
         );
 
         $this->pdo->prepare($sql)->execute([
@@ -77,6 +81,7 @@ final class CoverRepository
             $width,
             $height,
             self::isPublic($path) ? 1 : 0,
+            null,
         ]);
     }
 
@@ -87,7 +92,8 @@ final class CoverRepository
      */
     public function bestFor(int $bookId, bool $viewerIsSignedIn): ?array
     {
-        $sql = 'SELECT source, path, external_url, attribution FROM covers WHERE book_id = ?';
+        $sql = 'SELECT source, path, external_url, attribution FROM covers'
+            . ' WHERE book_id = ? AND rejected_at IS NULL';
         $parameters = [$bookId];
         if (!$viewerIsSignedIn) {
             $sql .= ' AND is_public = 1';
@@ -117,7 +123,8 @@ final class CoverRepository
             return [];
         }
         $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
-        $sql = "SELECT book_id, source, path, external_url, attribution FROM covers WHERE book_id IN ($placeholders)";
+        $sql = 'SELECT book_id, source, path, external_url, attribution FROM covers'
+            . " WHERE book_id IN ($placeholders) AND rejected_at IS NULL";
         if (!$viewerIsSignedIn) {
             $sql .= ' AND is_public = 1';
         }
@@ -140,7 +147,16 @@ final class CoverRepository
     }
 
     /**
-     * Remove covers for a book, optionally just one source.
+     * Throw a cover out, optionally just the one from a given source.
+     *
+     * The row is kept and marked rather than deleted. Deleting it made the
+     * book cover-less, and the next run of the nightly job fetched the same
+     * wrong image from the same source and put it back - so sorting bad
+     * covers out by hand was only ever valid until the following night.
+     *
+     * What is blocked is the source for this book, not the book: it still
+     * counts as having no cover everywhere that matters, so another source
+     * may still be tried and an upload by hand still wins.
      *
      * Returns the stored paths so the caller can unlink the files - the
      * repository owns rows, not the filesystem.
@@ -149,7 +165,7 @@ final class CoverRepository
      */
     public function remove(int $bookId, ?string $source = null): array
     {
-        $sql = 'SELECT path FROM covers WHERE book_id = ? AND path IS NOT NULL';
+        $sql = 'SELECT path FROM covers WHERE book_id = ? AND path IS NOT NULL AND rejected_at IS NULL';
         $parameters = [$bookId];
         if ($source !== null) {
             $sql .= ' AND source = ?';
@@ -161,15 +177,34 @@ final class CoverRepository
             array_map(static fn (array $row): string => (string) $row['path'], $statement->fetchAll())
         ));
 
-        $delete = 'DELETE FROM covers WHERE book_id = ?';
-        $deleteParameters = [$bookId];
+        $reject = 'UPDATE covers SET rejected_at = ?, path = NULL, external_url = NULL, is_public = 0'
+            . ' WHERE book_id = ? AND rejected_at IS NULL';
+        $rejectParameters = [(new \DateTimeImmutable())->format('Y-m-d H:i:s'), $bookId];
         if ($source !== null) {
-            $delete .= ' AND source = ?';
-            $deleteParameters[] = $source;
+            $reject .= ' AND source = ?';
+            $rejectParameters[] = $source;
         }
-        $this->pdo->prepare($delete)->execute($deleteParameters);
+        $this->pdo->prepare($reject)->execute($rejectParameters);
 
         return $paths;
+    }
+
+    /**
+     * Sources this book has already been offered and had thrown out.
+     *
+     * @return list<string>
+     */
+    public function rejectedSources(int $bookId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT source FROM covers WHERE book_id = ? AND rejected_at IS NOT NULL'
+        );
+        $statement->execute([$bookId]);
+
+        return array_map(
+            static fn (array $row): string => (string) $row['source'],
+            $statement->fetchAll()
+        );
     }
 
     public function countBySource(int $ownerId): array
@@ -177,7 +212,7 @@ final class CoverRepository
         $statement = $this->pdo->prepare(
             'SELECT c.source, COUNT(*) AS n
                FROM covers c JOIN books b ON b.id = c.book_id
-              WHERE b.owner_id = ?
+              WHERE b.owner_id = ? AND c.rejected_at IS NULL
               GROUP BY c.source'
         );
         $statement->execute([$ownerId]);

@@ -54,4 +54,39 @@ final class HttpClient
             'error'  => $error,
         ];
     }
+
+    /**
+     * The same request, but a server error is given a second chance.
+     *
+     * Measured against Google Books with a real key: about one request in six
+     * comes back 503 and succeeds when asked again a moment later. Without a
+     * retry those become recorded misses, and a book is then left alone for a
+     * month over a hiccup that lasted two seconds.
+     *
+     * Only 5xx and transport failures are retried. A 404 is an answer, and a
+     * 429 means the quota is gone - asking again makes that worse.
+     *
+     * @param array<int, string> $headers
+     * @return array{status: int, body: string, error: ?string, attempts: int}
+     */
+    public function getRetrying(string $url, int $attempts = 3, array $headers = []): array
+    {
+        $response = ['status' => 0, 'body' => '', 'error' => 'no attempt made'];
+
+        for ($attempt = 1; $attempt <= max(1, $attempts); $attempt++) {
+            $response = $this->get($url, $headers);
+            $response['attempts'] = $attempt;
+
+            $worthRetrying = $response['status'] >= 500 || $response['status'] === 0;
+            if (!$worthRetrying || $attempt === $attempts) {
+                return $response;
+            }
+
+            // Briefly, and a little longer each time. The sources are free and
+            // hammering one that is already struggling is how access is lost.
+            usleep(500000 * $attempt);
+        }
+
+        return $response;
+    }
 }

@@ -33,7 +33,15 @@ final class CoverFinder
      */
     public function findFor(int $bookId, string $isbn13, ?BookData $known = null): array
     {
+        // A cover thrown out by hand stays out. Only that source is blocked,
+        // so the book still gets a chance at a right image from another one.
+        $rejected = $this->covers->rejectedSources($bookId);
+
         foreach ($this->candidates($isbn13, $known) as [$url, $source, $attribution]) {
+            if (in_array($source, $rejected, true)) {
+                continue;
+            }
+
             try {
                 $stored = $this->storage->storeRemote($url, $isbn13 . '-' . $source);
             } catch (Throwable $e) {
