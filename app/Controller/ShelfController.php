@@ -27,6 +27,7 @@ final class ShelfController
             'tag'      => $request->query('tag'),
             'author'   => $request->query('author'),
             'binding'  => $this->oneOf($request->query('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
+            'review'   => $this->oneOf($request->query('review'), ['yes', 'no']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
             'sort'     => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read'], 'recent'),
@@ -91,6 +92,7 @@ final class ShelfController
             'topAuthors'    => $this->app->authors->listWithCounts($this->app->ownerId, 12),
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
             'bindingCounts' => $this->app->books->countBy($this->app->ownerId, 'binding'),
+            'reviewCounts'  => $this->app->books->countByReview($this->app->ownerId),
             'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
             'isbnCounts'    => $this->app->books->countByIsbn($this->app->ownerId),
             'filters'       => $filters,
@@ -107,6 +109,114 @@ final class ShelfController
             'canonical' => $this->app->url($current === 'unread' ? '/unread' : '/'),
             'jsonLd'    => $this->collectionJsonLd($result['total']),
         ]));
+    }
+
+    /**
+     * Every genre there is.
+     *
+     * The sidebar lists the biggest fourteen because a sidebar has to stop
+     * somewhere, which left three hundred and sixty-seven of them reachable
+     * only by guessing the URL. This is where the heading points.
+     */
+    public function genres(): Response
+    {
+        $rows = $this->app->tags->listAllByName($this->app->ownerId);
+
+        return $this->renderFacets(
+            t('filter.genre'),
+            'genres',
+            array_map(static fn (array $tag): array => [
+                'label' => $tag['name'],
+                'sort'  => $tag['name'],
+                'count' => (int) $tag['book_count'],
+                'url'   => '/?tag=' . rawurlencode($tag['slug']),
+            ], $rows)
+        );
+    }
+
+    /** Everyone, sorted by surname the way a shelf is. */
+    public function authors(): Response
+    {
+        $rows = $this->app->authors->listAllByName($this->app->ownerId);
+
+        return $this->renderFacets(
+            t('filter.author'),
+            'authors',
+            array_map(static fn (array $person): array => [
+                'label' => $person['name'],
+                'sort'  => $person['sort_name'] !== '' ? $person['sort_name'] : $person['name'],
+                'count' => (int) $person['book_count'],
+                'url'   => '/?author=' . rawurlencode($person['name']),
+            ], $rows)
+        );
+    }
+
+    /**
+     * One template for both lists: a long alphabet is a long alphabet.
+     *
+     * Grouped by initial rather than printed as one run, because seventeen
+     * hundred names in a single column is a list nobody reads to the end.
+     *
+     * @param list<array{label: string, sort: string, count: int, url: string}> $entries
+     */
+    private function renderFacets(string $heading, string $current, array $entries): Response
+    {
+        $groups = [];
+        foreach ($entries as $entry) {
+            // The sort key decides, but it is derived data and can be wrong:
+            // eleven authors imported with a role marker sort as "(Ill.),
+            // Eva Gebhardt" and would file under # rather than G. Where the
+            // key yields no letter, the name shown to the reader does - a
+            // name that genuinely starts with something else, like a handle,
+            // still lands in the last group.
+            $letter = self::initial($entry['sort']);
+            if ($letter === self::OTHER) {
+                $letter = self::initial($entry['label']);
+            }
+            $groups[$letter][] = $entry;
+        }
+        ksort($groups, SORT_LOCALE_STRING);
+        if (isset($groups[self::OTHER])) {
+            $other = $groups[self::OTHER];
+            unset($groups[self::OTHER]);
+            $groups[self::OTHER] = $other;
+        }
+
+        $body = $this->app->view->render('shelf.facets', [
+            'heading' => $heading,
+            'groups'  => $groups,
+            'total'   => count($entries),
+        ]);
+
+        return Response::html($this->app->view->render('layout.base', [
+            'content'   => $body,
+            'title'     => $heading,
+            'current'   => $current,
+            'canonical' => $this->app->url('/' . $current),
+        ]));
+    }
+
+    /** Where anything that does not begin with a letter is collected. */
+    private const OTHER = '#';
+
+    /**
+     * The letter something files under.
+     *
+     * Accents are folded, so Ärger sits with A rather than in a group of its
+     * own at the end of the alphabet; anything that does not start with a
+     * letter is collected under a single heading instead of scattering.
+     */
+    private static function initial(string $value): string
+    {
+        $first = mb_strtoupper(mb_substr(trim($value), 0, 1), 'UTF-8');
+        $folded = strtr($first, [
+            'Ä' => 'A', 'Ö' => 'O', 'Ü' => 'U', 'À' => 'A', 'Á' => 'A', 'Â' => 'A', 'Ã' => 'A', 'Å' => 'A',
+            'È' => 'E', 'É' => 'E', 'Ê' => 'E', 'Ë' => 'E', 'Ì' => 'I', 'Í' => 'I', 'Î' => 'I', 'Ï' => 'I',
+            'Ò' => 'O', 'Ó' => 'O', 'Ô' => 'O', 'Õ' => 'O', 'Ø' => 'O', 'Ù' => 'U', 'Ú' => 'U', 'Û' => 'U',
+            'Ç' => 'C', 'Ñ' => 'N', 'Š' => 'S', 'Ž' => 'Z',
+        ]);
+
+        return preg_match('/^\p{L}$/u', $folded) === 1 ? $folded : '#';
     }
 
     public function detail(Request $request, array $params): Response

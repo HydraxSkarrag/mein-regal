@@ -295,6 +295,16 @@ final class BookRepository
         } elseif (($filters['isbn'] ?? '') === 'no') {
             $conditions[] = 'b.isbn13 IS NULL';
         }
+        // Which books have been written about. The blog is the reason the
+        // shelf exists, so "what have I already reviewed" and "what is still
+        // waiting to be written up" are the two halves of a working queue.
+        // An empty string counts as no review: the edit form stores NULL, but
+        // an import or a hand-edited row need not have.
+        if (($filters['review'] ?? '') === 'yes') {
+            $conditions[] = "b.review_url IS NOT NULL AND b.review_url <> ''";
+        } elseif (($filters['review'] ?? '') === 'no') {
+            $conditions[] = "(b.review_url IS NULL OR b.review_url = '')";
+        }
         // Covers arrive gradually, so "show me the ones that have one" and
         // "show me what still needs one" are both worth asking for.
         if (($filters['cover'] ?? '') === 'yes') {
@@ -321,6 +331,24 @@ final class BookRepository
         return [
             'with'    => (int) ($row['with_isbn'] ?? 0),
             'without' => (int) ($row['without_isbn'] ?? 0),
+        ];
+    }
+
+    /** @return array{with: int, without: int} */
+    public function countByReview(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            "SELECT
+                 SUM(CASE WHEN review_url IS NOT NULL AND review_url <> '' THEN 1 ELSE 0 END) AS with_review,
+                 SUM(CASE WHEN review_url IS NULL OR review_url = '' THEN 1 ELSE 0 END) AS without_review
+               FROM books WHERE owner_id = ?"
+        );
+        $statement->execute([$ownerId]);
+        $row = $statement->fetch() ?: [];
+
+        return [
+            'with'    => (int) ($row['with_review'] ?? 0),
+            'without' => (int) ($row['without_review'] ?? 0),
         ];
     }
 

@@ -82,6 +82,33 @@ final class TagRepository
         );
     }
 
+    /**
+     * Every genre, in reading order rather than by size.
+     *
+     * The sidebar shows the biggest fourteen, which is the right answer for a
+     * sidebar and the wrong one for "what is actually in here" - three hundred
+     * and seventy of them were invisible. Sorted by name, because this list is
+     * for finding a particular genre; the sidebar already answers which are
+     * the common ones.
+     *
+     * @return list<array{id: int, name: string, slug: string, book_count: int}>
+     */
+    public function listAllByName(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT t.id, t.name, t.slug, COUNT(bt.book_id) AS book_count
+               FROM tags t
+               JOIN book_tags bt ON bt.tag_id = t.id
+              WHERE t.owner_id = ?
+              GROUP BY t.id, t.name, t.slug
+              ORDER BY t.name ASC'
+        );
+        $statement->execute([$ownerId]);
+
+        /** @var list<array{id: int, name: string, slug: string, book_count: int}> */
+        return $statement->fetchAll();
+    }
+
     /** @return list<array{id: int, name: string, slug: string, book_count: int}> */
     public function listWithCounts(int $ownerId, int $limit = 40): array
     {

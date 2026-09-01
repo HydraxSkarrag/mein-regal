@@ -1043,3 +1043,63 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---- Full genre and author lists ------------------------------------ */
+
+/* The heading is a link without looking like one until it is reached for. */
+.sidebar h2 .facet-all { color: inherit; text-decoration: none; }
+.sidebar h2 .facet-all:hover,
+.sidebar h2 .facet-all:focus-visible { text-decoration: underline; }
+
+.alphabet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 22px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  padding: 8px 0;
+  z-index: 1;
+}
+.alphabet a {
+  min-width: 30px;
+  padding: 4px 6px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.alphabet a:hover { border-color: var(--accent); color: var(--accent); }
+
+.facet-group { margin: 0 0 26px; }
+.facet-group h2 {
+  font-size: 1.1rem;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  /* Cleared, so the sticky alphabet bar does not sit on the heading. */
+  scroll-margin-top: 56px;
+}
+
+/* Columns rather than one long run: seventeen hundred names in a single
+   column is a list nobody reads to the end. */
+.facet-list {
+  columns: 260px;
+  column-gap: 28px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.facet-list li { break-inside: avoid; }
+.facet-list a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  text-decoration: none;
+}
+.facet-list a:hover span:first-child { text-decoration: underline; }
+.facet-list .n { color: var(--muted); font-variant-numeric: tabular-nums; }

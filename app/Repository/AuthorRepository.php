@@ -66,6 +66,31 @@ final class AuthorRepository
         $this->pdo->prepare($sql)->execute([$bookId, $authorId, $role, $position]);
     }
 
+    /**
+     * Everyone, sorted the way a shelf is: by surname.
+     *
+     * sort_name is what the normalisation produced when the CSV was read, so
+     * "Flechsig, Dorothea" and "Dorothea Flechsig" - one person - sort to one
+     * place instead of to F and to D.
+     *
+     * @return list<array{id: int, name: string, sort_name: string, book_count: int}>
+     */
+    public function listAllByName(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT a.id, a.name, a.sort_name, COUNT(ba.book_id) AS book_count
+               FROM authors a
+               JOIN book_authors ba ON ba.author_id = a.id
+              WHERE a.owner_id = ?
+              GROUP BY a.id, a.name, a.sort_name
+              ORDER BY a.sort_name ASC'
+        );
+        $statement->execute([$ownerId]);
+
+        /** @var list<array{id: int, name: string, sort_name: string, book_count: int}> */
+        return $statement->fetchAll();
+    }
+
     /** @return list<array{id: int, name: string, sort_name: string, book_count: int}> */
     public function listWithCounts(int $ownerId, int $limit = 50): array
     {

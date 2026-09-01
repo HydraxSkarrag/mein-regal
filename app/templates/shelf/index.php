@@ -10,7 +10,10 @@ declare(strict_types=1);
 ?>
 <div class="page-head">
   <h1><?= e($heading) ?></h1>
-  <span class="count"><?= e(t('shelf.count', ['count' => $formatter->number($total)])) ?></span>
+  <?php /* A filter can narrow the shelf to one book, and "1 Bücher" reads like a fault. */ ?>
+  <span class="count"><?= e($total === 1
+      ? t('shelf.count.one')
+      : t('shelf.count', ['count' => $formatter->number($total)])) ?></span>
 </div>
 
 <form class="searchbar" method="get" action="/" role="search">
@@ -44,7 +47,8 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
-    <h2><?= e(t('filter.genre')) ?></h2>
+    <?php /* The sidebar shows the biggest few; the heading leads to all of them. */ ?>
+    <h2><a class="facet-all" href="/genres"><?= e(t('filter.genre')) ?></a></h2>
     <ul>
       <?php foreach ($tags as $tag): ?>
       <li><a href="<?= e($urlFor(['tag' => ($filters['tag'] ?? '') === $tag['slug'] ? '' : $tag['slug']])) ?>"
@@ -53,13 +57,23 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
-    <h2><?= e(t('filter.author')) ?></h2>
+    <h2><a class="facet-all" href="/authors"><?= e(t('filter.author')) ?></a></h2>
     <ul>
       <?php foreach ($topAuthors as $person): ?>
       <li><a href="<?= e($urlFor(['author' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"
              aria-current="<?= ($filters['author'] ?? '') === $person['name'] ? 'true' : 'false' ?>">
         <span><?= e($person['name']) ?></span><span class="n"><?= e($formatter->number((int) $person['book_count'])) ?></span></a></li>
       <?php endforeach; ?>
+    </ul>
+
+    <h2><?= e(t('filter.review')) ?></h2>
+    <ul>
+      <li><a href="<?= e($urlFor(['review' => ($filters['review'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
+             aria-current="<?= ($filters['review'] ?? '') === 'yes' ? 'true' : 'false' ?>">
+        <span><?= e(t('filter.review.yes')) ?></span><span class="n"><?= e($formatter->number($reviewCounts['with'])) ?></span></a></li>
+      <li><a href="<?= e($urlFor(['review' => ($filters['review'] ?? '') === 'no' ? '' : 'no'])) ?>"
+             aria-current="<?= ($filters['review'] ?? '') === 'no' ? 'true' : 'false' ?>">
+        <span><?= e(t('filter.review.no')) ?></span><span class="n"><?= e($formatter->number($reviewCounts['without'])) ?></span></a></li>
     </ul>
 
     <h2><?= e(t('filter.cover')) ?></h2>

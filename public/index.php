@@ -71,6 +71,8 @@ $data  = new MaintenanceController($app);
 $app->router->get('/', $shelf->index(...));
 $app->router->get('/unread', $shelf->unread(...));
 $app->router->get('/search', $shelf->index(...));
+$app->router->get('/genres', $shelf->genres(...));
+$app->router->get('/authors', $shelf->authors(...));
 $app->router->get('/book/{slug}', $shelf->detail(...));
 $app->router->get('/stats', $stats->page(...));
 $app->router->get('/project', $pages->project(...));
