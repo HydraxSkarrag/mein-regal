@@ -30,8 +30,11 @@ return [
     'shelf.empty'        => 'Kein Buch gefunden.',
     'shelf.empty.hint'   => 'Andere Suche oder Filter versuchen.',
     'shelf.all'          => 'Alle',
-    'shelf.more'         => 'Mehr laden',
-    'shelf.showing'      => '{shown} von {total}',
+    'shelf.range'        => '{from}–{to} von {total}',
+    'page.nav'           => 'Seiten',
+    'page.previous'      => 'Zurück',
+    'page.next'          => 'Weiter',
+    'page.go'            => 'Seite {number}',
 
     'filter.status'      => 'Status',
     'filter.genre'       => 'Genre',

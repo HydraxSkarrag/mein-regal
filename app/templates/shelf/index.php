@@ -175,13 +175,38 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
-    <?php if ($nextUrl !== null): ?>
-    <p style="text-align:center;margin-top:28px">
-      <a class="btn" href="<?= e($nextUrl) ?>"><?= e(t('shelf.more')) ?></a>
-    </p>
+    <?php if ($pages > 1): ?>
+    <nav class="pager" aria-label="<?= e(t('page.nav')) ?>">
+      <?php if ($page > 1): ?>
+      <a class="pager-step" href="<?= e($pageUrl($page - 1)) ?>" rel="prev">&lsaquo; <?= e(t('page.previous')) ?></a>
+      <?php else: ?>
+      <span class="pager-step is-off">&lsaquo; <?= e(t('page.previous')) ?></span>
+      <?php endif; ?>
+
+      <?php foreach ($pageNumbers as $number): ?>
+        <?php if ($number === null): ?>
+      <span class="pager-gap" aria-hidden="true">…</span>
+        <?php elseif ($number === $page): ?>
+      <span class="pager-page is-here" aria-current="page"><?= e($formatter->number($number)) ?></span>
+        <?php else: ?>
+      <a class="pager-page" href="<?= e($pageUrl($number)) ?>"
+         aria-label="<?= e(t('page.go', ['number' => $number])) ?>"><?= e($formatter->number($number)) ?></a>
+        <?php endif; ?>
+      <?php endforeach; ?>
+
+      <?php if ($page < $pages): ?>
+      <a class="pager-step" href="<?= e($pageUrl($page + 1)) ?>" rel="next"><?= e(t('page.next')) ?> &rsaquo;</a>
+      <?php else: ?>
+      <span class="pager-step is-off"><?= e(t('page.next')) ?> &rsaquo;</span>
+      <?php endif; ?>
+    </nav>
     <?php endif; ?>
     <p class="note" style="text-align:center">
-      <?= e(t('shelf.showing', ['shown' => $formatter->number(count($books) + $offset), 'total' => $formatter->number($total)])) ?>
+      <?= e(t('shelf.range', [
+          'from'  => $formatter->number($offset + 1),
+          'to'    => $formatter->number($offset + count($books)),
+          'total' => $formatter->number($total),
+      ])) ?>
     </p>
     <?php endif; ?>
   </div>

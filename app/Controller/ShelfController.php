@@ -76,10 +76,26 @@ final class ShelfController
             return $next === [] ? '/' : '/?' . http_build_query($next);
         };
 
-        $nextUrl = null;
-        if ($offset + count($books) < $result['total']) {
-            $nextUrl = '/?' . http_build_query(array_merge(array_filter($query), ['page' => $page + 1]));
-        }
+        /* Page links, not a "load more" button.
+         *
+         * The button said "load more" and then replaced what was on screen,
+         * because there is no JavaScript behind it - it was a page link
+         * wearing the wrong word. With fifty-one pages, the honest control is
+         * the one that says which page this is and lets you jump.
+         *
+         * The base path matters: the old link always pointed at "/", so
+         * paging out of the unread pile quietly landed you in the whole
+         * shelf. */
+        $base = $current === 'unread' ? '/unread' : '/';
+        $kept = array_filter($query, static fn ($v, string $k): bool => $k !== 'page' && $v !== '' && $v !== null, ARRAY_FILTER_USE_BOTH);
+
+        $pageUrl = static function (int $number) use ($base, $kept): string {
+            $parameters = $number > 1 ? array_merge($kept, ['page' => $number]) : $kept;
+
+            return $parameters === [] ? $base : $base . '?' . http_build_query($parameters);
+        };
+
+        $pages = max(1, (int) ceil($result['total'] / self::PER_PAGE));
 
         $body = $this->app->view->render('shelf.index', [
             'heading'       => $heading,
@@ -100,7 +116,11 @@ final class ShelfController
             'filters'       => $filters,
             'hasFilters'    => array_filter($filters) !== ['sort' => 'recent'] && array_filter($filters) !== [],
             'urlFor'        => $urlFor,
-            'nextUrl'       => $nextUrl,
+            'pageUrl'       => $pageUrl,
+            'page'          => $page,
+            'pages'         => $pages,
+            'pageNumbers'   => self::pageNumbers($page, $pages),
+            'perPage'       => self::PER_PAGE,
             'view'          => $this->app->view,
         ]);
 
@@ -219,6 +239,40 @@ final class ShelfController
         ]);
 
         return preg_match('/^\p{L}$/u', $folded) === 1 ? $folded : '#';
+    }
+
+    /**
+     * Which page numbers to show, with gaps.
+     *
+     * Fifty-one numbers in a row is not a control, it is a wall. First and
+     * last are always there, plus a window around where you are; null marks a
+     * gap the template renders as an ellipsis.
+     *
+     * @return list<?int>
+     */
+    private static function pageNumbers(int $page, int $pages, int $window = 2): array
+    {
+        $wanted = [1, $pages];
+        for ($n = $page - $window; $n <= $page + $window; $n++) {
+            $wanted[] = $n;
+        }
+        $wanted = array_values(array_unique(array_filter(
+            $wanted,
+            static fn (int $n): bool => $n >= 1 && $n <= $pages
+        )));
+        sort($wanted);
+
+        $out = [];
+        $previous = 0;
+        foreach ($wanted as $number) {
+            if ($previous !== 0 && $number > $previous + 1) {
+                $out[] = null;
+            }
+            $out[] = $number;
+            $previous = $number;
+        }
+
+        return $out;
     }
 
     public function detail(Request $request, array $params): Response

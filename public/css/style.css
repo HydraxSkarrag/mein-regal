@@ -1127,3 +1127,45 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .facet-list a:hover span:first-child { text-decoration: underline; }
 .facet-list .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- Page controls --------------------------------------------------- */
+
+/* Was a "load more" button that replaced the page instead of adding to it -
+   a page link wearing the wrong word. With fifty-one pages the honest
+   control says which page this is and lets you jump. */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 28px 0 10px;
+}
+.pager-page,
+.pager-step {
+  min-width: 38px;
+  padding: 7px 11px;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.pager-page:hover,
+.pager-step:hover { border-color: var(--accent); color: var(--accent); }
+.pager-page.is-here {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+/* Kept in place rather than removed, so the row does not shift as you page. */
+.pager-step.is-off { color: var(--muted); opacity: 0.45; }
+.pager-gap { padding: 0 2px; color: var(--muted); }
+
+@media (max-width: 560px) {
+  .pager-page,
+  .pager-step { min-width: 34px; padding: 6px 8px; font-size: 0.85rem; }
+}

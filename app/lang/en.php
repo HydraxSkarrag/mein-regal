@@ -30,8 +30,11 @@ return [
     'shelf.empty'        => 'No books found.',
     'shelf.empty.hint'   => 'Try a different search or filter.',
     'shelf.all'          => 'All',
-    'shelf.more'         => 'Load more',
-    'shelf.showing'      => '{shown} of {total}',
+    'shelf.range'        => '{from}–{to} of {total}',
+    'page.nav'           => 'Pages',
+    'page.previous'      => 'Back',
+    'page.next'          => 'Next',
+    'page.go'            => 'Page {number}',
 
     'filter.status'      => 'Status',
     'filter.genre'       => 'Genre',
