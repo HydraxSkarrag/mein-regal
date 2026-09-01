@@ -8,10 +8,10 @@ use App\Core\Isbn;
 /**
  * Google Books.
  *
- * Second in line for German titles, high in line for English ones. Displaying
- * the returned thumbnail is permitted as long as it is linked back to Google
- * and not passed off as our own - so the cover is LINKED, never copied, and
- * carries an attribution.
+ * Second in line for German titles, high in line for English ones. Covers are
+ * shown with an attribution and a link back to Google, never passed off as
+ * our own. They are fetched once and served from this server rather than
+ * embedded from Google's - see CoverStorage for why that trade is made.
  *
  * Without a key the quota is shared per IP and runs out quickly; a free key
  * raises it to roughly a thousand calls a day.
@@ -19,6 +19,22 @@ use App\Core\Isbn;
 final class GoogleBooksLookup implements LookupSource
 {
     private const ENDPOINT = 'https://www.googleapis.com/books/v1/volumes';
+
+    /**
+     * How wide a cover to ask for.
+     *
+     * The thumbnail the API hands out is 128 pixels wide - a third of what the
+     * shelf grid needs and a seventh of the detail page, so every Google cover
+     * arrived upscaled and soft. The same image address serves a larger
+     * rendition when asked: fife=w900 returns the biggest one Google holds up
+     * to that width, which measured over twelve covers was 900 where a full
+     * scan exists and 300 where it does not - larger every single time.
+     *
+     * zoom=0 looks like the obvious lever and is the wrong one: for two thirds
+     * of the same sample it answered with the grey "image not available"
+     * filler rather than the cover. This asks for a size, not a zoom level.
+     */
+    private const RENDITION_WIDTH = 900;
 
     public function __construct(
         private readonly HttpClient $http,
@@ -113,16 +129,37 @@ final class GoogleBooksLookup implements LookupSource
             if (!isset($imageLinks[$key]) || !is_string($imageLinks[$key])) {
                 continue;
             }
-            // Google still hands out http:// links; loading those on an https
-            // page would be blocked as mixed content.
-            $url = str_replace('http://', 'https://', $imageLinks[$key]);
-
-            // "edge=curl" paints a fake page curl onto the image. It looks
-            // like a rendering artefact next to real cover photos.
-            return str_replace('&edge=curl', '', $url);
+            return self::renditionUrl($imageLinks[$key]);
         }
 
         return null;
+    }
+
+    /**
+     * The address a cover is actually fetched from.
+     *
+     * Public and static because covers recorded before this existed are
+     * refreshed from their stored address by bin/covers.php, and both paths
+     * have to arrive at the same URL - one rule, one place.
+     */
+    public static function renditionUrl(string $thumbnail): string
+    {
+        // Google still hands out http:// links; loading those on an https
+        // page would be blocked as mixed content.
+        $url = str_replace('http://', 'https://', $thumbnail);
+
+        // "edge=curl" paints a fake page curl onto the image. It looks
+        // like a rendering artefact next to real cover photos.
+        $url = str_replace('&edge=curl', '', $url);
+
+        // Idempotent: refreshing an already upgraded address must not append
+        // a second size, which would leave the first one to win.
+        $url = preg_replace('/([?&])fife=[^&]*/', '$1fife=w' . self::RENDITION_WIDTH, $url, 1, $count) ?? $url;
+        if ($count === 0) {
+            $url .= (str_contains($url, '?') ? '&' : '?') . 'fife=w' . self::RENDITION_WIDTH;
+        }
+
+        return $url;
     }
 
     /** publishedDate is "2017", "2017-03" or "2017-03-14". */

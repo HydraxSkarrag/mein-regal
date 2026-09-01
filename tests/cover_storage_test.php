@@ -159,3 +159,46 @@ foreach (glob($dir2 . '/*') ?: [] as $entry) {
     unlink($entry);
 }
 rmdir($dir2);
+
+Assert::group('Google hands out a bigger cover when asked');
+
+/*
+ * The API's thumbnail is 128 pixels wide - a third of what the grid needs.
+ * The same address serves a larger rendition, and every cover is fetched
+ * through this one rule so a refreshed cover and a freshly found one cannot
+ * end up at different sizes.
+ */
+$thumbnail = 'http://books.google.com/books/content?id=X&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api';
+$upgraded = App\Lookup\GoogleBooksLookup::renditionUrl($thumbnail);
+
+Assert::true('a size is asked for', str_contains($upgraded, 'fife=w900'));
+Assert::true('http is lifted to https', str_starts_with($upgraded, 'https://'));
+Assert::true('the fake page curl is dropped', !str_contains($upgraded, 'edge=curl'));
+
+// Covers stored before this existed are refreshed from their recorded
+// address, so the rule runs over its own output. A second size appended
+// after the first would leave the first one deciding.
+$twice = App\Lookup\GoogleBooksLookup::renditionUrl($upgraded);
+Assert::same('running it again changes nothing', $twice, $upgraded);
+Assert::same('and does not append a second size', substr_count($twice, 'fife='), 1);
+
+// An address that already asks for a different size is corrected, not added to.
+$other = App\Lookup\GoogleBooksLookup::renditionUrl(
+    'https://books.google.com/books/content?id=X&fife=w200&source=gbs_api'
+);
+Assert::same('an existing size is replaced', substr_count($other, 'fife='), 1);
+Assert::true('by the one we want', str_contains($other, 'fife=w900'));
+Assert::true('and the rest of the address survives', str_contains($other, 'source=gbs_api'));
+
+// The refresh decides what to fetch by comparing addresses: a source with
+// nothing better to offer must produce the address it already has, so that
+// comparison is what keeps Open Library's covers from being downloaded again
+// for nothing.
+Assert::true('an address with a query gets another parameter', str_contains(
+    App\Lookup\GoogleBooksLookup::renditionUrl('https://books.google.com/books/content?id=X'),
+    '&fife=w900'
+));
+Assert::true('one without a query gets its first', str_contains(
+    App\Lookup\GoogleBooksLookup::renditionUrl('https://books.google.com/books/content'),
+    '?fife=w900'
+));
