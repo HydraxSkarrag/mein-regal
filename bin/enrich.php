@@ -219,6 +219,18 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
         $pdo = Database::connect($config);
     }
 
+    try {
+        Database::assertSchema(
+            $pdo,
+            isset($options['sqlite']) && $options['sqlite'] !== false
+                ? (string) $options['sqlite']
+                : Database::describe($config)
+        );
+    } catch (RuntimeException $e) {
+        fwrite(STDERR, $e->getMessage() . "\n");
+        exit(1);
+    }
+
     $started = microtime(true);
     $stats = enrich($pdo, $config, $limit, $ownerId, !isset($options['quiet']), $budget);
 

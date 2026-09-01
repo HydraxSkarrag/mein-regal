@@ -42,8 +42,18 @@ if (isset($options['sqlite']) && $options['sqlite'] !== false) {
     Database::sqliteDefaults($pdo);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $where = (string) $options['sqlite'];
 } else {
-    $pdo = Database::connect(Config::load());
+    $config = Config::load();
+    $pdo = Database::connect($config);
+    $where = Database::describe($config);
+}
+
+try {
+    Database::assertSchema($pdo, $where);
+} catch (RuntimeException $e) {
+    fwrite(STDERR, $e->getMessage() . "\n");
+    exit(1);
 }
 
 $extension = $format === 'json' ? 'json' : 'csv';

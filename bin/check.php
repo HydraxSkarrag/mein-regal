@@ -155,4 +155,28 @@ if ($placeholder) {
     }
 }
 
+/* Which database this installation would use.
+ *
+ * db_dsn is meant for local work and belongs empty on a server. Left filled
+ * in, the site starts perfectly well against whatever it names - an SQLite
+ * file that may not even exist yet - and shows an empty shelf with nothing to
+ * suggest that the real catalogue is somewhere else. Worth a word before
+ * going live, which is one of the two moments this script is for.
+ */
+if (isset($config)) {
+    echo "\n";
+    $dsn = $config->str('db_dsn');
+    if ($dsn === '') {
+        line('Database', true, 'mysql, as configured for a server');
+    } else {
+        line('Database', false, 'db_dsn is set: ' . $dsn);
+        echo "                         That overrides the MySQL settings. On the server it
+";
+        echo "                         belongs empty, or the shelf will be looked for in
+";
+        echo "                         the wrong place - quietly.
+";
+    }
+}
+
 echo "\n";
