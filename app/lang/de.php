@@ -183,6 +183,7 @@ return [
     'filter.review.yes'    => 'Mit Rezension',
     'filter.review.no'     => 'Ohne Rezension',
     'facets.count'         => '{count} insgesamt',
+    'facets.all'           => 'alle {count}',
     'facets.none'          => 'Noch nichts erfasst.',
     'book.review.read'     => 'Rezension auf {blog} lesen',
     'book.review'          => 'Rezension',

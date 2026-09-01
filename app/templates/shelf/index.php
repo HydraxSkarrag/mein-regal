@@ -47,8 +47,17 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
-    <?php /* The sidebar shows the biggest few; the heading leads to all of them. */ ?>
-    <h2><a class="facet-all" href="/genres"><?= e(t('filter.genre')) ?></a></h2>
+    <?php /*
+       * The sidebar shows the biggest few. Making the heading itself a quiet
+       * link hid the other 367 just as thoroughly as having no link at all -
+       * nothing about a heading suggests it can be clicked. The way out is
+       * its own control, with the number on it: it says both that there is
+       * more and how much more.
+       */ ?>
+    <h2 class="sidebar-head">
+      <span><?= e(t('filter.genre')) ?></span>
+      <a class="facet-all" href="/genres"><?= e(t('facets.all', ['count' => $formatter->number($tagTotal)])) ?></a>
+    </h2>
     <ul>
       <?php foreach ($tags as $tag): ?>
       <li><a href="<?= e($urlFor(['tag' => ($filters['tag'] ?? '') === $tag['slug'] ? '' : $tag['slug']])) ?>"
@@ -57,7 +66,10 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
-    <h2><a class="facet-all" href="/authors"><?= e(t('filter.author')) ?></a></h2>
+    <h2 class="sidebar-head">
+      <span><?= e(t('filter.author')) ?></span>
+      <a class="facet-all" href="/authors"><?= e(t('facets.all', ['count' => $formatter->number($authorTotal)])) ?></a>
+    </h2>
     <ul>
       <?php foreach ($topAuthors as $person): ?>
       <li><a href="<?= e($urlFor(['author' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"

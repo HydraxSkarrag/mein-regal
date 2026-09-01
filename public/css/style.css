@@ -1046,10 +1046,34 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 /* ---- Full genre and author lists ------------------------------------ */
 
-/* The heading is a link without looking like one until it is reached for. */
-.sidebar h2 .facet-all { color: inherit; text-decoration: none; }
-.sidebar h2 .facet-all:hover,
-.sidebar h2 .facet-all:focus-visible { text-decoration: underline; }
+/* The heading keeps its weight; the way to the full list sits beside it and
+   looks like something you press. */
+.sidebar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sidebar-head .facet-all {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.sidebar-head .facet-all::after { content: " \203A"; }
+.sidebar-head .facet-all:hover,
+.sidebar-head .facet-all:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
 
 .alphabet {
   display: flex;

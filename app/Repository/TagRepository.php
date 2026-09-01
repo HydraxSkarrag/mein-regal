@@ -109,6 +109,22 @@ final class TagRepository
         return $statement->fetchAll();
     }
 
+    /** Genres that are actually on a book; an orphan tag is not one. */
+    public function count(int $ownerId): int
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM (
+                 SELECT t.id FROM tags t
+                   JOIN book_tags bt ON bt.tag_id = t.id
+                  WHERE t.owner_id = ?
+                  GROUP BY t.id
+             ) AS used'
+        );
+        $statement->execute([$ownerId]);
+
+        return (int) $statement->fetchColumn();
+    }
+
     /** @return list<array{id: int, name: string, slug: string, book_count: int}> */
     public function listWithCounts(int $ownerId, int $limit = 40): array
     {

@@ -183,6 +183,7 @@ return [
     'filter.review.yes'    => 'With a review',
     'filter.review.no'     => 'Without a review',
     'facets.count'         => '{count} in total',
+    'facets.all'           => 'all {count}',
     'facets.none'          => 'Nothing recorded yet.',
     'book.review.read'     => 'Read the review on {blog}',
     'book.review'          => 'Review',
