@@ -3,7 +3,9 @@
  * Look after the cover files.
  *
  *   php bin/covers.php                          what is stored, and how big it is
- *   php bin/covers.php --refresh                fetch the small ones again, bigger
+ *   php bin/covers.php --refresh                fetch the small ones again, bigger,
+ *                                               and ask the other source about
+ *                                               whatever is still too small
  *   php bin/covers.php --refresh --limit=50     a few at a time
  *   php bin/covers.php --prune                  list files no cover row points at
  *   php bin/covers.php --prune --commit         and delete them, except any that
@@ -35,6 +37,7 @@ use App\Core\Config;
 use App\Core\CoverStorage;
 use App\Core\Database;
 use App\Lookup\GoogleBooksLookup;
+use App\Lookup\OpenLibraryLookup;
 use App\Repository\CoverRepository;
 
 /** Below this width a cover is upscaled in the shelf grid, which is visible. */
@@ -70,6 +73,7 @@ report($pdo, $ownerId, $minimum);
 
 if (isset($options['refresh'])) {
     refresh($pdo, $directory, $ownerId, $minimum, $limit);
+    alternates($pdo, $directory, $ownerId, $minimum, $limit);
 }
 if (isset($options['prune'])) {
     prune($pdo, $directory, isset($options['commit']), isset($options['all']));
@@ -214,6 +218,106 @@ function refresh(PDO $pdo, string $directory, int $ownerId, int $minimum, int $l
     }
 
     printf("\nLarger: %d, unchanged: %d, failed: %d\n", $bigger, $same, $failed);
+}
+
+/**
+ * Ask the other free source about the covers that are still too small.
+ *
+ * A rendition is only ever as big as what that source holds, and for many
+ * German titles Google holds 300 pixels and no more. Open Library often has a
+ * different scan of the same edition, and its cover service answers by ISBN
+ * alone - no lookup, no API key, no quota. Where its picture is the larger
+ * one it is stored alongside the existing cover rather than replacing it:
+ * both are permitted and both are attributed, so nothing is lost by keeping
+ * the pair, and the repository shows whichever is bigger.
+ *
+ * A source thrown out by hand for a book is never asked again, here as
+ * everywhere else.
+ */
+function alternates(PDO $pdo, string $directory, int $ownerId, int $minimum, int $limit): void
+{
+    $storage = new CoverStorage($directory);
+    $covers = new CoverRepository($pdo);
+
+    $sql = 'SELECT b.id, b.isbn13, b.title, MAX(c.width) AS best
+              FROM books b
+              JOIN covers c ON c.book_id = b.id AND c.rejected_at IS NULL AND c.path IS NOT NULL
+             WHERE b.owner_id = ? AND b.isbn13 IS NOT NULL
+          GROUP BY b.id, b.isbn13, b.title
+            HAVING MAX(c.width) < ?
+          ORDER BY MAX(c.width) ASC';
+    if ($limit > 0) {
+        $sql .= ' LIMIT ' . $limit;
+    }
+    $statement = $pdo->prepare($sql);
+    $statement->execute([$ownerId, $minimum]);
+
+    $work = [];
+    foreach ($statement->fetchAll() as $row) {
+        // Nothing to gain where Open Library is already the cover on show,
+        // and nothing to reopen where it was thrown out.
+        $existing = $pdo->prepare('SELECT 1 FROM covers WHERE book_id = ? AND source = ?');
+        $existing->execute([(int) $row['id'], CoverRepository::SOURCE_OPENLIBRARY]);
+        if ($existing->fetchColumn() === false) {
+            $work[] = $row;
+        }
+    }
+
+    printf("\n%d covers below %dpx to ask Open Library about.\n\n", count($work), $minimum);
+
+    $better = 0;
+    $worse = 0;
+    $none = 0;
+    foreach ($work as $row) {
+        $isbn = (string) $row['isbn13'];
+        $best = (int) $row['best'];
+
+        try {
+            $stored = $storage->storeRemote(
+                OpenLibraryLookup::coverUrl($isbn),
+                $isbn . '-' . CoverRepository::SOURCE_OPENLIBRARY
+            );
+        } catch (Throwable $e) {
+            // Open Library answers for a book it has no cover for with a
+            // one-pixel image, which the placeholder check refuses.
+            $none++;
+            continue;
+        }
+
+        if ($stored['width'] <= $best) {
+            /* Not an improvement, and the files are already written - so they
+               are taken away again. Storing them would leave the shelf with a
+               second, smaller picture nobody will ever see. */
+            $worse++;
+            discard($directory, $stored['path']);
+            continue;
+        }
+
+        $covers->save(
+            (int) $row['id'],
+            CoverRepository::SOURCE_OPENLIBRARY,
+            $stored['path'],
+            OpenLibraryLookup::coverUrl($isbn),
+            'Cover: Open Library',
+            $stored['width'],
+            $stored['height']
+        );
+        $better++;
+        printf("  %4d -> %4d  %s\n", $best, $stored['width'], mb_substr((string) $row['title'], 0, 50));
+    }
+
+    printf("\nBetter: %d, not better: %d, no cover there: %d\n", $better, $worse, $none);
+}
+
+/** Remove a cover that was written and then not wanted, both of its files. */
+function discard(string $directory, string $path): void
+{
+    foreach ([$path, preg_replace('/\.webp$/', '-klein.webp', $path)] as $file) {
+        $full = $directory . '/' . $file;
+        if (is_file($full)) {
+            unlink($full);
+        }
+    }
 }
 
 /**

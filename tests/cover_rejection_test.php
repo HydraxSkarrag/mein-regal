@@ -62,3 +62,39 @@ Assert::same('the rejection is unaffected', $covers->rejectedSources($bookId), [
 $covers->save($bookId, CoverRepository::SOURCE_GOOGLE, 'ab/x-google.webp', null, null, 400, 600);
 Assert::same('an explicit save clears the rejection', $covers->rejectedSources($bookId), []);
 Assert::same('and the cover is back', $covers->bestFor($bookId, true)['source'], 'google');
+
+Assert::group('Two web sources: the bigger picture wins');
+
+/*
+ * Google used to outrank Open Library outright, which was a decision about
+ * provenance being applied to a question of quality: a 128 pixel Google
+ * thumbnail was shown in front of a 325 pixel Open Library scan of the same
+ * book. Both are equally permitted and equally attributed, so between those
+ * two there is nothing to prefer but the picture.
+ */
+$small = $books->insert(1, ['title' => 'Klein bei Google', 'isbn13' => '9783150056981']);
+$covers->save($small, CoverRepository::SOURCE_GOOGLE, 'ab/g.webp', null, 'Cover: Google Books', 128, 170);
+$covers->save($small, CoverRepository::SOURCE_OPENLIBRARY, 'cd/o.webp', null, 'Cover: Open Library', 325, 500);
+
+Assert::same('the larger one is shown', $covers->bestFor($small, true)['source'], 'openlibrary');
+Assert::same(
+    'and the shelf listing agrees with the detail page',
+    $covers->bestForMany([$small], true)[$small]['source'],
+    'openlibrary'
+);
+
+// The other way round, to be sure it is the size deciding and not the order
+// the rows went in.
+$big = $books->insert(1, ['title' => 'Groß bei Google', 'isbn13' => '9783150087510']);
+$covers->save($big, CoverRepository::SOURCE_OPENLIBRARY, 'cd/o2.webp', null, 'Cover: Open Library', 95, 140);
+$covers->save($big, CoverRepository::SOURCE_GOOGLE, 'ab/g2.webp', null, 'Cover: Google Books', 900, 1341);
+
+Assert::same('Google when Google is bigger', $covers->bestFor($big, true)['source'], 'google');
+
+// Provenance still comes first where it means something: a photograph of the
+// actual copy is the right cover even when a web source has a sharper scan.
+$own = $books->insert(1, ['title' => 'Selbst fotografiert', 'isbn13' => '9783473402113']);
+$covers->save($own, CoverRepository::SOURCE_OWN, 'ef/own.webp', null, null, 400, 600);
+$covers->save($own, CoverRepository::SOURCE_OPENLIBRARY, 'cd/o3.webp', null, 'Cover: Open Library', 900, 1350);
+
+Assert::same('the photograph wins anyway', $covers->bestFor($own, true)['source'], 'own');

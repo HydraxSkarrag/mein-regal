@@ -31,13 +31,39 @@ final class CoverRepository
     public const SOURCE_OPENLIBRARY = 'openlibrary';
 
 
-    /** Preference order when a book has more than one cover. */
+    /**
+     * Preference order when a book has more than one cover.
+     *
+     * Provenance decides: a photograph of the actual copy first, then the
+     * publishers' own service. The two free web sources share a rank on
+     * purpose - they are equally permitted and equally attributed, so there is
+     * nothing left to prefer between them except the picture itself, and that
+     * is settled by size in compare().
+     */
     private const PRIORITY = [
         self::SOURCE_OWN         => 0,
         self::SOURCE_VLBTIX      => 1,
         self::SOURCE_GOOGLE      => 2,
-        self::SOURCE_OPENLIBRARY => 3,
+        self::SOURCE_OPENLIBRARY => 2,
     ];
+
+    /**
+     * Which of two covers to show. Negative means the first one.
+     *
+     * @param array{source: string, width?: ?int} $a
+     * @param array{source: string, width?: ?int} $b
+     */
+    private static function compare(array $a, array $b): int
+    {
+        $rank = (self::PRIORITY[$a['source']] ?? 99) <=> (self::PRIORITY[$b['source']] ?? 99);
+        if ($rank !== 0) {
+            return $rank;
+        }
+
+        // Same standing, so the larger image wins - a 128 pixel thumbnail
+        // next to a 500 pixel cover is not a matter of taste.
+        return (int) ($b['width'] ?? 0) <=> (int) ($a['width'] ?? 0);
+    }
 
     private readonly Dialect $dialect;
 
@@ -92,7 +118,7 @@ final class CoverRepository
      */
     public function bestFor(int $bookId, bool $viewerIsSignedIn): ?array
     {
-        $sql = 'SELECT source, path, external_url, attribution FROM covers'
+        $sql = 'SELECT source, path, external_url, attribution, width FROM covers'
             . ' WHERE book_id = ? AND rejected_at IS NULL';
         $parameters = [$bookId];
         if (!$viewerIsSignedIn) {
@@ -107,11 +133,7 @@ final class CoverRepository
             return null;
         }
 
-        usort(
-            $rows,
-            static fn (array $a, array $b): int =>
-                (self::PRIORITY[$a['source']] ?? 99) <=> (self::PRIORITY[$b['source']] ?? 99)
-        );
+        usort($rows, self::compare(...));
 
         return $rows[0];
     }
@@ -123,7 +145,7 @@ final class CoverRepository
             return [];
         }
         $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
-        $sql = 'SELECT book_id, source, path, external_url, attribution FROM covers'
+        $sql = 'SELECT book_id, source, path, external_url, attribution, width FROM covers'
             . " WHERE book_id IN ($placeholders) AND rejected_at IS NULL";
         if (!$viewerIsSignedIn) {
             $sql .= ' AND is_public = 1';
@@ -135,8 +157,7 @@ final class CoverRepository
         $best = [];
         foreach ($statement->fetchAll() as $row) {
             $bookId = (int) $row['book_id'];
-            $rank = self::PRIORITY[$row['source']] ?? 99;
-            if (isset($best[$bookId]) && (self::PRIORITY[$best[$bookId]['source']] ?? 99) <= $rank) {
+            if (isset($best[$bookId]) && self::compare($best[$bookId], $row) <= 0) {
                 continue;
             }
             unset($row['book_id']);
