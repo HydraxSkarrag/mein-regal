@@ -205,9 +205,9 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
         $pdo = new PDO('sqlite:' . $options['sqlite']);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        /* Die echte Konfiguration, wenn es sie gibt: --sqlite soll nur die
-           database, not to throw the Google key away. It did exactly that,
-           and enrichment then ran without Google, with nothing to say so. */
+        /* The real configuration, where there is one: --sqlite is meant to
+           swap the database, not to throw the Google key away. It did exactly
+           that, and enrichment then ran without Google, saying nothing. */
         try {
             $config = Config::load();
         } catch (Throwable $e) {

@@ -59,7 +59,7 @@ function backup(PDO $pdo, string $directory, int $keepDays, bool $verbose = true
     $rows = dumpDatabase($pdo, $sqlPath);
     $files[] = $sqlPath;
     if ($verbose) {
-        printf("  %-44s %7d Zeilen\n", basename($sqlPath), $rows);
+        printf("  %-44s %7d rows\n", basename($sqlPath), $rows);
     }
 
     // ---- the collection, in the format that outlives this application ----
@@ -81,7 +81,7 @@ function backup(PDO $pdo, string $directory, int $keepDays, bool $verbose = true
     if ($covers > 0) {
         $files[] = $zipPath;
         if ($verbose) {
-            printf("  %-44s %7d Dateien\n", basename($zipPath), $covers);
+            printf("  %-44s %7d files\n", basename($zipPath), $covers);
         }
     }
 
@@ -115,7 +115,8 @@ function dumpDatabase(PDO $pdo, string $path): int
         : $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
 
     fwrite($handle, "-- Mein Regal, backup taken " . date('c') . "\n");
-    fwrite($handle, "-- Einspielen: in phpMyAdmin importieren.\n");
+    fwrite($handle, "-- To restore: import this file in phpMyAdmin.\n");
+    fwrite($handle, "-- The tables must exist first; load schema.sql before this.\n");
     fwrite($handle, "--\n");
     fwrite($handle, "-- Note: notes and page texts may contain line breaks, so a single\n");
     fwrite($handle, "-- INSERT statement can span several lines. That is valid SQL; reading\n");
@@ -322,9 +323,9 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
     $result = backup($pdo, $directory, $keep);
 
     printf(
-        "\n%d Dateien, %s, in %s (%.1f s)\n",
+        "\n%d files, %s, in %s (%.1f s)\n",
         count($result['files']),
-        number_format($result['bytes'] / 1024 / 1024, 1, ',', '.') . ' MB',
+        number_format($result['bytes'] / 1024 / 1024, 1) . ' MB',
         $directory,
         microtime(true) - $started
     );

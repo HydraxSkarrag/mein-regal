@@ -233,16 +233,15 @@ final class CoverStorage
     }
 
     /**
-     * Ist das überhaupt ein Cover?
+     * Is this a cover at all?
      *
-     * Google liefert für Bücher ohne Vorschau ein einfarbiges Ersatzbild
-     * statt eines Fehlers - beim Testen war es 575x750 Pixel in sieben
-     * Farben, durchgehend blau. Gespeichert sähe das im Regal aus wie ein
-     * Cover und wäre schlechter als der selbst erzeugte Platzhalter, der
-     * wenigstens den Titel zeigt.
+     * For books with no preview Google serves a flat filler image rather than
+     * an error - in testing, 575x750 pixels in seven colours, blue throughout.
+     * Stored, that would sit in the shelf looking like a cover, and it is
+     * worse than the generated placeholder, which at least shows the title.
      *
-     * Ein paar hundert Bildpunkte reichen für die Unterscheidung: ein
-     * gedrucktes Cover hat Dutzende Farbwerte, ein Ersatzbild eine Handvoll.
+     * A few hundred sampled pixels are enough to tell them apart: a printed
+     * cover has dozens of colour values, a filler image has a handful.
      */
     private static function looksLikePlaceholder(\GdImage $image, int $width, int $height): bool
     {
