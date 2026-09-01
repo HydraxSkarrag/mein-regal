@@ -8,16 +8,27 @@ use RuntimeException;
 /**
  * Reads the Bookstats export.
  *
- * The file is Latin-1, semicolon-separated with CRLF line endings - not a
- * combination PHP guesses correctly on its own. Reading it as UTF-8 turns
+ * The file is single-byte, semicolon-separated, with CRLF line endings - not
+ * a combination PHP guesses correctly on its own. Reading it as UTF-8 turns
  * "Rückkehr" into mojibake that is then stored, so the conversion happens here
  * once and everything downstream is UTF-8.
+ *
+ * Windows-1252 rather than ISO-8859-1, which is what this said at first. The
+ * two agree on everything from 0xA0 up, and differ in the range 0x80-0x9F:
+ * printable punctuation in the one, control characters in the other. The
+ * export uses that range - an en dash sits at 0x96 - so reading it as
+ * ISO-8859-1 turned a dash into an invisible control character that then
+ * travelled into the database intact and unreadable.
+ *
+ * Every file that really is ISO-8859-1 still decodes correctly here, because
+ * the ranges the two share are identical. There is no case where the narrower
+ * guess is the better one.
  */
 final class CsvReader
 {
     public function __construct(
         private readonly string $path,
-        private readonly string $sourceEncoding = 'ISO-8859-1',
+        private readonly string $sourceEncoding = 'Windows-1252',
         private readonly string $delimiter = ';',
     ) {
     }

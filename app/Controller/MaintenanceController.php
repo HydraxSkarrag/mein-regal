@@ -72,7 +72,7 @@ final class MaintenanceController
         ignore_user_abort(true);
 
         try {
-            $reader = new CsvReader($temporary, $request->post('encoding') === 'utf8' ? 'UTF-8' : 'ISO-8859-1');
+            $reader = new CsvReader($temporary, $request->post('encoding') === 'utf8' ? 'UTF-8' : 'Windows-1252');
             $importer = new Importer(
                 $this->app->pdo,
                 $this->app->books,

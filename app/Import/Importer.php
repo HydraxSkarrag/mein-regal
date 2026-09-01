@@ -120,11 +120,18 @@ final class Importer
                 ]);
 
                 foreach ($authors['names'] as $position => $name) {
-                    $authorId = $this->authors->findOrCreate($ownerId, $name, $authorCreated);
+                    /* The export writes the role into the author field, so
+                     * "Eva Gebhardt (Ill.)" arrives as one string. Taking it
+                     * whole left the marker in the name for good and filed
+                     * every link under 'author' - the role column existed and
+                     * was never once used. */
+                    ['name' => $person, 'role' => $role] = Text::splitRole($name);
+
+                    $authorId = $this->authors->findOrCreate($ownerId, $person, $authorCreated);
                     if ($authorCreated) {
                         $report->authorsCreated++;
                     }
-                    $this->authors->link($bookId, $authorId, 'author', $position);
+                    $this->authors->link($bookId, $authorId, $role, $position);
                 }
 
                 if ($row->genreIsIdentifier()) {

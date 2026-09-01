@@ -61,14 +61,14 @@ if (isset($options['sqlite']) && $options['sqlite'] !== false) {
 
 $users = new UserRepository($pdo);
 if ($users->findByEmail($email) !== null) {
-    fwrite(STDERR, "Es gibt bereits ein Konto mit dieser Adresse.\n");
+    fwrite(STDERR, "An account with that address already exists.\n");
     exit(1);
 }
 
 $id = $users->create($email, $password, $name, (string) ($options['locale'] ?? 'de'), true);
 
-printf("Konto angelegt (id %d): %s\n", $id, $email);
+printf("Account created (id %d): %s\n", $id, $email);
 if ($generated !== null) {
-    printf("Passwort: %s\n", $generated);
+    printf("Password: %s\n", $generated);
     echo "Write it down now - only its hash is stored, and it cannot be read back.\n";
 }

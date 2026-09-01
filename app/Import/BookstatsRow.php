@@ -60,9 +60,39 @@ final class BookstatsRow
 
     public function title(): string
     {
-        $title = trim($this->raw['Titel'] ?? '');
+        $title = self::undoLatin1Loss(trim($this->raw['Titel'] ?? ''));
 
         return $title !== '' ? $title : '(untitled)';
+    }
+
+    /**
+     * Put back the characters the export could not carry.
+     *
+     * Bookstats writes its CSV as Latin-1, and everything outside that set is
+     * replaced with a literal question mark - byte 0x3f, verifiable in the
+     * file itself. In a collection of three thousand books that came to 204
+     * fields: every en dash between a title and its subtitle, and every
+     * typographic apostrophe.
+     *
+     * Only shapes that cannot be a real question mark are touched. One with a
+     * space in front of it is not punctuation any typography produces, and
+     * one wedged between two letters is not one either. A question mark
+     * anywhere else is left exactly where it is, which is what keeps "Wieso?
+     * Weshalb? Warum?" intact.
+     */
+    public static function undoLatin1Loss(string $text): string
+    {
+        if (!str_contains($text, '?')) {
+            return $text;
+        }
+
+        // " ? " was a dash.
+        $text = preg_replace('/(?<= )\?(?= )/u', '–', $text) ?? $text;
+        // Between letters: a space where a capital follows - "Das?Sagen-Epos"
+        // was a narrow one - and an apostrophe where a lowercase one does.
+        $text = preg_replace('/(?<=\p{L})\?(?=\p{Lu})/u', ' ', $text) ?? $text;
+
+        return preg_replace('/(?<=\p{L})\?(?=\p{Ll})/u', '’', $text) ?? $text;
     }
 
     public function isbn13(): ?string
@@ -212,7 +242,7 @@ final class BookstatsRow
 
     public function notes(): ?string
     {
-        $notes = trim($this->raw['Notizen'] ?? '');
+        $notes = self::undoLatin1Loss(trim($this->raw['Notizen'] ?? ''));
 
         return $notes !== '' ? $notes : null;
     }

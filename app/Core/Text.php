@@ -180,6 +180,63 @@ final class Text
     }
 
     /**
+     * What a bracketed marker in a name means, in either language and either
+     * bracket shape. The export uses "(Ill.)", "[Hrsg.]" and the spelled-out
+     * forms interchangeably.
+     */
+    private const ROLE_MARKERS = [
+        'aut' => 'author', 'autor' => 'author', 'autorin' => 'author',
+        'ill' => 'illustrator', 'illustr' => 'illustrator',
+        'illustrator' => 'illustrator', 'illustratorin' => 'illustrator',
+        'hrsg' => 'editor', 'hg' => 'editor', 'herausgeber' => 'editor',
+        'uebers' => 'translator', 'übers' => 'translator',
+        'uebersetzer' => 'translator', 'übersetzerin' => 'translator',
+    ];
+
+    /**
+     * Split "Eva Gebhardt (Ill.)" into the person and what she did.
+     *
+     * The export writes the role into the author field, and the import used
+     * to take the whole string as a name and file every link under 'author'.
+     * The marker then sat in the displayed name for good, and the role column
+     * - which exists - was never used at all.
+     *
+     * Only a marker that names a role is removed. "A. A. (Alan Alexander)
+     * Milne" is an expanded initial and keeps its brackets; the sort name
+     * ignores them either way.
+     *
+     * @return array{name: string, role: string}
+     */
+    public static function splitRole(string $name): array
+    {
+        if (preg_match_all('/\(([^)]*)\)|\[([^\]]*)\]/u', $name, $matches, PREG_SET_ORDER) === 0) {
+            return ['name' => self::tidyName($name), 'role' => 'author'];
+        }
+
+        $role = null;
+        $remove = [];
+        foreach ($matches as $match) {
+            $inside = trim($match[2] ?? '') !== '' ? trim($match[2]) : trim($match[1]);
+            $found = self::ROLE_MARKERS[mb_strtolower(rtrim($inside, '.'))] ?? null;
+            if ($found !== null) {
+                $role = $found;
+                $remove[] = $match[0];
+            }
+        }
+
+        if ($remove === []) {
+            return ['name' => self::tidyName($name), 'role' => 'author'];
+        }
+
+        $bare = str_replace($remove, ' ', $name);
+
+        return [
+            'name' => self::tidyName(preg_replace('/\s{2,}/u', ' ', $bare) ?? $bare),
+            'role' => $role ?? 'author',
+        ];
+    }
+
+    /**
      * Drop bracketed asides: role markers, and expansions of an initial.
      *
      * Both bracket shapes, because the export uses both - "(Ill.)" and

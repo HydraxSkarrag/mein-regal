@@ -51,7 +51,7 @@ if (isset($options['sqlite']) && $options['sqlite'] !== false) {
     $pdo = Database::connect(Config::load());
 }
 
-$reader = new CsvReader($file, (string) ($options['encoding'] ?? 'ISO-8859-1'));
+$reader = new CsvReader($file, (string) ($options['encoding'] ?? 'Windows-1252'));
 $importer = new Importer(
     $pdo,
     new BookRepository($pdo),
