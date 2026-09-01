@@ -18,8 +18,9 @@
  * shelf after a change to how big an image is asked for.
  *
  * Covers are only ever replaced by a LARGER image. A source that has nothing
- * better to offer leaves what is already there alone, so running this twice
- * costs bandwidth and changes nothing.
+ * better to offer leaves what is already there alone, and the address that was
+ * actually fetched is written down, so a second run skips everything it has
+ * already asked about instead of downloading it again to learn nothing.
  */
 declare(strict_types=1);
 
@@ -174,33 +175,64 @@ function refresh(PDO $pdo, string $directory, int $ownerId, int $minimum, int $l
         try {
             $stored = $storage->storeRemote($url, $row['isbn13'] . '-' . $source);
         } catch (Throwable $e) {
+            // Nothing was written: storeFile checks the picture before it
+            // touches the disk, so the cover already there is untouched.
             $failed++;
-            printf("  ! %-40s %s\n", mb_substr((string) $row['title'], 0, 40), $e->getMessage());
+            printf("  ! %-40s %s\n", mb_substr((string) $row['title'], 0, 40), whyNot($e->getMessage()));
             continue;
         }
 
         $was = (int) ($row['width'] ?? 0);
-        if ($stored['width'] <= $was) {
-            // Nothing gained. The file on disk has been rewritten with the
-            // same picture, which is harmless; the row still describes it.
-            $same++;
-            continue;
-        }
 
+        /* Record what was actually fetched, every time.
+         *
+         * The file on disk has been rewritten by now, so the row has to
+         * describe the new picture even when it is no larger - width and
+         * height end up in the img tag, and wrong ones move the page about
+         * while it loads.
+         *
+         * Storing the address that was fetched is also what makes a second
+         * run cheap: it now matches what the rule would ask for, so the
+         * cover counts as settled and is not downloaded again for nothing. */
         $covers->save(
             (int) $row['book_id'],
             $source,
             $stored['path'],
-            (string) $row['external_url'],
+            $url,
             $row['attribution'],
             $stored['width'],
             $stored['height']
         );
+
+        if ($stored['width'] <= $was) {
+            $same++;
+            continue;
+        }
+
         $bigger++;
         printf("  %4d -> %4d  %s\n", $was, $stored['width'], mb_substr((string) $row['title'], 0, 50));
     }
 
     printf("\nLarger: %d, unchanged: %d, failed: %d\n", $bigger, $same, $failed);
+}
+
+/**
+ * Why a cover was left as it was, in words rather than in exception messages.
+ *
+ * These lines are read by whoever ran the command, and every one of them is a
+ * decision the code made on their behalf - "placeholder" is not a fault, it is
+ * the guard refusing to swap a printed cover for Google's grey filler.
+ */
+function whyNot(string $message): string
+{
+    if ($message === 'placeholder') {
+        return 'the bigger version is Google\'s grey "image not available" - kept the small one';
+    }
+    if (str_contains($message, 'status 404')) {
+        return 'the source does not have this image any more - kept what is there';
+    }
+
+    return $message . ' - kept what is there';
 }
 
 /**
