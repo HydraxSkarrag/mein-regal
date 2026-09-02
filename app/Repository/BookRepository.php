@@ -586,4 +586,75 @@ final class BookRepository
 
         return ['filled' => count($empty), 'already' => $already, 'conflicting' => $conflicting];
     }
+
+    /**
+     * Everything the review matcher needs.
+     *
+     * Two queries and a loop rather than one query with GROUP_CONCAT: that
+     * function takes its separator differently in MySQL and in SQLite, and
+     * this project runs on both.
+     *
+     * @return list<array{id: int, isbn13: ?string, title: string, review_url: ?string, authors: list<string>}>
+     */
+    public function forReviewMatching(int $ownerId): array
+    {
+        $people = [];
+        $names = $this->pdo->prepare(
+            'SELECT ba.book_id, a.name
+               FROM book_authors ba
+               JOIN authors a ON a.id = ba.author_id
+               JOIN books b ON b.id = ba.book_id
+              WHERE b.owner_id = ?
+           ORDER BY ba.position'
+        );
+        $names->execute([$ownerId]);
+        foreach ($names->fetchAll() as $row) {
+            $people[(int) $row['book_id']][] = (string) $row['name'];
+        }
+
+        $statement = $this->pdo->prepare(
+            'SELECT id, isbn13, title, review_url FROM books WHERE owner_id = ?'
+        );
+        $statement->execute([$ownerId]);
+
+        return array_map(
+            static fn (array $row): array => [
+                'id'         => (int) $row['id'],
+                'isbn13'     => $row['isbn13'],
+                'title'      => (string) $row['title'],
+                'review_url' => $row['review_url'],
+                'authors'    => $people[(int) $row['id']] ?? [],
+            ],
+            $statement->fetchAll()
+        );
+    }
+
+    /** @return int 1 when the row changed */
+    public function setReviewUrl(int $ownerId, int $bookId, string $url): int
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE books SET review_url = ?, updated_at = ? WHERE id = ? AND owner_id = ?'
+        );
+        $statement->execute([$url, date('Y-m-d H:i:s'), $bookId, $ownerId]);
+
+        return $statement->rowCount();
+    }
+
+    /**
+     * Write an ISBN a book has been missing.
+     *
+     * Only ever into an empty field, and only the 13-digit form plus the 10
+     * derived from it, so a book found through its review ends up looking
+     * exactly like one found through a scanner.
+     */
+    public function setIsbnIfEmpty(int $ownerId, int $bookId, string $isbn13, ?string $isbn10): int
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE books SET isbn13 = ?, isbn10 = ?, updated_at = ?
+              WHERE id = ? AND owner_id = ? AND (isbn13 IS NULL OR isbn13 = ?)'
+        );
+        $statement->execute([$isbn13, $isbn10, date('Y-m-d H:i:s'), $bookId, $ownerId, '']);
+
+        return $statement->rowCount();
+    }
 }

@@ -65,6 +65,18 @@ return [
     // here; left empty it points at the original repository.
     'repository_url' => '',
 
+    // A WordPress blog whose posts are reviews of these books, e.g.
+    // 'https://www.example.org'. Left empty - the default - nothing here ever
+    // contacts it, and bin/reviews.php refuses to run: an installation
+    // without a blog should never reach out to one.
+    //
+    // With an address, bin/reviews.php reads the blog's public posts through
+    // /wp-json/wp/v2/posts and links each book to the post about it, matching
+    // on the ISBN in the post's text first and on title and author second.
+    // Only that script talks to the blog; no visitor ever loads anything
+    // from it.
+    'review_blog_url' => '',
+
     // Optional Google Books API key. Without one the shared per-IP quota applies.
     'google_books_key' => '',
 
