@@ -150,7 +150,10 @@ final class MaintenanceController
             'title'   => t('maintenance.title'),
             'current' => 'admin',
             'noIndex' => true,
-            'narrow'  => true,
+            /* Full width, like the rest of the private area. The prose width
+               is right for a text to be read and wrong for a screen reached
+               from a menu: changing width between two entries of the same
+               menu makes the page jump under the pointer. */
         ]), $error === '' ? 200 : 422)->noIndex();
     }
 }
