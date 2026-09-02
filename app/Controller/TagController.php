@@ -47,16 +47,22 @@ final class TagController
             return $this->render(t('error.csrf'));
         }
 
-        /* Everything ticked, and nothing else.
+        /* Every tag says what it is, including the ones left alone.
          *
-         * A browser sends only the boxes that are ticked, so a tag missing
-         * from the request is the form saying "not a genre" - which is why
-         * the whole set is written at once rather than tag by tag. */
-        $genres = $request->allPost()['genre'] ?? [];
-        $genreCount = $this->app->tags->setGenres(
-            $this->app->ownerId,
-            is_array($genres) ? array_map('intval', array_keys($genres)) : []
-        );
+         * A browser sends only ticked boxes, so each checkbox is preceded by
+         * a hidden field of the same name carrying "0". An unticked box then
+         * arrives as a plain no rather than as silence, and the save can
+         * touch exactly what the form spoke about - which is what keeps this
+         * screen safe to filter or page later. */
+        $posted = $request->allPost()['genre'] ?? [];
+        $genreById = [];
+        if (is_array($posted)) {
+            foreach ($posted as $id => $value) {
+                $genreById[(int) $id] = (string) $value === '1';
+            }
+        }
+
+        $genreCount = $this->app->tags->setKinds($this->app->ownerId, $genreById);
 
         $this->app->session->flash(t('tags.saved', ['count' => $genreCount]), 'ok');
 

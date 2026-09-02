@@ -45,7 +45,10 @@ Assert::same('a new tag is a label', $tags->count(1, TagRepository::KIND_GENRE),
 Assert::same('all three are labels', $tags->count(1, TagRepository::KIND_LABEL), 3);
 Assert::same('and both kinds together are still three', $tags->count(1), 3);
 
-$tags->setGenres(1, [$fantasy]);
+// The form speaks about every tag it shows, ticked or not: each checkbox has
+// a hidden field of the same name in front of it, so an unticked box arrives
+// as a plain "no" instead of as silence.
+$tags->setKinds(1, [$fantasy => true, $age => false, $binding => false]);
 
 Assert::same('one genre now', $tags->count(1, TagRepository::KIND_GENRE), 1);
 Assert::same('the other two stayed labels', $tags->count(1, TagRepository::KIND_LABEL), 2);
@@ -60,32 +63,49 @@ Assert::same(
     ['Ab 10 Jahren', 'Taschenbücher']
 );
 
-// A browser sends only ticked boxes, so anything missing from a save has to
-// be read as "not a genre" - otherwise unticking would never take effect.
-$tags->setGenres(1, [$age]);
+// Unticking has to take effect, which is exactly what the hidden field is
+// for: the tag arrives with a "0" and is demoted.
+$tags->setKinds(1, [$fantasy => false, $age => true, $binding => false]);
 Assert::same('the new one is a genre', $tags->count(1, TagRepository::KIND_GENRE), 1);
 Assert::same(
-    'and the one left out fell back to a label',
+    'and the unticked one fell back to a label',
     array_column($tags->listAllByName(1, TagRepository::KIND_GENRE), 'name'),
     ['Ab 10 Jahren']
 );
 
-Assert::same('saving nothing clears the genres', $tags->setGenres(1, []), 0);
+/*
+ * A tag the form did not mention is left exactly as it was. That is the
+ * difference the hidden field buys: the save no longer has to assume it was
+ * shown everything, so the screen can be filtered or paged later without
+ * quietly demoting whatever was off-screen.
+ */
+$tags->setKinds(1, [$binding => false]);
+Assert::same(
+    'a tag left out of the request keeps its kind',
+    array_column($tags->listAllByName(1, TagRepository::KIND_GENRE), 'name'),
+    ['Ab 10 Jahren']
+);
+
+Assert::same(
+    'and saying no to everything clears them',
+    $tags->setKinds(1, [$fantasy => false, $age => false, $binding => false]),
+    0
+);
 Assert::same('all labels again', $tags->count(1, TagRepository::KIND_LABEL), 3);
 
 // The sidebar asks the same question with a limit on it.
-$tags->setGenres(1, [$fantasy, $binding]);
+$tags->setKinds(1, [$fantasy => true, $binding => true]);
 Assert::same(
     'the sidebar sees genres only',
     count($tags->listWithCounts(1, 14, TagRepository::KIND_GENRE)),
     2
 );
-Assert::same('and the count agrees', $tags->setGenres(1, [$fantasy, $binding]), 2);
+Assert::same('and the count agrees', $tags->setKinds(1, [$fantasy => true, $binding => true]), 2);
 
 // An unused tag is not a genre worth listing: the facet pages join through
 // book_tags, and a tag on no book would be a link to an empty shelf.
 $orphan = $tags->findOrCreate(1, 'Nie benutzt');
-$tags->setGenres(1, [$fantasy, $orphan]);
+$tags->setKinds(1, [$fantasy => true, $binding => false, $orphan => true]);
 Assert::same(
     'an orphan genre is not listed',
     array_column($tags->listAllByName(1, TagRepository::KIND_GENRE), 'name'),

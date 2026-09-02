@@ -4,7 +4,7 @@
  */
 declare(strict_types=1);
 ?>
-<p class="detail-actions"><a href="/admin">&larr; <?= e(t('nav.admin')) ?></a></p>
+<?= $view->render('partials.admin_nav', ['adminCurrent' => 'data']) ?>
 
 <h1><?= e(t('maintenance.title')) ?></h1>
 

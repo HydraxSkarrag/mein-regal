@@ -179,33 +179,36 @@ final class TagRepository
     }
 
     /**
-     * Set exactly these tags to genre and every other one to label.
+     * Write the kind of every tag the caller names.
      *
-     * The whole screen is saved at once rather than a tag at a time: a form
-     * sends the boxes that are ticked and says nothing about the ones that
-     * are not, so anything left out has to be read as "not a genre" - and
-     * unticking would otherwise never take effect.
+     * A map of id to "is a genre", and only those ids are touched. The
+     * earlier version took the ticked boxes alone and demoted everything
+     * else, which is correct exactly as long as the form carries every tag
+     * there is - and quietly wrong the day somebody filters or pages that
+     * screen. The form says what it means about each tag instead.
      *
-     * @param  list<int> $genreIds
+     * @param  array<int, bool> $genreById
      * @return int how many tags are genres afterwards
      */
-    public function setGenres(int $ownerId, array $genreIds): int
+    public function setKinds(int $ownerId, array $genreById): int
     {
-        $genreIds = array_values(array_unique(array_map('intval', $genreIds)));
+        $wanted = [self::KIND_GENRE => [], self::KIND_LABEL => []];
+        foreach ($genreById as $id => $isGenre) {
+            $wanted[$isGenre ? self::KIND_GENRE : self::KIND_LABEL][] = (int) $id;
+        }
 
         $this->pdo->beginTransaction();
         try {
-            $reset = $this->pdo->prepare('UPDATE tags SET kind = ? WHERE owner_id = ? AND kind <> ?');
-            $reset->execute([self::KIND_LABEL, $ownerId, self::KIND_LABEL]);
-
-            if ($genreIds !== []) {
-                $placeholders = implode(',', array_fill(0, count($genreIds), '?'));
-                $mark = $this->pdo->prepare(
-                    "UPDATE tags SET kind = ? WHERE owner_id = ? AND id IN ($placeholders)"
+            foreach ($wanted as $kind => $ids) {
+                if ($ids === []) {
+                    continue;
+                }
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $statement = $this->pdo->prepare(
+                    "UPDATE tags SET kind = ? WHERE owner_id = ? AND kind <> ? AND id IN ($placeholders)"
                 );
-                $mark->execute([self::KIND_GENRE, $ownerId, ...$genreIds]);
+                $statement->execute([$kind, $ownerId, $kind, ...$ids]);
             }
-
             $this->pdo->commit();
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -214,10 +217,10 @@ final class TagRepository
             throw $e;
         }
 
-        /* How many are genres now, not how many rows the update touched:
-         * every save rewrites the lot, and the drivers disagree about
-         * whether an unchanged row counts as touched. The number somebody
-         * wants to read back is the size of their genre list. */
+        /* How many are genres now, not how many rows an update touched: the
+         * drivers disagree about whether an unchanged row counts as touched,
+         * and the number somebody wants to read back is the size of their
+         * genre list. */
         return $this->count($ownerId, self::KIND_GENRE);
     }
 }

@@ -148,6 +148,9 @@ final class Application
 
     private function shareViewDefaults(): void
     {
+        // Templates that include a partial need the view itself; sharing it
+        // once beats every controller remembering to pass it along.
+        $this->view->share('view', $this->view);
         $this->view->share('translator', $this->translator);
         $this->view->share('formatter', $this->formatter);
         $this->view->share('signedIn', $this->auth->isSignedIn());
