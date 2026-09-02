@@ -7,6 +7,7 @@ use App\Core\Isbn;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
+use App\Repository\BookRepository;
 use App\Repository\TagRepository;
 
 /**
@@ -48,7 +49,8 @@ final class ShelfController
             'review'   => $this->oneOf($request->query('review'), ['yes', 'no']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
-            'sort'     => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read', 'acquired'], 'recent'),
+            'sort'     => $this->oneOf($request->query('sort'), BookRepository::sorts(), 'recent'),
+            'dir'      => $this->oneOf($request->query('dir'), ['asc', 'desc']),
         ];
 
         $heading = $filters['author'] !== ''
@@ -69,7 +71,8 @@ final class ShelfController
                 $request->query('language'),
                 array_keys($this->app->books->countBy($this->app->ownerId, 'language'))
             ),
-            'sort'   => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read', 'acquired'], 'recent'),
+            'sort'   => $this->oneOf($request->query('sort'), BookRepository::sorts(), 'recent'),
+            'dir'    => $this->oneOf($request->query('dir'), ['asc', 'desc']),
         ];
 
         return $this->renderShelf($request, $filters, t('nav.unread'), 'unread');
@@ -139,7 +142,7 @@ final class ShelfController
             'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
             'isbnCounts'    => $this->app->books->countByIsbn($this->app->ownerId),
             'filters'       => $filters,
-            'hasFilters'    => array_filter($filters) !== ['sort' => 'recent'] && array_filter($filters) !== [],
+            'hasFilters'    => array_diff_key(array_filter($filters), ['sort' => 1, 'dir' => 1]) !== [],
             'urlFor'        => $urlFor,
             'pageUrl'       => $pageUrl,
             'page'          => $page,

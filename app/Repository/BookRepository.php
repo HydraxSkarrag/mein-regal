@@ -216,6 +216,58 @@ final class BookRepository
      * @param array{search?: string, status?: string, tag?: string, author?: string, binding?: string, rating?: int, language?: string, cover?: string, isbn?: string, sort?: string} $filters
      * @return array{rows: list<array<string,mixed>>, total: int}
      */
+    /**
+     * What each sort is, which way it runs by default, and what to do with
+     * books that have nothing in that column.
+     *
+     * The natural direction is the one somebody means when they pick the
+     * sort without saying more: newest first for a date, A to Z for a title.
+     * It can be turned round, and turning it round must not drag the books
+     * with an empty column to the top - "no rating" is not the best rating,
+     * and 229 undated books at the head would bury what the sort is about.
+     *
+     * @var array<string, array{0: string, 1: string, 2: ?string, 3: string}>
+     *      column, natural direction, "is empty" test, tie-breaker
+     */
+    private const SORTS = [
+        'recent'   => ['b.created_at', 'DESC', null, 'b.id DESC'],
+        'acquired' => ['b.acquired_at', 'DESC', 'b.acquired_at IS NULL', 'b.title ASC'],
+        'title'    => ['b.title', 'ASC', null, 'b.id ASC'],
+        'year'     => ['b.published_year', 'DESC', 'b.published_year IS NULL', 'b.title ASC'],
+        'rating'   => ['b.rating', 'DESC', 'b.rating IS NULL', 'b.title ASC'],
+        'read'     => ['b.finished_at', 'DESC', 'b.finished_at IS NULL', 'b.title ASC'],
+    ];
+
+    /** @return list<string> the sorts the shelf offers, in the order it offers them */
+    public static function sorts(): array
+    {
+        return array_keys(self::SORTS);
+    }
+
+    /** Which way a sort runs when nobody has said otherwise. */
+    public static function naturalDirection(string $sort): string
+    {
+        return strtolower(self::SORTS[$sort][1] ?? 'DESC');
+    }
+
+    private static function orderBy(string $sort, string $direction): string
+    {
+        [$column, $natural, $emptyTest, $tieBreak] = self::SORTS[$sort] ?? self::SORTS['recent'];
+
+        $direction = strtoupper($direction) === 'ASC' || strtoupper($direction) === 'DESC'
+            ? strtoupper($direction)
+            : $natural;
+
+        // The empty test first and always ascending: 0 before 1 puts the
+        // books that have a value ahead of the ones that do not, whichever
+        // way the values themselves are being read.
+        $parts = $emptyTest === null ? [] : [$emptyTest . ' ASC'];
+        $parts[] = $column . ' ' . $direction;
+        $parts[] = $tieBreak;
+
+        return implode(', ', $parts);
+    }
+
     public function search(int $ownerId, array $filters = [], int $limit = 60, int $offset = 0): array
     {
         [$where, $parameters] = $this->buildWhere($ownerId, $filters);
@@ -224,18 +276,7 @@ final class BookRepository
         $countStatement->execute($parameters);
         $total = (int) $countStatement->fetchColumn();
 
-        $order = match ($filters['sort'] ?? 'recent') {
-            'title'  => 'b.title ASC',
-            'year'   => 'b.published_year DESC, b.title ASC',
-            'rating' => 'b.rating DESC, b.title ASC',
-            'read'   => 'b.finished_at DESC, b.title ASC',
-            /* Books with no date last rather than first: an empty column
-               sorts before everything in MySQL and after it in SQLite, and
-               229 undated books at the head of the list would bury the ones
-               the sort is about. */
-            'acquired' => 'b.acquired_at IS NULL, b.acquired_at DESC, b.title ASC',
-            default  => 'b.created_at DESC, b.id DESC',
-        };
+        $order = self::orderBy((string) ($filters['sort'] ?? 'recent'), (string) ($filters['dir'] ?? ''));
 
         $sql = "SELECT DISTINCT b.* FROM books b {$where['join']} WHERE {$where['sql']}
                 ORDER BY {$order} LIMIT " . (int) $limit . ' OFFSET ' . (int) $offset;

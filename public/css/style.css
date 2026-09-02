@@ -1264,3 +1264,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .tag-purge { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
 .tag-purge:hover { color: var(--accent); }
 
+/* The arrow on the sort you are on. Its own element so the label does not
+   shift sideways when the direction changes. */
+.sort-dir { display: inline-block; width: 1em; text-align: center; }
+

@@ -46,6 +46,9 @@ return [
     'filter.sort'        => 'Sort by',
     'filter.reset'       => 'Clear filters',
 
+    'sort.by'            => 'Sort by this',
+    'sort.turn.asc'      => 'Turn round: ascending',
+    'sort.turn.desc'     => 'Turn round: descending',
     'sort.recent'        => 'Recently added',
     'sort.acquired'      => 'Acquired',
     'sort.title'         => 'Title',

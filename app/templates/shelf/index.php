@@ -41,9 +41,21 @@ declare(strict_types=1);
   <aside class="sidebar">
     <h2><?= e(t('filter.sort')) ?></h2>
     <ul>
-      <?php foreach (['recent', 'acquired', 'title', 'year', 'rating', 'read'] as $sort): ?>
-      <li><a href="<?= e($urlFor(['sort' => $sort])) ?>"
-             aria-current="<?= ($filters['sort'] ?? 'recent') === $sort ? 'true' : 'false' ?>"><?= e(t('sort.' . $sort)) ?></a></li>
+      <?php foreach (App\Repository\BookRepository::sorts() as $sort): ?>
+        <?php
+          /* Clicking the sort you are already on turns it round. Picking a
+             different one starts from its own natural direction - newest
+             first for a date, A to Z for a title - because that is what
+             somebody means when they pick it without saying more. */
+          $active = ($filters['sort'] ?? 'recent') === $sort;
+          $natural = App\Repository\BookRepository::naturalDirection($sort);
+          $current = $active && ($filters['dir'] ?? '') !== '' ? $filters['dir'] : $natural;
+          $next = $active ? ($current === 'asc' ? 'desc' : 'asc') : '';
+        ?>
+      <li><a href="<?= e($urlFor(['sort' => $sort, 'dir' => $next])) ?>"
+             aria-current="<?= $active ? 'true' : 'false' ?>"
+             title="<?= e(t($active ? ('sort.turn.' . ($current === 'asc' ? 'desc' : 'asc')) : 'sort.by')) ?>">
+        <?= e(t('sort.' . $sort)) ?><?php if ($active): ?><span class="sort-dir" aria-hidden="true"><?= $current === 'asc' ? '↑' : '↓' ?></span><?php endif; ?></a></li>
       <?php endforeach; ?>
     </ul>
 

@@ -46,6 +46,9 @@ return [
     'filter.sort'        => 'Sortierung',
     'filter.reset'       => 'Filter zurücksetzen',
 
+    'sort.by'            => 'Danach sortieren',
+    'sort.turn.asc'      => 'Umdrehen: aufsteigend',
+    'sort.turn.desc'     => 'Umdrehen: absteigend',
     'sort.recent'        => 'Zuletzt erfasst',
     'sort.acquired'      => 'Erhalten am',
     'sort.title'         => 'Titel',
