@@ -229,6 +229,11 @@ final class BookRepository
             'year'   => 'b.published_year DESC, b.title ASC',
             'rating' => 'b.rating DESC, b.title ASC',
             'read'   => 'b.finished_at DESC, b.title ASC',
+            /* Books with no date last rather than first: an empty column
+               sorts before everything in MySQL and after it in SQLite, and
+               229 undated books at the head of the list would bury the ones
+               the sort is about. */
+            'acquired' => 'b.acquired_at IS NULL, b.acquired_at DESC, b.title ASC',
             default  => 'b.created_at DESC, b.id DESC',
         };
 

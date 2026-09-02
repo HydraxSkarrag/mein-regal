@@ -165,6 +165,11 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
             }
         }
         if ($updates !== []) {
+            // The record changed, so say so. Writing the columns and leaving
+            // updated_at at the import date makes the field a lie, and it is
+            // the field a backup or a later sync would go by.
+            $updates[] = 'updated_at = ?';
+            $values[] = date('Y-m-d H:i:s');
             $values[] = $book['id'];
             $pdo->prepare('UPDATE books SET ' . implode(', ', $updates) . ' WHERE id = ?')->execute($values);
             $stats['metadata']++;

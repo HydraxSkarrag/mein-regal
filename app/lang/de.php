@@ -47,6 +47,7 @@ return [
     'filter.reset'       => 'Filter zurücksetzen',
 
     'sort.recent'        => 'Zuletzt erfasst',
+    'sort.acquired'      => 'Erhalten am',
     'sort.title'         => 'Titel',
     'sort.year'          => 'Erscheinungsjahr',
     'sort.rating'        => 'Bewertung',

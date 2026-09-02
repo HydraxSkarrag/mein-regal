@@ -47,6 +47,7 @@ return [
     'filter.reset'       => 'Clear filters',
 
     'sort.recent'        => 'Recently added',
+    'sort.acquired'      => 'Acquired',
     'sort.title'         => 'Title',
     'sort.year'          => 'Year published',
     'sort.rating'        => 'Rating',

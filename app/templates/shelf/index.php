@@ -41,7 +41,7 @@ declare(strict_types=1);
   <aside class="sidebar">
     <h2><?= e(t('filter.sort')) ?></h2>
     <ul>
-      <?php foreach (['recent', 'title', 'year', 'rating', 'read'] as $sort): ?>
+      <?php foreach (['recent', 'acquired', 'title', 'year', 'rating', 'read'] as $sort): ?>
       <li><a href="<?= e($urlFor(['sort' => $sort])) ?>"
              aria-current="<?= ($filters['sort'] ?? 'recent') === $sort ? 'true' : 'false' ?>"><?= e(t('sort.' . $sort)) ?></a></li>
       <?php endforeach; ?>
@@ -200,6 +200,9 @@ declare(strict_types=1);
                     break;
                 case 'recent':
                     $sortValue = $formatter->date(substr((string) $book['created_at'], 0, 10));
+                    break;
+                case 'acquired':
+                    $sortValue = $book['acquired_at'] !== null ? $formatter->date($book['acquired_at']) : null;
                     break;
             }
           ?>
