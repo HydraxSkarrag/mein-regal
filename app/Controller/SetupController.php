@@ -77,7 +77,7 @@ final class SetupController
             return $this->render(t('error.500.title'), $email, $name);
         }
 
-        $this->seedPages($userId);
+        $this->seedPages($userId, $name, $email);
 
         // Straight in, rather than sending someone who just chose a password
         // to a form asking for it again.
@@ -102,10 +102,10 @@ final class SetupController
      * installation with no Impressum is a job to finish, an installation with
      * no owner is one to start over.
      */
-    private function seedPages(int $userId): void
+    private function seedPages(int $userId, string $operator, string $email): void
     {
         try {
-            foreach (DefaultPages::all($this->app->config) as $slug => $page) {
+            foreach (DefaultPages::all($this->app->config, $operator, $email) as $slug => $page) {
                 if ($this->app->pages->find($userId, $slug, DefaultPages::SEEDED_LOCALE) !== null) {
                     continue;
                 }

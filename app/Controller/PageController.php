@@ -169,7 +169,12 @@ final class PageController
          * right order of events for a legal text.
          */
         if ($page === null && $slug !== PageRepository::ABOUT) {
-            $default = DefaultPages::all($this->app->config)[$slug] ?? null;
+            $user = $this->app->auth->user() ?? [];
+            $default = DefaultPages::all(
+                $this->app->config,
+                (string) ($user['display_name'] ?? ''),
+                (string) ($user['email'] ?? '')
+            )[$slug] ?? null;
             if ($default !== null) {
                 $page = [
                     'title'      => $default['title'],
@@ -190,7 +195,7 @@ final class PageController
             'heading'   => t('page.' . $slug),
             'suggested' => $slug === PageRepository::ABOUT
                 ? t('about.suggested', [
-                    'owner' => $this->app->config->str('legal.operator'),
+                    'owner' => (string) ($this->app->auth->user()['display_name'] ?? ''),
                     'blog'  => $this->app->config->str('blog_name'),
                 ])
                 : '',

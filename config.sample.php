@@ -57,21 +57,6 @@ return [
     'blog_url'  => '',
     'blog_name' => '',
 
-    // Fill in before going live. These are written into the Impressum and the
-    // privacy policy when the first account is created; afterwards both texts
-    // are edited in the browser under /imprint and /privacy, and changing them
-    // here has no further effect.
-    'legal' => [
-        'operator' => '',
-        'street'   => '',
-        'city'     => '',
-        'email'    => '',
-        // Who hosts the site, as it should read in the privacy policy, e.g.
-        // 'ALL-INKL.COM - Neue Medien Münnich, Hauptstraße 68, 02742 Friedersdorf'.
-        'host'     => '',
-        // Responsible party under section 18 (2) MStV, if editorial content is shown.
-        'mstv_responsible' => '',
-    ],
 
     // The statistics page at /stats, visible to anyone. Set to false to keep
     // the figures to yourself; the owner's dashboard under /admin is

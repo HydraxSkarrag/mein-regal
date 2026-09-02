@@ -50,12 +50,11 @@ final class DefaultPages
     /**
      * @return array<string, array{title: string, body: string}>
      */
-    public static function all(Config $config): array
+    public static function all(Config $config, string $operator = '', string $email = ''): array
     {
-        $address = self::address($config);
-        $host = self::value($config, 'legal.host', 'Name und Anschrift des Hosters');
+        $address = self::address($operator, $email);
+        $host = self::mark('', 'Name und Anschrift des Hosters');
         $siteName = $config->str('site_name', 'Mein Regal');
-        $responsible = trim((string) $config->get('legal.mstv_responsible', ''));
 
         return [
             'imprint' => [
@@ -63,7 +62,7 @@ final class DefaultPages
                 'body'  => str_replace(
                     self::HOLD_ADDRESS,
                     $address,
-                    self::unwrap(self::imprint($address, $responsible))
+                    self::unwrap(self::imprint($address, $operator))
                 ),
             ],
             'privacy' => [
@@ -108,13 +107,22 @@ final class DefaultPages
         return implode("\n\n", $out);
     }
 
-    private static function address(Config $config): string
+    /**
+     * The address block.
+     *
+     * Name and e-mail come from the account being created, because at that
+     * moment they are already known and asking twice is how two answers
+     * start to disagree. The postal address cannot be guessed and is marked
+     * instead: it is filled in on the page, which is where the text is
+     * corrected from then on anyway.
+     */
+    private static function address(string $operator, string $email): string
     {
         return implode("\n", [
-            self::value($config, 'legal.operator', 'Name der Betreiberin oder des Betreibers'),
-            self::value($config, 'legal.street', 'Straße und Hausnummer'),
-            self::value($config, 'legal.city', 'Postleitzahl und Ort'),
-            'E-Mail: ' . self::value($config, 'legal.email', 'E-Mail-Adresse'),
+            self::mark($operator, 'Name der Betreiberin oder des Betreibers'),
+            self::mark('', 'Straße und Hausnummer'),
+            self::mark('', 'Postleitzahl und Ort'),
+            'E-Mail: ' . self::mark($email, 'E-Mail-Adresse'),
         ]);
     }
 
@@ -124,23 +132,27 @@ final class DefaultPages
      * An empty line in an Impressum reads like a formatting slip and survives
      * for years. A warning sign in the middle of the page does not.
      */
-    private static function value(Config $config, string $key, string $hint): string
+    private static function mark(string $value, string $hint): string
     {
-        $value = trim((string) $config->get($key, ''));
+        $value = trim($value);
 
         return $value !== '' ? $value : '⚠ ' . $hint . ' eintragen';
     }
 
-    private static function imprint(string $address, string $responsible): string
+    private static function imprint(string $address, string $operator): string
     {
         $text = "## Angaben gemäß § 5 DDG\n\n" . self::HOLD_ADDRESS . "\n\n";
 
-        // Only shown when it applies. An empty heading in a legal notice
-        // invites the reader to wonder what was left out.
-        if ($responsible !== '') {
-            $text .= "## Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV\n\n"
-                . $responsible . "\n\n";
-        }
+        /* The section is always here, with a note saying when it does not
+           apply. It used to appear only when a value was configured, which
+           meant that whoever had never heard of § 18 (2) MStV - the reason
+           the section exists - was also never told about it. A heading that
+           explains how to delete itself is the safer of the two mistakes. */
+        $text .= "## Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV\n\n"
+            . self::mark($operator, 'Verantwortliche Person')
+            . "\n\n> Dieser Abschnitt ist nur nötig, wenn hier redaktionelle Inhalte"
+            . " erscheinen - etwa eigene Rezensionstexte. Trifft das nicht zu, kann er"
+            . " gelöscht werden.\n\n";
 
         return $text . <<<'TEXT'
             ## Haftung für Inhalte

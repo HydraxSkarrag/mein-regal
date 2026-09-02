@@ -209,23 +209,6 @@ if (isset($config)) {
         line('Cron secret', true, 'set, ' . strlen($secret) . ' characters');
     }
 
-    /* The imprint, but only until the first account exists: after that the
-       text lives in the database and this block is spent. Worth saying while
-       it can still be filled in. */
-    if (trim((string) $config->get('legal.operator', '')) === '') {
-        line('Imprint', false, 'legal.operator is empty');
-        echo "                         If the first account is created now, the imprint
-";
-        echo "                         is written with placeholders in it. Filling this in
-";
-        echo "                         afterwards changes nothing - the text is then edited
-";
-        echo "                         in the browser under /imprint.
-";
-    } else {
-        line('Imprint', true, (string) $config->get('legal.operator', ''));
-    }
-
     /* A theme named in config.php that is not on disk. The shelf still
        renders - it falls back to the neutral default - so nothing breaks
        loudly enough to notice, and the site simply looks wrong. */

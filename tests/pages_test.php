@@ -103,26 +103,45 @@ Assert::same(
 
 Assert::group('The seeded legal texts');
 
-$config = new App\Core\Config([
-    'site_name' => 'Testregal',
-    'legal'     => [
-        'operator' => 'Erika Mustermann',
-        'street'   => 'Musterweg 1',
-        'city'     => '12345 Musterstadt',
-        'email'    => 'post@example.org',
-        'host'     => 'Beispielhoster GmbH, Musterstadt',
-    ],
-]);
-$seeded = App\Content\DefaultPages::all($config);
+$config = new App\Core\Config(['site_name' => 'Testregal']);
+$seeded = App\Content\DefaultPages::all($config, 'Erika Mustermann', 'post@example.org');
 
 Assert::same('both legal pages are seeded', array_keys($seeded), ['imprint', 'privacy']);
+
+// The two details the application already has when it seeds these: the name
+// and address of the account being created. Asking for them a second time in
+// a configuration file is how two answers start to disagree.
 Assert::true(
-    'the operator lands in the Impressum',
+    'the new account is the operator',
     str_contains($seeded['imprint']['body'], 'Erika Mustermann')
 );
 Assert::true(
-    'the host lands in the privacy policy',
-    str_contains($seeded['privacy']['body'], 'Beispielhoster GmbH')
+    'and its address is the contact',
+    str_contains($seeded['imprint']['body'], 'post@example.org')
+);
+
+// The postal address and the host cannot be guessed from anything. They are
+// marked rather than left blank: an empty line in an Impressum reads like a
+// formatting slip and survives for years.
+Assert::true(
+    'the street is marked as missing',
+    str_contains($seeded['imprint']['body'], '⚠')
+);
+Assert::true(
+    'so is the hosting company, in the privacy policy',
+    str_contains($seeded['privacy']['body'], '⚠')
+);
+
+// The section exists whether or not it applies, because somebody who has
+// never heard of it is exactly who needs to be told - and it says how to
+// remove itself.
+Assert::true(
+    'the MStV section is always there',
+    str_contains($seeded['imprint']['body'], '18 Abs. 2 MStV')
+);
+Assert::true(
+    'and explains when it can go',
+    str_contains($seeded['imprint']['body'], 'gelöscht werden')
 );
 
 // The whole reason these moved out of the templates: no hosting company may
@@ -135,7 +154,8 @@ foreach ($seeded as $slug => $page) {
     );
 }
 
-// A detail nobody filled in must be visible as a gap, not as a blank line.
+// Seeded with nothing at all - the command line creates an account without
+// touching the pages, and the editor offers the text when one is opened.
 $empty = App\Content\DefaultPages::all(new App\Core\Config([]));
 Assert::true(
     'a missing operator is marked, not silently blank',
@@ -157,7 +177,7 @@ Assert::true(
 );
 Assert::true(
     'but the address keeps its line breaks',
-    str_contains($seeded['imprint']['body'], "Erika Mustermann\nMusterweg 1")
+    str_contains($seeded['imprint']['body'], "Erika Mustermann\n⚠ Straße und Hausnummer eintragen")
 );
 Assert::true(
     'and list items stay on their own lines',

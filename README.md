@@ -143,10 +143,15 @@ Open `https://your-address/setup` and create the first account. The page answers
 only while no account exists; afterwards it is a 404 like any unknown address.
 
 Creating the account also writes a German imprint and privacy policy into the
-database, filled in from `config.php`. **Read both before going live.** They
-describe an installation with no analytics, no CDN and no embedded images,
-because that is what this application is — but the details are yours, and the
-text is not legal advice. Both are edited under `/imprint` and `/privacy`.
+database, carrying the name and address of the account just created. What it
+cannot know — your postal address, who hosts the site — is marked in the text
+with a ⚠ rather than left blank, because an empty line in an imprint reads
+like a formatting slip and survives for years.
+
+**Read both before going live**, and fill in the marked places under
+`/imprint` and `/privacy`. They describe an installation with no analytics,
+no CDN and no embedded images, because that is what this application is — but
+the details are yours, and the text is not legal advice.
 
 With shell access:
 
