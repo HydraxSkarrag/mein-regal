@@ -11,6 +11,8 @@
  * @var string              $warning
  * @var list<string>        $notes
  * @var array<string,string> $hidden
+ * @var ?string $listUrl the books this is about, opened in a second tab so
+ *                       the confirmation is still there afterwards
  */
 declare(strict_types=1);
 ?>
@@ -26,6 +28,10 @@ declare(strict_types=1);
     <li><?= e($note) ?></li>
     <?php endforeach; ?>
   </ul>
+  <?php endif; ?>
+
+  <?php if (($listUrl ?? null) !== null): ?>
+  <p><a href="<?= e($listUrl) ?>" target="_blank" rel="noopener"><?= e(t('tags.show.books')) ?></a></p>
   <?php endif; ?>
 
   <form method="post" action="<?= e($action) ?>" class="confirm-actions">

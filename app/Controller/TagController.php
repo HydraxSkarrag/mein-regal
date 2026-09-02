@@ -113,7 +113,9 @@ final class TagController
             t('tags.remove.warning', ['count' => (int) $tag['book_count']]),
             [t('tags.remove.reversible'), t('tags.remove.imports')],
             '/admin/tags/' . (int) $tag['id'] . '/remove',
-            t('tags.remove.do')
+            t('tags.remove.do'),
+            [],
+            (string) $tag['slug']
         );
     }
 
@@ -221,7 +223,8 @@ final class TagController
             ],
             '/admin/tags/merge',
             t('tags.merge.do'),
-            ['from' => (string) $from['id'], 'into' => (string) $into['id']]
+            ['from' => (string) $from['id'], 'into' => (string) $into['id']],
+            (string) $from['slug']
         );
     }
 
@@ -284,7 +287,8 @@ final class TagController
             ]),
             '/admin/tags/' . (int) $tag['id'] . '/field',
             t('tags.field.do'),
-            ['field' => $field, 'value' => $value]
+            ['field' => $field, 'value' => $value],
+            (string) $tag['slug']
         );
     }
 
@@ -408,6 +412,8 @@ final class TagController
      *
      * @param list<string>          $notes
      * @param array<string, string> $hidden
+     * @param ?string                $listSlug the tag whose books this is about,
+     *                                         so they can be looked at first
      */
     private function confirm(
         string $heading,
@@ -415,7 +421,8 @@ final class TagController
         array $notes,
         string $action,
         string $button,
-        array $hidden = []
+        array $hidden = [],
+        ?string $listSlug = null
     ): Response {
         $body = $this->app->view->render('admin.tag_confirm', [
             'heading'   => $heading,
@@ -424,6 +431,7 @@ final class TagController
             'action'    => $action,
             'button'    => $button,
             'hidden'    => $hidden,
+            'listUrl'   => $listSlug === null ? null : '/?tag=' . rawurlencode($listSlug),
             'csrfField' => $this->app->csrf->field(),
         ]);
 

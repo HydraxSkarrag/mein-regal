@@ -420,6 +420,7 @@ return [
     'tags.remove.reversible' => 'Rückgängig jederzeit: die Zuordnungen bleiben gespeichert, nur unsichtbar.',
     'tags.remove.imports'    => 'Künftige Importe legen es nicht wieder an.',
     'tags.remove.do'         => 'Entfernen',
+    'tags.show.books'        => 'Diese Bücher ansehen',
     'tags.removed'           => '„{name}" entfernt. Wiederherstellen geht unten auf dieser Seite.',
     'tags.restore'           => 'wiederherstellen',
     'tags.restored'          => '„{name}" ist wieder da.',

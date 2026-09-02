@@ -329,8 +329,10 @@ final class BookRepository
             $parameters[] = Text::authorMatchKey((string) $filters['author']);
         }
         if (($filters['tag'] ?? '') !== '') {
+            // A tag taken out of use stops being a filter too, or its address
+            // would keep working long after it left every list.
             $join = 'JOIN book_tags bt ON bt.book_id = b.id JOIN tags t ON t.id = bt.tag_id';
-            $conditions[] = 't.slug = ?';
+            $conditions[] = 't.slug = ? AND t.dropped_at IS NULL';
             $parameters[] = $filters['tag'];
         }
         // The hundred books with no ISBN are exactly the ones that cannot be

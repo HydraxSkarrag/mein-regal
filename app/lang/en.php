@@ -417,6 +417,7 @@ return [
     'tags.remove.reversible' => 'Undo at any time: the links are kept, only hidden.',
     'tags.remove.imports'    => 'Future imports will not put it back.',
     'tags.remove.do'         => 'Remove',
+    'tags.show.books'        => 'Look at these books',
     'tags.removed'           => '"{name}" removed. It can be restored at the bottom of this page.',
     'tags.restore'           => 'restore',
     'tags.restored'          => '"{name}" is back.',
