@@ -77,6 +77,14 @@ return [
     // from it.
     'review_blog_url' => '',
 
+    // Whether crawlers that collect text to train language models are asked
+    // to stay away. false - the default - writes a Disallow for each of them
+    // into robots.txt; ordinary search engines are unaffected either way.
+    //
+    // It is a request, not a fence: the crawlers that publish a name honour
+    // it, the ones that do not were never going to.
+    'ai_crawlers' => false,
+
     // Optional Google Books API key. Without one the shared per-IP quota applies.
     'google_books_key' => '',
 

@@ -237,7 +237,62 @@ final class PageController
         ]));
     }
 
+    /**
+     * Crawlers that gather text to train language models on.
+     *
+     * Named separately from the search engines because they are a different
+     * bargain. A search engine takes a page and sends readers back to it; a
+     * training crawler takes it and returns nothing. Whether that trade is
+     * worth making is the operator's call, not this application's, so it is
+     * a line in config.php - but the default is no, because a shelf is
+     * somebody's reading life and the quieter default is the one that can be
+     * undone later.
+     *
+     * Honesty about what this achieves: robots.txt is a request, not a
+     * fence. It is obeyed by the crawlers that publish a name and ignored by
+     * the ones that do not. Blocking at the server would be the fence, and
+     * would also block the archives worth being in.
+     *
+     * @var list<string>
+     */
+    private const AI_CRAWLERS = [
+        'GPTBot',
+        'ChatGPT-User',
+        'OAI-SearchBot',
+        'ClaudeBot',
+        'Claude-Web',
+        'anthropic-ai',
+        'Google-Extended',
+        'Applebot-Extended',
+        'meta-externalagent',
+        'FacebookBot',
+        'CCBot',
+        'PerplexityBot',
+        'Bytespider',
+        'Amazonbot',
+        'YouBot',
+        'Diffbot',
+        'ImagesiftBot',
+        'Omgilibot',
+        'Timpibot',
+    ];
+
     public function robots(): Response
+    {
+        return Response::text(self::robotsTxt(
+            $this->app->url('/sitemap.xml'),
+            $this->app->publicStats(),
+            $this->app->config->bool('ai_crawlers', false)
+        ));
+    }
+
+    /**
+     * The body of robots.txt, built from three answers and nothing else.
+     *
+     * Separate from the request so it can be read - and tested - as what it
+     * is: a list of decisions about what belongs in an index.
+     */
+    public static function robotsTxt(string $sitemapUrl, bool $publicStats, bool $aiCrawlers): string
     {
         $lines = [
             'User-agent: *',
@@ -249,17 +304,34 @@ final class PageController
             'Disallow: /api/',
             // Kept out of the index when it is not public; the page itself
             // still redirects to the login, this only stops crawlers asking.
-            ...($this->app->publicStats() ? [] : ['Disallow: /stats']),
+            ...($publicStats ? [] : ['Disallow: /stats']),
             // Filter and sort combinations would otherwise pile thousands of
-            // near-identical pages into the index.
+            // near-identical pages into the index. A genre or an author is a
+            // page worth having; the same shelf in a different order is not,
+            // and neither is somebody's search.
             'Disallow: /*?*sort=',
+            'Disallow: /*?*dir=',
             'Disallow: /*?*page=',
+            'Disallow: /*?*q=',
             'Disallow: /*?*binding=',
-            '',
-            'Sitemap: ' . $this->app->url('/sitemap.xml'),
+            'Disallow: /*?*missing=',
+            'Disallow: /*?*cover=',
+            'Disallow: /*?*isbn=',
+            'Disallow: /*?*review=',
         ];
 
-        return Response::text(implode("\n", $lines) . "\n");
+        if (!$aiCrawlers) {
+            foreach (self::AI_CRAWLERS as $agent) {
+                $lines[] = '';
+                $lines[] = 'User-agent: ' . $agent;
+                $lines[] = 'Disallow: /';
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = 'Sitemap: ' . $sitemapUrl;
+
+        return implode("\n", $lines) . "\n";
     }
 
     /**
@@ -275,7 +347,18 @@ final class PageController
 
         $xml = ['<?xml version="1.0" encoding="UTF-8"?>'];
         $xml[] = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
-        $pages = [['/', '1.0'], ['/unread', '0.6'], ['/about', '0.4'], ['/project', '0.3']];
+        $pages = [
+            ['/', '1.0'],
+            ['/unread', '0.6'],
+            // The three ways into the shelf that are not the shelf itself.
+            // Without them a crawler reaches a book only through the front
+            // page, which lists sixty of three thousand.
+            ['/genres', '0.6'],
+            ['/authors', '0.6'],
+            ['/labels', '0.5'],
+            ['/about', '0.4'],
+            ['/project', '0.3'],
+        ];
         if ($this->app->publicStats()) {
             $pages[] = ['/stats', '0.6'];
         }
