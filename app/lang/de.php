@@ -398,7 +398,8 @@ return [
                             . 'Webspace liegt, kann so nicht verschwinden.',
     'project.origin.heading' => 'Herkunft',
     'project.origin'     => 'Geschrieben für das Bücherregal von {blog} und von dort weitergegeben. '
-                            . 'Jede Installation trägt diesen Hinweis im Fuß – das ist der ganze Preis.',
+                            . 'Jede Installation trägt diesen Hinweis im Fuß – nicht, weil die Lizenz es '
+                            . 'verlangt, sondern damit man sieht, woher sie kommt.',
     'project.how.heading' => 'Was sie kann',
     'project.how.scan'   => 'Barcode mit der Handykamera scannen, direkt im Browser, ohne App.',
     'project.how.sources' => 'Buchdaten von der Deutschen Nationalbibliothek, Google Books und Open Library.',
