@@ -95,6 +95,43 @@ final class PageRepository
         return $statement->fetchAll(\PDO::FETCH_COLUMN);
     }
 
+    /**
+     * The legal pages that are not finished yet.
+     *
+     * Finished means: written at all, and with no ⚠ left in it. The seeded
+     * texts mark every gap that way and open by saying they are a draft, so
+     * the marker is a reliable answer to "has anybody been through this".
+     *
+     * Only the two legal ones. An empty About page is a page somebody has
+     * not got round to; an unfinished Impressum is a different kind of thing.
+     *
+     * @return list<string> slugs, in the order they are listed
+     */
+    public function unfinishedLegal(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT slug, body FROM pages WHERE owner_id = ? AND slug IN (?, ?)'
+        );
+        $statement->execute([$ownerId, self::IMPRINT, self::PRIVACY]);
+
+        $written = [];
+        foreach ($statement->fetchAll() as $row) {
+            $slug = (string) $row['slug'];
+            $body = (string) ($row['body'] ?? '');
+            // Any language: a gap left in one of them is still a gap.
+            $written[$slug] = ($written[$slug] ?? true) && !str_contains($body, '⚠');
+        }
+
+        $open = [];
+        foreach ([self::IMPRINT, self::PRIVACY] as $slug) {
+            if (($written[$slug] ?? false) === false) {
+                $open[] = $slug;
+            }
+        }
+
+        return $open;
+    }
+
     public function save(int $ownerId, string $slug, string $locale, string $title, ?string $body): void
     {
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');

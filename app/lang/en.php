@@ -363,6 +363,7 @@ return [
     'about.perlanguage'        => 'Each language has its own text. The tick shows which are written.',
     'about.other.language'     => 'Something has been written here in another language.',
 
+    'legal.draft.hint'   => 'The imprint and the privacy policy are still drafts - please read, complete and check them:',
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
 

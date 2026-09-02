@@ -195,3 +195,61 @@ Assert::true('explicitly on', (new App\Core\Config(['public_stats' => true]))->b
 Assert::same('explicitly off', (new App\Core\Config(['public_stats' => false]))->bool('public_stats', true), false);
 // A default of false must not be flipped by an absent key either.
 Assert::same('an absent key never overrides the default', (new App\Core\Config([]))->bool('nothing', false), false);
+
+Assert::group('The seeded texts say they are a draft');
+
+$draft = App\Content\DefaultPages::all(
+    new App\Core\Config(['site_name' => 'Testregal']),
+    'Erika Mustermann',
+    'post@example.org'
+);
+
+// A legal page that looks finished is read as finished - by its operator
+// most of all, who has every reason to want it to be.
+foreach ($draft as $slug => $page) {
+    Assert::true('the ' . $slug . ' opens by saying it is a draft', str_starts_with($page['body'], '> **Dieser Text ist ein Entwurf.**'));
+    Assert::true('and that it is not legal advice: ' . $slug, str_contains($page['body'], 'keine Rechtsberatung'));
+    Assert::true('and how to remove the notice: ' . $slug, str_contains($page['body'], 'gelöscht werden'));
+}
+
+// Three claims the application cannot check from the inside. They read as
+// statements of fact and are in truth tasks.
+Assert::true(
+    'the privacy policy names what has to be verified',
+    str_contains($draft['privacy']['body'], 'Auftragsverarbeitung besteht, wie lange er die')
+);
+
+Assert::group('The seeded texts describe this installation');
+
+// The shelf shows covers from Google Books and Open Library, downloaded and
+// served from its own server. The imprint used to say they came from the
+// publishers, which was written before any of it was built.
+Assert::true(
+    'the real cover sources are named',
+    str_contains($draft['imprint']['body'], 'Google Books und Open Library')
+);
+Assert::same(
+    'and no longer credits the publishers for them',
+    str_contains($draft['imprint']['body'], 'von den Verlagen zur Verwendung bereitgestellt'),
+    false
+);
+
+// With the switch turned off nothing ever writes the language cookie, and a
+// policy listing one describes processing that does not happen.
+$oneLanguage = App\Content\DefaultPages::all(
+    new App\Core\Config(['site_name' => 'Testregal', 'language_switcher' => false]),
+    'Erika Mustermann',
+    'post@example.org'
+);
+Assert::true('two cookies with the switch on', str_contains($draft['privacy']['body'], 'setzt zwei Cookies'));
+Assert::true('one without it', str_contains($oneLanguage['privacy']['body'], 'setzt ein Cookie,'));
+Assert::same(
+    'and the language cookie is not described',
+    str_contains($oneLanguage['privacy']['body'], 'Sprach-Cookie'),
+    false
+);
+
+// The list has to survive the renderer as a list.
+$html = App\Core\Text::prose($draft['privacy']['body']);
+Assert::true('the cookies render as list items', str_contains($html, '<li><strong>Sitzungs-Cookie</strong>'));
+Assert::same('with no escape sequence left in the text', str_contains($html, 'u{'), false);

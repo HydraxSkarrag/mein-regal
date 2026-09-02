@@ -47,6 +47,9 @@ final class DefaultPages
      */
     private const HOLD_ADDRESS = '{{address}}';
 
+    /** Likewise for the cookie list, which is built from list items. */
+    private const HOLD_COOKIES = '{{cookies}}';
+
     /**
      * @return array<string, array{title: string, body: string}>
      */
@@ -68,8 +71,8 @@ final class DefaultPages
             'privacy' => [
                 'title' => 'Datenschutzerklärung',
                 'body'  => str_replace(
-                    self::HOLD_ADDRESS,
-                    $address,
+                    [self::HOLD_ADDRESS, self::HOLD_COOKIES],
+                    [$address, self::cookies($config->bool('language_switcher', true))],
                     self::unwrap(self::privacy($address, $host, $siteName))
                 ),
             ],
@@ -139,9 +142,37 @@ final class DefaultPages
         return $value !== '' ? $value : '⚠ ' . $hint . ' eintragen';
     }
 
+    /**
+     * The notice that this is a draft.
+     *
+     * The ⚠ marks show where something is missing. They do not show that the
+     * rest has never been read by anyone, and a legal page that looks
+     * finished is read as finished - by its operator most of all, who has
+     * every reason to want it to be.
+     *
+     * It stands at the top, in the text, where it is published along with
+     * everything else: an operator who leaves it there is telling visitors
+     * something true. And it says how to remove itself, so finishing the job
+     * is what makes it go away.
+     */
+    private static function draftNotice(string ...$checks): string
+    {
+        $text = '> **Dieser Text ist ein Entwurf.** Er wird mit der Anwendung ausgeliefert'
+            . ' und ist von niemandem geprüft worden, der diese Installation kennt.'
+            . ' Bitte ganz lesen, die mit ⚠ markierten Stellen ausfüllen und streichen,'
+            . " was nicht zutrifft.\n";
+        foreach ($checks as $check) {
+            $text .= '> ' . $check . "\n";
+        }
+
+        return $text . '> Dies ist keine Rechtsberatung. Ist alles geprüft und richtig,'
+            . " kann dieser Absatz gelöscht werden.\n\n";
+    }
+
     private static function imprint(string $address, string $operator): string
     {
-        $text = "## Angaben gemäß § 5 DDG\n\n" . self::HOLD_ADDRESS . "\n\n";
+        $text = self::draftNotice()
+            . "## Angaben gemäß § 5 DDG\n\n" . self::HOLD_ADDRESS . "\n\n";
 
         /* The section is always here, with a note saying when it does not
            apply. It used to appear only when a value was configured, which
@@ -171,17 +202,67 @@ final class DefaultPages
             ## Urheberrecht
 
             Die auf dieser Seite gezeigten Buchcover sind urheberrechtlich geschützt und
-            gehören den jeweiligen Rechteinhabern. Öffentlich gezeigt werden ausschließlich
-            selbst aufgenommene Fotografien der eigenen Exemplare sowie Coverabbildungen,
-            die von den Verlagen zur Verwendung bereitgestellt werden. Die bibliografischen
-            Daten stammen unter anderem von der Deutschen Nationalbibliothek und stehen
-            dort unter CC0.
+            gehören den jeweiligen Rechteinhabern. Gezeigt werden selbst aufgenommene
+            Fotografien der eigenen Exemplare sowie Coverabbildungen aus den öffentlichen
+            Verzeichnissen von Google Books und Open Library. Diese werden auf den eigenen
+            Server übernommen und von dort ausgeliefert, jeweils mit Angabe der Quelle;
+            eingebunden von fremden Servern wird nichts. Rechteinhaber können die Entfernung
+            einer einzelnen Abbildung unter der oben genannten Adresse verlangen. Die
+            bibliografischen Daten stammen unter anderem von der Deutschen Nationalbibliothek
+            und stehen dort unter CC0.
             TEXT;
+    }
+
+    /**
+     * The cookies an installation actually sets.
+     *
+     * With the language switch turned off nothing ever writes the language
+     * cookie, and a privacy policy that lists one is wrong in the direction
+     * that matters: it describes processing that does not happen, which is
+     * the kind of error nobody ever finds because nobody is harmed by it.
+     */
+    private static function cookies(bool $multilingual): string
+    {
+        /* One line per paragraph, because this is spliced in after unwrap()
+           has run and the renderer turns a newline inside a paragraph into a
+           line break. List items keep their own lines, which is the point of
+           holding this back until then. */
+        $items = ['- **Sitzungs-Cookie** – nur nach dem Anmelden. Es hält die Sitzung'
+            . ' der angemeldeten Person und wird beim Abmelden gelöscht.'];
+        if ($multilingual) {
+            $items[] = '- **Sprach-Cookie** – merkt sich, ob die Oberfläche auf Deutsch'
+                . ' oder Englisch angezeigt werden soll. Es enthält ausschließlich diese'
+                . ' Angabe und läuft nach einem Jahr ab.';
+        }
+
+        $one = count($items) === 1;
+
+        return ($one ? 'Diese Seite setzt ein Cookie, technisch notwendig'
+                     : 'Diese Seite setzt zwei Cookies, beide technisch notwendig')
+            . ' im Sinne des § 25 Abs. 2 TDDDG. Eine Einwilligung ist dafür nicht'
+            . " erforderlich, weshalb es hier auch kein Cookie-Banner gibt:\n\n"
+            . implode("\n", $items) . "\n\n"
+            . 'Wer angemeldet bleibt, erhält zusätzlich ein Anmelde-Token als Cookie. Es'
+            . ' enthält keine personenbezogenen Angaben, sondern eine Zufallszeichenfolge,'
+            . ' und wird bei jeder Nutzung ausgetauscht.';
     }
 
     private static function privacy(string $address, string $host, string $siteName): string
     {
-        return "## Verantwortliche\n\n" . self::HOLD_ADDRESS . "\n\n"
+        /* The three claims below that nobody can check from inside the
+           application. They read as statements of fact and are in truth
+           tasks - which is the sort of error that is never found, because
+           nobody is harmed by a privacy policy that is too flattering until
+           somebody is. */
+        return self::draftNotice(
+            'Zu prüfen ist außerdem, ob stimmt, was hier behauptet wird: dass mit dem'
+                . ' Hoster ein Vertrag zur Auftragsverarbeitung besteht, wie lange er die'
+                . ' Server-Logs wirklich aufbewahrt, und dass die Seite tatsächlich nichts'
+                . ' von fremden Servern nachlädt. Letzteres gilt für diese Anwendung im'
+                . ' Auslieferungszustand und endet mit der ersten eingebundenen fremden'
+                . ' Schrift, Karte oder Statistik.'
+        )
+            . "## Verantwortliche\n\n" . self::HOLD_ADDRESS . "\n\n"
             . "## Hosting\n\n"
             . 'Diese Seite wird gehostet bei: ' . $host . ". Mit dem Anbieter besteht ein\n"
             . "Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO.\n\n"
@@ -197,19 +278,7 @@ final class DefaultPages
 
                 ## Cookies
 
-                Diese Seite setzt zwei Cookies, beide technisch notwendig im Sinne des
-                § 25 Abs. 2 TDDDG. Eine Einwilligung ist dafür nicht erforderlich, weshalb
-                es hier auch kein Cookie-Banner gibt:
-
-                - **Sitzungs-Cookie** – nur nach dem Anmelden. Es hält die Sitzung der
-                  angemeldeten Person und wird beim Abmelden gelöscht.
-                - **Sprach-Cookie** – merkt sich, ob die Oberfläche auf Deutsch oder
-                  Englisch angezeigt werden soll. Es enthält ausschließlich diese Angabe
-                  und läuft nach einem Jahr ab.
-
-                Wer angemeldet bleibt, erhält zusätzlich ein Anmelde-Token als Cookie. Es
-                enthält keine personenbezogenen Angaben, sondern eine Zufallszeichenfolge,
-                und wird bei jeder Nutzung ausgetauscht.
+                {{cookies}}
 
                 ## Keine Analyse, keine externen Dienste
 

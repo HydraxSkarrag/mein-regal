@@ -363,6 +363,7 @@ return [
     'about.perlanguage'        => 'Jede Sprache hat einen eigenen Text. Das Häkchen zeigt, welche schon geschrieben sind.',
     'about.other.language'     => 'In einer anderen Sprache steht hier schon etwas.',
 
+    'legal.draft.hint'   => 'Impressum und Datenschutzerklärung sind noch Entwürfe – bitte durchlesen, ergänzen und prüfen:',
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
 
