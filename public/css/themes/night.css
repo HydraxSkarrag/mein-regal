@@ -1,0 +1,76 @@
+/* Night - the default look, but dark when the reader's system is.
+ *
+ * Deliberately not a second palette to choose from: everything sits inside
+ * a prefers-color-scheme query, so the shelf follows the device and there is
+ * no switch, no stored preference and no cookie to explain. On a machine set
+ * to light this file changes nothing at all.
+ *
+ *   'theme' => 'night'
+ *
+ * Worth knowing before copying this as a starting point: a dark theme is
+ * more than inverted greys. Three things have to be restated or they look
+ * broken - the shadows (a black shadow on a black ground is invisible, so
+ * they become light-coloured rims), the veil behind the sticky header, and
+ * the sixteen placeholder grounds, which were picked to sit under a white
+ * page and turn muddy on a dark one.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #7cb0e8;
+    --accent-dark: #a3c8f0;
+    --on-accent: #10131a;
+    --accent-ring: rgba(124, 176, 232, 0.2);
+    --accent-ring-strong: rgba(124, 176, 232, 0.4);
+    --accent-shadow: rgba(0, 0, 0, 0.5);
+
+    --text: #e6e6e9;
+    --muted: #9b9ba4;
+    --border: #2c2c33;
+    --bg: #131318;
+    --surface: #1b1b21;
+    --surface-2: #232329;
+    --surface-veil: rgba(19, 19, 24, 0.94);
+
+    --danger: #ffb3c0;
+    --danger-bg: #3a1620;
+    --danger-border: #6b2434;
+    --ok: #b7e6c8;
+    --ok-bg: #16301f;
+    --ok-border: #2c5a3c;
+    --hint: #f0dca8;
+    --hint-bg: #322915;
+    --hint-border: #5c4a1e;
+
+    --bar-muted: #45454e;
+    --chart-muted: #3c3c44;
+    --chart-grid: #2c2c33;
+    --chart-zero: #3c3c44;
+    --chart-axis: #77777f;
+
+    --split-1: #7cb0e8;
+    --split-2: #5d87b4;
+    --split-3: #446283;
+    --split-4: #2f4257;
+    --split-5: #2c2c33;
+
+    /* Lifted and desaturated: the same hues would sink into the page. */
+    --placeholder-1:  #55496f; --placeholder-2:  #8a4335;
+    --placeholder-3:  #35695a; --placeholder-4:  #8a7028;
+    --placeholder-5:  #44546e; --placeholder-6:  #6f3c58;
+    --placeholder-7:  #365a68; --placeholder-8:  #7c5236;
+    --placeholder-9:  #4e4865; --placeholder-10: #625f36;
+    --placeholder-11: #6f3841; --placeholder-12: #3c5f47;
+    --placeholder-13: #62503e; --placeholder-14: #475343;
+    --placeholder-15: #6e5263; --placeholder-16: #3a5364;
+
+    /* A shadow cannot be seen on a dark ground, so it becomes a rim. */
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.6);
+    --shadow-nav: 0 -8px 12px -8px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Cover photographs are made for print and glare against a dark page.
+     A hair of restraint, taken back on hover, where you are looking anyway. */
+  .cover img { filter: brightness(0.92); transition: filter 0.15s; }
+  .cover img:hover { filter: none; }
+}

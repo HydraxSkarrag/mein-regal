@@ -45,23 +45,15 @@ DirectoryIndex index.php
   # file verbatim would break the one feature this site exists for.
   Header set Permissions-Policy "geolocation=(), microphone=(), camera=(self)"
 
-  # The site loads nothing from anywhere else - no CDN, no web fonts, no
-  # analytics - so this can be as strict as it looks. It stays true only as
-  # long as that holds; the first external script would have to loosen it,
-  # and would also cost the site its consent-banner-free standing.
+  # The Content-Security-Policy is NOT here. It carries a nonce that differs
+  # on every request, and a static file cannot mint one - see App\Core\Csp,
+  # which sends it. A second policy here would not be a safety net either: a
+  # browser enforces every policy it is given, so this one would go on
+  # blocking exactly what that one allows.
   #
-  # img-src names the few hosts a cover can come from rather than allowing
-  # https: outright. Covers are downloaded and served from here, so a visitor
-  # never needs any of them; what does is the scanner, which shows the
-  # candidate cover straight from the source before anyone has decided to
-  # keep it. Naming them closes the one channel a policy like this otherwise
-  # leaves wide open: an image request carries data in its address, and "any
-  # https host" is somewhere to send it. The hosts are the ones in
-  # CoverStorage's fetch allowlist, kept in step by hand: Open Library
-  # redirects its covers onto the Internet Archive, and a browser follows
-  # that redirect too. If a preview ever fails to appear while the cover
-  # still saves correctly, this line is why - add the host it came from.
-  Header set Content-Security-Policy "default-src 'self'; img-src 'self' data: https://books.google.com https://books.googleusercontent.com https://lh3.googleusercontent.com https://covers.openlibrary.org https://archive.org https://*.archive.org; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  # These headers stay, because they are the same on every response and
+  # because they then also cover the CSS, the fonts and the cover images,
+  # which never reach PHP at all.
 
   Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains"
 </IfModule>

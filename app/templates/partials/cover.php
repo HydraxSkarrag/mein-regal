@@ -20,8 +20,7 @@ $sizes = $sizes ?? '(max-width: 600px) 33vw, 150px';
        loading="lazy" decoding="async" sizes="<?= e($sizes) ?>">
 </div>
 <?php else: ?>
-<div class="cover cover--placeholder"
-     style="background: <?= e(CoverImage::placeholderColour((string) ($book['isbn13'] ?? $book['slug'] ?? ''))) ?>"
+<div class="cover cover--placeholder <?= e(CoverImage::placeholderClass((string) ($book['isbn13'] ?? $book['slug'] ?? ''))) ?>"
      role="img"
      aria-label="<?= e(t('book.no.cover')) ?>">
   <span class="ph-title"><?= e($book['title']) ?></span>

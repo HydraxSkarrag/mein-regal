@@ -54,7 +54,7 @@ $chartId = 'c' . substr(sha1($caption), 0, 6);
 // a dense series still fills the full width.
 $maxWidth = min(1160, max(360, $padLeft + $count * 84));
 ?>
-<figure class="chart-figure" style="max-width: <?= $maxWidth ?>px">
+<figure class="chart-figure <?= e($styles->maxWidth($maxWidth)) ?>">
   <svg class="chart" viewBox="0 0 <?= $width ?> <?= $height ?>" role="img"
        aria-labelledby="<?= $chartId ?>-t" preserveAspectRatio="xMidYMid meet">
     <title id="<?= $chartId ?>-t"><?= e($caption) ?></title>
@@ -63,9 +63,9 @@ $maxWidth = min(1160, max(360, $padLeft + $count * 84));
     <?php $value = (int) round($niceMax / 4 * $line); ?>
     <?php $y = $padTop + $plotHeight - ($plotHeight / 4 * $line); ?>
     <line x1="<?= $padLeft ?>" y1="<?= round($y, 1) ?>" x2="<?= $width ?>" y2="<?= round($y, 1) ?>"
-          stroke="#e4e4e7" stroke-width="1"<?= $line === 0 ? ' stroke="#d4d4d8"' : '' ?>></line>
+          class="chart-grid<?= $line === 0 ? ' chart-grid--zero' : '' ?>" stroke-width="1"></line>
     <text x="<?= $padLeft - 7 ?>" y="<?= round($y + 3.5, 1) ?>" text-anchor="end"
-          font-size="10" fill="#a1a1aa" font-family="Inter, system-ui, sans-serif"><?= $value ?></text>
+          font-size="10" class="chart-tick"><?= $value ?></text>
 <?php endfor; ?>
 
 <?php foreach (array_values($series) as $index => $value): ?>
@@ -83,8 +83,7 @@ $maxWidth = min(1160, max(360, $padLeft + $count * 84));
             width="<?= round($barWidth, 2) ?>" height="<?= round($barHeight, 2) ?>"
             rx="2" class="chart-bar<?= $muted ? ' chart-bar--muted' : '' ?>"></rect>
       <text x="<?= round($padLeft + $index * $slot + $slot / 2, 2) ?>" y="<?= round($y - 5, 2) ?>"
-            text-anchor="middle" font-size="10" class="chart-value"
-            font-family="Inter, system-ui, sans-serif"><?= e($formatter->number($value)) ?></text>
+            text-anchor="middle" font-size="10" class="chart-value"><?= e($formatter->number($value)) ?></text>
       <title><?= e((string) $keys[$index]) ?>: <?= e($formatter->number($value)) ?></title>
     </g>
 <?php endforeach; ?>
@@ -92,8 +91,7 @@ $maxWidth = min(1160, max(360, $padLeft + $count * 84));
 <?php foreach ($keys as $index => $key): ?>
     <?php if (!isset($labelled[$index])) { continue; } ?>
     <text x="<?= round($padLeft + $index * $slot + $slot / 2, 2) ?>" y="<?= $height - 8 ?>"
-          text-anchor="middle" font-size="10.5" fill="#71717a"
-          font-family="Inter, system-ui, sans-serif"><?= e((string) $key) ?></text>
+          text-anchor="middle" font-size="10.5" class="chart-label"><?= e((string) $key) ?></text>
 <?php endforeach; ?>
   </svg>
 <?php if (($note ?? '') !== ''): ?>

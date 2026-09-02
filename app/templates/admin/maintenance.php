@@ -13,7 +13,7 @@ declare(strict_types=1);
 <?php endif; ?>
 
 <?php if (($report ?? '') !== ''): ?>
-<div class="panel" style="margin-bottom:24px">
+<div class="panel mb-l">
   <h2><?= e(t('maintenance.import.report')) ?></h2>
   <pre class="report"><?= e($report) ?></pre>
 </div>
@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 <div class="panel">
   <h2><?= e(t('maintenance.export')) ?></h2>
-  <p class="note" style="margin-top:0"><?= e(t('maintenance.export.hint')) ?></p>
+  <p class="note mt-0"><?= e(t('maintenance.export.hint')) ?></p>
   <ul class="download-list">
     <li>
       <a href="/admin/export/bookstats"><?= e(t('maintenance.export.bookstats')) ?></a>
@@ -38,12 +38,12 @@ declare(strict_types=1);
   </ul>
 </div>
 
-<div class="panel" style="margin-top:24px">
+<div class="panel mt-l">
   <h2><?= e(t('maintenance.import')) ?></h2>
-  <p class="note" style="margin-top:0"><?= e(t('maintenance.import.hint')) ?></p>
+  <p class="note mt-0"><?= e(t('maintenance.import.hint')) ?></p>
 
   <?php if ($bookCount > 0): ?>
-  <p class="note" style="color:#8a0a22">
+  <p class="note note--danger">
     <?= e(t('maintenance.import.notempty', ['count' => $bookCount])) ?>
   </p>
   <?php endif; ?>
@@ -70,7 +70,7 @@ declare(strict_types=1);
   </form>
 </div>
 
-<div class="panel" style="margin-top:24px">
+<div class="panel mt-l">
   <h2><?= e(t('maintenance.cron')) ?></h2>
-  <p class="note" style="margin-top:0"><?= e(t('maintenance.cron.hint')) ?></p>
+  <p class="note mt-0"><?= e(t('maintenance.cron.hint')) ?></p>
 </div>

@@ -128,11 +128,11 @@ $value = static fn (?string $v): string => $v ?? '';
         <h2><?= e(t('edit.group.cover')) ?></h2>
         <?php if ($cover !== null): ?>
         <div class="cover-current">
-          <div style="max-width:110px">
+          <div class="w-thumb">
             <?= $view->render('partials.cover', ['book' => $book, 'cover' => $cover, 'authorLine' => '', 'sizes' => '110px']) ?>
           </div>
           <div>
-            <p class="note" style="margin-top:0"><?= e(t('cover.from.' . $cover['source'])) ?></p>
+            <p class="note mt-0"><?= e(t('cover.from.' . $cover['source'])) ?></p>
             <button class="btn btn--danger" type="submit" form="cover-delete"><?= e(t('cover.remove')) ?></button>
           </div>
         </div>
@@ -154,7 +154,7 @@ $value = static fn (?string $v): string => $v ?? '';
           <?php endif; ?>
         </div>
       </div>
-      <div class="panel" style="margin-top:20px">
+      <div class="panel mt-m">
         <h2><?= e(t('edit.group.reading')) ?></h2>
 
         <div class="field">
@@ -202,9 +202,9 @@ $value = static fn (?string $v): string => $v ?? '';
           <textarea id="notes" name="notes" rows="4"><?= e($value($book['notes'])) ?></textarea>
         </div>
       </div>
-      <div class="panel" style="margin-top:20px">
+      <div class="panel mt-m">
         <h2><?= e(t('edit.group.private')) ?></h2>
-        <p class="note" style="margin-top:-6px"><?= e(t('edit.group.private.hint')) ?></p>
+        <p class="note mt-tight"><?= e(t('edit.group.private.hint')) ?></p>
 
         <div class="field-row">
           <div class="field">

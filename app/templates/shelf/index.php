@@ -167,7 +167,7 @@ declare(strict_types=1);
     <?php endif; ?>
 
     <?php if ($hasFilters): ?>
-    <p style="margin-top:18px"><a href="/"><?= e(t('filter.reset')) ?></a></p>
+    <p class="mt-s"><a href="/"><?= e(t('filter.reset')) ?></a></p>
     <?php endif; ?>
   </aside>
 
@@ -252,7 +252,7 @@ declare(strict_types=1);
       <?php endif; ?>
     </nav>
     <?php endif; ?>
-    <p class="note" style="text-align:center">
+    <p class="note center">
       <?= e(t('shelf.range', [
           'from'  => $formatter->number($offset + 1),
           'to'    => $formatter->number($offset + count($books)),

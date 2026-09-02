@@ -85,22 +85,29 @@ rmdir($dir);
 
 Assert::group('CoverImage placeholder');
 
-// The same book must always get the same colour, or the shelf reshuffles
+// The same book must always get the same ground, or the shelf reshuffles
 // itself on every load.
 Assert::same(
-    'the colour is stable for one book',
-    CoverImage::placeholderColour('9783473408061'),
-    CoverImage::placeholderColour('9783473408061')
+    'the ground is stable for one book',
+    CoverImage::placeholderClass('9783473408061'),
+    CoverImage::placeholderClass('9783473408061')
 );
-// With a small palette some books share a colour, which is fine. What
+// With a small palette some books share a ground, which is fine. What
 // matters is that the whole palette gets used rather than everything
 // landing on one or two shades.
 $seen = [];
 foreach (range(9783000000000, 9783000000400) as $isbn) {
-    $seen[CoverImage::placeholderColour((string) $isbn)] = true;
+    $seen[CoverImage::placeholderClass((string) $isbn)] = true;
 }
 Assert::same('the palette is used across its full range', count($seen), 16);
-Assert::true('a book with no ISBN still gets a colour', CoverImage::placeholderColour('') !== '');
+Assert::true('a book with no ISBN still gets one', CoverImage::placeholderClass('') !== '');
+// The class names the stylesheet defines, and nothing else: a colour in the
+// markup is a colour a theme cannot change.
+Assert::same(
+    'it is a class, not a colour',
+    preg_match('/^ph-([1-9]|1[0-6])$/', CoverImage::placeholderClass('9783473408061')),
+    1
+);
 Assert::same('a stored file becomes a path', CoverImage::url(['source' => 'own', 'path' => 'a3/x.webp', 'external_url' => null]), '/covers/a3/x.webp');
 Assert::same(
     'the grid asks for the small copy',

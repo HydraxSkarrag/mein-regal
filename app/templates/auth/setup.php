@@ -8,9 +8,9 @@
  */
 declare(strict_types=1);
 ?>
-<div class="card" style="max-width:440px;margin:32px auto">
-  <h1 style="margin-bottom:6px"><?= e(t('setup.title')) ?></h1>
-  <p class="note" style="margin-top:0"><?= e(t('setup.intro')) ?></p>
+<div class="card w-setup">
+  <h1 class="mb-s"><?= e(t('setup.title')) ?></h1>
+  <p class="note mt-0"><?= e(t('setup.intro')) ?></p>
 
   <?= $view->render('partials.brand_hint') ?>
 

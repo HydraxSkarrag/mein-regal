@@ -28,9 +28,17 @@ $current = $current ?? '';
   <meta name="description" content="<?= e($metaDescription ?? t('app.tagline')) ?>">
   <link rel="canonical" href="<?= e($canonical ?? $siteUrl) ?>">
   <?php endif; ?>
-  <meta name="theme-color" content="#ed002f">
+  <meta name="theme-color" content="<?= e($themeColour) ?>">
 
   <link rel="stylesheet" href="/css/style.css?v=<?= e($assetVersion) ?>">
+<?php foreach ($themeUrls as $themeUrl): ?>
+  <link rel="stylesheet" href="<?= e($themeUrl) ?>">
+<?php endforeach; ?>
+<?php if (!$styles->isEmpty()): ?>
+  <?php /* Measurements only this page knows - see App\Core\Styles. The nonce
+           is what lets them past a policy that forbids inline style. */ ?>
+  <style nonce="<?= e($cspNonce) ?>"><?= $styles->css() ?></style>
+<?php endif; ?>
   <?php if ($brand->url('icon') !== null): ?>
   <link rel="icon" href="<?= e($brand->url('icon')) ?>" sizes="32x32">
   <?php endif; ?>

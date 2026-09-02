@@ -7,6 +7,7 @@ use App\Core\Auth;
 use App\Core\Brand;
 use App\Core\Config;
 use App\Core\Cookies;
+use App\Core\Csp;
 use App\Core\Csrf;
 use App\Core\Database;
 use App\Core\Formatter;
@@ -15,6 +16,8 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Router;
 use App\Core\Session;
+use App\Core\Styles;
+use App\Core\Theme;
 use App\Core\Translator;
 use App\Core\View;
 use App\Lookup\DnbLookup;
@@ -44,12 +47,15 @@ final class Application
     public readonly Session $session;
     public readonly Cookies $cookies;
     public readonly Csrf $csrf;
+    public readonly Csp $csp;
+    public readonly Styles $styles;
     public readonly Auth $auth;
     public readonly Translator $translator;
     public readonly Formatter $formatter;
     public readonly View $view;
     public readonly Router $router;
     public readonly Brand $brand;
+    public readonly Theme $theme;
 
     public readonly BookRepository $books;
     public readonly AuthorRepository $authors;
@@ -74,6 +80,8 @@ final class Application
         $this->session->start();
         $this->cookies = new HttpCookies($secure);
         $this->csrf = new Csrf($this->session);
+        $this->csp = new Csp();
+        $this->styles = new Styles();
 
         $this->users = new UserRepository($this->pdo);
         $this->auth = new Auth($this->pdo, $this->session, $this->users, $this->cookies);
@@ -98,6 +106,7 @@ final class Application
         $this->ownerId = $this->resolveOwnerId();
 
         $this->brand = new Brand(PROJECT_ROOT);
+        $this->theme = new Theme(PROJECT_ROOT, $this->config->str('theme'));
 
         $this->view = new View(APP_ROOT . '/templates');
         $this->shareViewDefaults();
@@ -160,10 +169,14 @@ final class Application
         $this->view->share('blogUrl', $this->config->str('blog_url'));
         $this->view->share('blogName', $this->config->str('blog_name'));
         $this->view->share('brand', $this->brand);
+        $this->view->share('themeUrls', $this->theme->urls());
+        $this->view->share('themeColour', $this->themeColour());
         $this->view->share('publicStats', $this->publicStats());
         $this->view->share('multilingual', $this->multilingual());
         $this->view->share('currentPath', $this->request->path);
         $this->view->share('csrfField', $this->csrf->field());
+        $this->view->share('styles', $this->styles);
+        $this->view->share('cspNonce', $this->csp->nonce());
         $this->view->share('assetVersion', $this->assetVersion());
         $this->view->share('flashes', $this->session->takeFlashes());
         $this->view->share('scripts', []);
@@ -200,6 +213,20 @@ final class Application
         return $this->config->bool('language_switcher', true);
     }
 
+    /**
+     * The colour the browser paints its own chrome with.
+     *
+     * A meta tag and a manifest field, neither of which is CSS, so neither
+     * can read a token out of the stylesheet - a theme that changes the
+     * accent says so here as well. Named after what it does rather than
+     * after the accent, because a dark theme wants its background here and
+     * not its brightest colour.
+     */
+    public function themeColour(): string
+    {
+        return $this->config->str('theme_colour', '#2f5d8f');
+    }
+
     /** Cache-busting for CSS and JS; the file's own timestamp is enough. */
     private function assetVersion(): string
     {
@@ -222,7 +249,10 @@ final class Application
             $response = $this->serverError();
         }
 
-        $response->send();
+        /* The policy is attached here rather than in each controller, so a
+           new route cannot be the one that forgets it. It carries this
+           request's nonce, which is why it cannot come from the .htaccess. */
+        $response->send($this->csp->header());
     }
 
     public function notFound(): Response

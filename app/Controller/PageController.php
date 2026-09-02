@@ -392,8 +392,11 @@ final class PageController
             'scope'            => '/',
             'display'          => 'standalone',
             'orientation'      => 'portrait',
-            'background_color' => '#f9fefd',
-            'theme_color'      => '#ed002f',
+            // Both from the theme, not from this file: an installation that
+            // restyles the shelf must not get the original's red back the
+            // moment somebody adds it to a home screen.
+            'background_color' => $this->app->config->str('background_colour', '#fbfbf9'),
+            'theme_color'      => $this->app->themeColour(),
             'lang'             => $this->app->translator->locale(),
             'icons'            => $this->manifestIcons(),
             'shortcuts' => [[

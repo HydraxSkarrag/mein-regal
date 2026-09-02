@@ -85,6 +85,24 @@ return [
     // it, the ones that do not were never going to.
     'ai_crawlers' => false,
 
+    // What the shelf looks like. Empty is the neutral default that ships
+    // with it; a name loads public/css/themes/<name>.css over the top.
+    // Ready-made: 'buecherhausen' (red on near-white, the original look) and
+    // 'night' (the default, but dark when the reader's system is).
+    //
+    // A look of your own goes in public/assets/brand/theme.css, beside the
+    // logo. That file is loaded last and wins, and like the logo it is kept
+    // out of Git and out of the deployment - one installation's appearance
+    // is nobody else's business.
+    'theme' => '',
+
+    // The colour the browser paints its own chrome with - the address bar on
+    // Android, the tile on a home screen. Neither the meta tag nor the web
+    // app manifest is CSS, so neither can read a token out of a theme: a
+    // theme that changes the accent has to be told here as well.
+    'theme_colour'      => '#2f5d8f',
+    'background_colour' => '#fbfbf9',
+
     // Optional Google Books API key. Without one the shared per-IP quota applies.
     'google_books_key' => '',
 

@@ -177,6 +177,18 @@ if (isset($config)) {
         echo "                         the wrong place - quietly.
 ";
     }
+
+    /* A theme named in config.php that is not on disk. The shelf still
+       renders - it falls back to the neutral default - so nothing breaks
+       loudly enough to notice, and the site simply looks wrong. */
+    $theme = new App\Core\Theme(PROJECT_ROOT, $config->str('theme'));
+    if ($theme->missing()) {
+        line('Theme', false, "'" . $theme->slug() . "' is named but not in public/css/themes/");
+        echo "                         The shelf falls back to the neutral default.
+";
+    } elseif ($theme->slug() !== '') {
+        line('Theme', true, $theme->slug());
+    }
 }
 
 echo "\n";

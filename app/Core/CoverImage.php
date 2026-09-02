@@ -12,22 +12,33 @@ namespace App\Core;
  * looks the same and a shelf does not reshuffle its colours on every load.
  *
  * The palette is deliberately dark and desaturated - these sit next to real
- * cover photographs and should not shout over them.
+ * cover photographs and should not shout over them. It lives in the
+ * stylesheet, so a theme can restate it along with everything else.
  */
 final class CoverImage
 {
-    /** @var list<string> */
-    private const PALETTE = [
-        '#4a3f6b', '#8c3a2e', '#2f5d50', '#8a6d1f', '#3b4a63', '#6b3350',
-        '#2f4f5d', '#7a4a2e', '#453f5e', '#5d5a2f', '#6b2f3a', '#35553f',
-        '#5b4636', '#3f4a3b', '#6a4a5e', '#334a5c',
-    ];
+    /**
+     * How many grounds a placeholder can have.
+     *
+     * The colours themselves are in the stylesheet as --placeholder-1 to -16
+     * and reached through the class this returns. They belong there and not
+     * here because a theme has to be able to restate them: sixteen muted
+     * purples chosen to sit under a white page look wrong on a black one,
+     * and no amount of PHP can know which page it is.
+     */
+    private const PLACEHOLDER_GROUNDS = 16;
 
-    public static function placeholderColour(string $seed): string
+    /**
+     * The class carrying this book's placeholder ground.
+     *
+     * Derived from the book's own identifier, so the same book always looks
+     * the same and a shelf does not reshuffle its colours on every load.
+     */
+    public static function placeholderClass(string $seed): string
     {
         $hash = crc32($seed !== '' ? $seed : 'ohne-isbn');
 
-        return self::PALETTE[$hash % count(self::PALETTE)];
+        return 'ph-' . ($hash % self::PLACEHOLDER_GROUNDS + 1);
     }
 
     /**

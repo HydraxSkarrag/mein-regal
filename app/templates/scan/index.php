@@ -23,7 +23,7 @@ declare(strict_types=1);
   </div>
   <p class="scanner-hint" id="hint"><?= e(t('scan.aim')) ?></p>
 
-  <div class="field field--check" style="margin-top:14px">
+  <div class="field field--check mt-s">
     <input id="series" type="checkbox" checked>
     <label for="series"><?= e(t('scan.series')) ?> <span class="note">– <?= e(t('scan.series.hint')) ?></span></label>
   </div>
@@ -33,8 +33,8 @@ declare(strict_types=1);
     <label for="read"><?= e(t('scan.read')) ?> <span class="note">– <?= e(t('scan.read.hint')) ?></span></label>
   </div>
 
-  <form id="manual" class="card" style="margin-top:18px">
-    <div class="field" style="margin-bottom:10px">
+  <form id="manual" class="card mt-s">
+    <div class="field mb-s">
       <label for="isbn"><?= e(t('scan.manual')) ?></label>
       <input id="isbn" type="text" inputmode="numeric" autocomplete="off"
              placeholder="<?= e(t('scan.manual.hint')) ?>">

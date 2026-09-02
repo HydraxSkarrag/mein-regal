@@ -84,10 +84,38 @@ Four settings decide what the installation is rather than how it looks:
 | `review_blog_url` | empty | the WordPress blog `bin/reviews.php` matches against. Empty means nothing is ever contacted |
 | `ai_crawlers` | `false` | whether crawlers collecting training text are welcome. `false` writes a `Disallow` for each into `robots.txt`; search engines are unaffected |
 
-### 4. Your own logo
+### 4. Your own logo and colours
 
-The shelf ships with a neutral mark so a fresh installation looks finished
-rather than borrowed. To use your own, put the files in `public/assets/brand/`:
+The shelf ships with a neutral mark and a neutral palette so a fresh
+installation looks finished rather than borrowed. Both are replaceable, and
+both are replaced in the same place.
+
+**Colours, shapes and typefaces** are tokens on `:root` in `public/css/style.css`,
+and nothing in that file uses a colour that is not one. A theme is therefore
+one small file that restates some of those tokens. Three layers, in this order:
+
+| | |
+|---|---|
+| `public/css/style.css` | the neutral default, always loaded |
+| `public/css/themes/<name>.css` | a shipped theme, chosen with `'theme' => '<name>'` |
+| `public/assets/brand/theme.css` | yours, loaded last, wins |
+
+Shipped so far: **`buecherhausen`** (red on near-white — the look this was first
+drawn in) and **`night`** (the default, but dark when the reader's system is).
+Copy either as a starting point.
+
+The third layer is the private one. It sits beside the logo, is excluded from
+Git and from the deployment, and is the right place for an installation whose
+appearance is nobody else's business. Web fonts of your own go next to it in
+`public/assets/brand/fonts/` and are referenced from `theme.css` with a
+relative path — never from a font service, which would hand every visitor's
+address to a third party and cost the site its consent-banner-free standing.
+
+Two colours are not CSS and have to be named separately in `config.php`:
+`theme_colour` (the browser's own chrome, and the home-screen tile) and
+`background_colour` (the splash while a home-screen app starts).
+
+**Logo and icons** go in `public/assets/brand/`:
 
 | File | Used for |
 |---|---|
@@ -239,6 +267,14 @@ in the way of libraries sits ready in `public/js/`.
   typed into what the database may hold. Writing a second `intOrNull` next to
   the first is how the scanner and the edit form came to disagree about whether
   a page count with a trailing space counts.
+- **No colour outside `:root`.** Every colour, radius, shadow and typeface in
+  `style.css` is a token, and templates carry classes rather than colours. That
+  is the whole of what makes a theme a small file instead of a fork.
+- **No `style` attribute, ever.** The Content-Security-Policy forbids inline
+  style, and `'unsafe-inline'` for one bar would mean it for the whole site.
+  Static values are utility classes; anything a page can only know while it
+  renders goes through `App\Core\Styles`, which collects it into one
+  nonce-bearing `<style>`.
 - **Owner-written text is never HTML.** It is stored as typed and rendered by
   `App\Core\Markup`, which escapes everything before it writes a single tag. If
   you find yourself adding an HTML filter, something has gone wrong.

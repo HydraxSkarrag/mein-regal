@@ -50,9 +50,9 @@ $books = (int) ($totals['books'] ?? 0);
 ]) ?>
 <?php endif; ?>
 
-<div class="stat-grid" style="margin-top:2rem">
+<div class="stat-grid mt-l">
   <div>
-    <h2 style="margin-top:0"><?= e(t('stats.status')) ?></h2>
+    <h2 class="mt-0"><?= e(t('stats.status')) ?></h2>
     <?= $view->render('partials.chart_split', [
         'counts'    => $statuses,
         'caption'   => t('stats.status'),
@@ -70,7 +70,7 @@ $books = (int) ($totals['books'] ?? 0);
   </div>
 
   <div>
-    <h2 style="margin-top:0"><?= e(t('stats.genres')) ?></h2>
+    <h2 class="mt-0"><?= e(t('stats.genres')) ?></h2>
     <?= $view->render('partials.barlist', [
         'counts'    => array_column($genres, 'book_count', 'name'),
         'formatter' => $formatter,

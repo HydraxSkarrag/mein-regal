@@ -39,19 +39,109 @@
 }
 
 :root {
-  --accent: #ed002f;
-  --accent-dark: #c2001f;
+  /* --------------------------------------------------------------- theme --
+   *
+   * Everything below is a token, and nothing in this file uses a colour that
+   * is not one. That is the whole trick: an installation restyles the shelf
+   * by redefining these and nothing else. See public/css/themes/ for the
+   * ready-made ones and README for how a theme is chosen.
+   *
+   * The default is deliberately quiet - ink on paper, one blue for anything
+   * you can click. A fresh installation should look finished rather than
+   * borrowed, the same reason a neutral logo ships with it.
+   */
+
+  /* The one colour that means "you can act on this". */
+  --accent: #2f5d8f;
+  --accent-dark: #234a74;
+  --on-accent: #ffffff;
+  --accent-ring: rgba(47, 93, 143, 0.14);
+  --accent-ring-strong: rgba(47, 93, 143, 0.32);
+  --accent-shadow: rgba(47, 93, 143, 0.34);
+
+  /* Text and surfaces. */
   --text: #27272a;
   --muted: #71717a;
   --border: #e4e4e7;
-  --bg: #f9fefd;
+  --bg: #fbfbf9;
   --surface: #ffffff;
   --surface-2: #f4f4f5;
+  /* The header and the bottom bar sit over content and let it show through. */
+  --surface-veil: rgba(255, 255, 255, 0.94);
+
+  /* Saying how it went. Three states, each with its own text, ground and
+     edge, because a coloured background alone is not a message. */
+  --danger: #8a0a22;
+  --danger-bg: #fdecef;
+  --danger-border: #f7b9c4;
+  --ok: #14532d;
+  --ok-bg: #edf7f1;
+  --ok-border: #b6dfc7;
+  --hint: #713f12;
+  --hint-bg: #fffbeb;
+  --hint-border: #fde68a;
+
+  /* Charts. The muted shades are for "and the rest", which must read as
+     background without disappearing. */
+  --bar-muted: #b4b2a9;
+  --chart-muted: #c4c2c7;
+  --chart-grid: #e4e4e7;
+  --chart-zero: #d4d4d8;
+  --chart-axis: #a1a1aa;
+
+  /* One hue, stepped, for a bar split into its parts. Colour encodes size
+     here, not identity, so a second hue would only add noise. */
+  --split-1: #2f5d8f;
+  --split-2: #5b83ad;
+  --split-3: #8ba9c9;
+  --split-4: #bccfe0;
+  --split-5: #e4e4e7;
+
+  /* The sixteen grounds a cover placeholder can have. Dark and desaturated
+     on purpose: they sit next to real cover photographs and must not shout
+     over them. A theme restates all sixteen or none. */
+  --placeholder-1: #4a3f6b;
+  --placeholder-2: #8c3a2e;
+  --placeholder-3: #2f5d50;
+  --placeholder-4: #8a6d1f;
+  --placeholder-5: #3b4a63;
+  --placeholder-6: #6b3350;
+  --placeholder-7: #2f4f5d;
+  --placeholder-8: #7a4a2e;
+  --placeholder-9: #453f5e;
+  --placeholder-10: #5d5a2f;
+  --placeholder-11: #6b2f3a;
+  --placeholder-12: #35553f;
+  --placeholder-13: #5b4636;
+  --placeholder-14: #3f4a3b;
+  --placeholder-15: #6a4a5e;
+  --placeholder-16: #334a5c;
+
+  /* The scanner, which is a camera picture with things drawn over it and so
+     has its own small palette that owes nothing to the rest. */
+  --scan-bg: #18181b;
+  --scan-frame: rgba(255, 255, 255, 0.75);
+  --scan-found: #3ddc84;
+  --scan-found-ring: rgba(61, 220, 132, 0.35);
+  --scan-found-glow: rgba(61, 220, 132, 0.5);
+  --overlay: rgba(24, 24, 27, 0.82);
+  --overlay-busy: rgba(24, 24, 27, 0.86);
+  --overlay-ok: rgba(21, 128, 61, 0.9);
+  --overlay-bad: rgba(194, 0, 31, 0.9);
+
+  /* Shape, shadow, type. A theme may change these too - a terminal look
+     wants square corners and a monospaced face, and both are tokens. */
   --radius: 16px;
   --radius-sm: 8px;
   --shadow: 0 6px 24px rgba(20, 20, 24, 0.08);
+  --shadow-sm: 0 1px 3px rgba(20, 20, 24, 0.14);
+  --shadow-nav: 0 -8px 12px -8px rgba(20, 20, 24, 0.14);
   --font-body: "Inter", system-ui, -apple-system, Arial, sans-serif;
   --font-head: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --head-weight: 600;
+  --head-spacing: normal;
+  --head-transform: none;
+
   --maxw-prose: 640px;
   --maxw-wide: 1200px;
   --nav-height: 60px;
@@ -181,7 +271,13 @@ img { max-width: 100%; height: auto; }
   .container { padding-bottom: calc(var(--nav-height) + 28px); }
 }
 
-h1, h2, h3 { font-family: var(--font-head); font-weight: 600; line-height: 1.25; }
+h1, h2, h3 {
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-spacing);
+  text-transform: var(--head-transform);
+  line-height: 1.25;
+}
 h1 { font-size: 1.6rem; margin: 0 0 4px; }
 h2 { font-size: 1.25rem; margin: 2rem 0 12px; }
 h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
@@ -238,7 +334,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .chip[aria-current="true"] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .layout-with-sidebar { display: block; }
@@ -291,7 +387,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   border-radius: 3px;
   overflow: hidden;
   background: var(--surface-2);
-  box-shadow: 0 1px 3px rgba(20, 20, 24, 0.14);
+  box-shadow: var(--shadow-sm);
 }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
@@ -303,7 +399,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   flex-direction: column;
   justify-content: space-between;
   padding: 10px 9px;
-  color: rgba(255, 255, 255, 0.94);
+  color: var(--surface-veil);
 }
 .cover--placeholder .ph-title {
   font-family: var(--font-head);
@@ -359,7 +455,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   width: 9px; height: 9px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.85);
+  box-shadow: 0 0 0 2px var(--surface-veil);
 }
 
 .empty {
@@ -430,9 +526,9 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .btn--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
-.btn--primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+.btn--primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--on-accent); }
 .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 .btn--block { width: 100%; }
 
@@ -486,15 +582,15 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .field input:focus, .field select:focus, .field textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(237, 0, 47, 0.12);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 .field--check { display: flex; align-items: center; gap: 9px; }
 .field--check label { margin: 0; color: var(--text); }
 
 .form-error {
-  background: #fdecef;
-  border: 1px solid #f7b9c4;
-  color: #8a0a22;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   border-radius: var(--radius-sm);
   padding: 11px 14px;
   margin: 0 0 16px;
@@ -509,9 +605,9 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   border: 1px solid var(--border);
   background: var(--surface);
 }
-.flash--ok { background: #edf7f1; border-color: #b6dfc7; color: #14532d; }
-.flash--error { background: #fdecef; border-color: #f7b9c4; color: #8a0a22; }
-.flash--hint { background: #fffbeb; border-color: #fde68a; color: #713f12; }
+.flash--ok { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok); }
+.flash--error { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+.flash--hint { background: var(--hint-bg); border-color: var(--hint-border); color: var(--hint); }
 .flash--hint a { color: inherit; }
 
 /* ---- Statistics ----------------------------------------------------- */
@@ -538,7 +634,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .bars .n { color: var(--muted); font-variant-numeric: tabular-nums; }
 .bar { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
 .bar-fill { height: 100%; background: var(--accent); border-radius: 999px; min-width: 2px; }
-.bar-fill--muted { background: #b4b2a9; }
+.bar-fill--muted { background: var(--bar-muted); }
 
 .stat-grid {
   display: grid;
@@ -549,7 +645,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .chart { width: 100%; height: auto; display: block; overflow: visible; }
 .chart-figure { margin: 0 0 8px; }
 .chart-bar { fill: var(--accent); transition: fill .12s ease; }
-.chart-bar--muted { fill: #c4c2c7; }
+.chart-bar--muted { fill: var(--chart-muted); }
 
 /* The exact figure appears on hover rather than sitting above every column -
    a number on each one turns a shape into a table. */
@@ -646,7 +742,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   border-radius: var(--radius-sm);
   background: var(--surface);
 }
-.tagbox:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(237, 0, 47, 0.12); }
+.tagbox:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
 .tagbox-chips { display: contents; }
 
 .tagbox-chip {
@@ -661,7 +757,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 /* A tag that does not exist yet looks different, so creating one is a
    visible act rather than something that happens by accident. */
-.tagbox-chip--new { background: #fdecef; color: #8a0a22; }
+.tagbox-chip--new { background: var(--danger-bg); color: var(--danger); }
 .tagbox-chip button {
   border: 0;
   background: none;
@@ -712,7 +808,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .tagbox-warning {
   margin: 6px 0 0;
   font-size: 0.8rem;
-  color: #8a0a22;
+  color: var(--danger);
 }
 
 .prose { max-width: 62ch; }
@@ -819,7 +915,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
     padding-bottom: 10px;
     background: var(--bg);
-    box-shadow: 0 -8px 12px -8px rgba(20, 20, 24, 0.14);
+    box-shadow: var(--shadow-nav);
   }
 }
 /* Three buttons are tight on a narrow phone. Let the bar wrap as a whole
@@ -888,16 +984,16 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .danger-body {
   margin-top: 12px;
   padding: 16px 18px;
-  border: 1px solid #f7b9c4;
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius);
-  background: #fdecef;
+  background: var(--danger-bg);
 }
-.danger-body .note { margin-top: 0; color: #8a0a22; }
+.danger-body .note { margin-top: 0; color: var(--danger); }
 .danger-body form { max-width: 340px; }
 .danger-body input { background: var(--surface); }
 
 .btn--danger { border-color: var(--accent); color: var(--accent); }
-.btn--danger:hover { background: var(--accent); color: #fff; }
+.btn--danger:hover { background: var(--accent); color: var(--on-accent); }
 .attribution a { color: var(--muted); }
 
 /* ---- Scanner -------------------------------------------------------- */
@@ -905,7 +1001,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .scanner { max-width: 520px; margin: 0 auto; }
 .scanner-frame {
   position: relative;
-  background: #18181b;
+  background: var(--scan-bg);
   border-radius: var(--radius);
   overflow: hidden;
   aspect-ratio: 4 / 3;
@@ -918,7 +1014,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   position: absolute;
   width: 74%;
   height: 34%;
-  border: 2px solid rgba(255, 255, 255, 0.75);
+  border: 2px solid var(--scan-frame);
   border-radius: var(--radius-sm);
   pointer-events: none;
   transition: border-color .12s ease, box-shadow .12s ease;
@@ -926,13 +1022,13 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 /* The frame itself answers, so the moment of recognition is visible from
    arm's length with a book in the way. */
 .scanner-reticle.is-hit {
-  border-color: #3ddc84;
-  box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.35), 0 0 22px rgba(61, 220, 132, 0.5);
+  border-color: var(--scan-found);
+  box-shadow: 0 0 0 3px var(--scan-found-ring), 0 0 22px var(--scan-found-glow);
   animation: reticle-pulse .45s ease-out;
 }
 .scanner-reticle.is-miss {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(237, 0, 47, 0.3);
+  box-shadow: 0 0 0 3px var(--accent-ring-strong);
 }
 @keyframes reticle-pulse {
   0%   { transform: scale(1); }
@@ -946,16 +1042,16 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   left: 0; right: 0; bottom: 0;
   margin: 0;
   padding: 11px 14px;
-  background: rgba(24, 24, 27, 0.82);
-  color: #fff;
+  background: var(--overlay);
+  color: var(--on-accent);
   font-size: 0.92rem;
   line-height: 1.35;
   text-align: center;
   pointer-events: none;
 }
-.scanner-overlay--good { background: rgba(21, 128, 61, 0.9); }
-.scanner-overlay--bad  { background: rgba(194, 0, 31, 0.9); }
-.scanner-overlay--busy { background: rgba(24, 24, 27, 0.86); }
+.scanner-overlay--good { background: var(--overlay-ok); }
+.scanner-overlay--bad  { background: var(--overlay-bad); }
+.scanner-overlay--busy { background: var(--overlay-busy); }
 .scanner-hint { color: var(--muted); font-size: 0.85rem; text-align: center; margin: 10px 0 0; }
 .scanner-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .scanner-actions .btn { flex: 1; }
@@ -1004,10 +1100,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     margin-top: -22px;
     border-radius: 50%;
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     justify-content: center;
     gap: 0;
-    box-shadow: 0 3px 10px rgba(237, 0, 47, 0.34);
+    box-shadow: 0 3px 10px var(--accent-shadow);
     min-width: 0;
     padding: 0;
   }
@@ -1072,7 +1168,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .sidebar-head .facet-all:focus-visible {
   border-color: var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .alphabet {
@@ -1158,7 +1254,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .pager-page.is-here {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 /* Kept in place rather than removed, so the row does not shift as you page. */
@@ -1228,7 +1324,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .admin-nav a[aria-current="page"] {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 /* The two tidying panels sit side by side where there is room; the long tag
@@ -1268,3 +1364,65 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
    shift sideways when the direction changes. */
 .sort-dir { display: inline-block; width: 1em; text-align: center; }
 
+
+/* ------------------------------------------------------------ utilities --
+ *
+ * A short, closed list of spacing and width helpers. They exist because the
+ * templates used to say style="margin-top:0" forty-odd times, and a strict
+ * Content-Security-Policy forbids the style attribute outright - see
+ * App\Core\Csp. Anything a page cannot know in advance goes through
+ * App\Core\Styles instead; these are the ones that were never dynamic.
+ */
+.mt-0    { margin-top: 0; }
+.mt-tight{ margin-top: -6px; }
+.mt-s    { margin-top: 14px; }
+.mt-m    { margin-top: 20px; }
+.mt-l    { margin-top: 28px; }
+.mb-s    { margin-bottom: 10px; }
+.mb-m    { margin-bottom: 18px; }
+.mb-l    { margin-bottom: 24px; }
+.center  { text-align: center; }
+.muted   { color: var(--muted); }
+.lede    { margin: 2px 0 12px; color: var(--muted); }
+.byline  { margin: 6px 0 18px; }
+
+/* Widths with a job, rather than a number: the form somebody signs in with,
+   the column a cover thumbnail sits in, the width prose stays readable at. */
+.w-form  { max-width: 400px; margin: 32px auto; }
+.w-setup { max-width: 440px; margin: 32px auto; }
+.w-read  { max-width: 560px; }
+.w-thumb { max-width: 110px; }
+
+/* The middle of an otherwise empty page: a 404, a filter with no matches. */
+.page-empty { text-align: center; padding: 48px 16px; }
+
+/* The split bar's five steps and the sixteen placeholder grounds are classes
+   rather than computed colours, so a theme can restate them and the markup
+   never carries a colour at all. */
+.split-part--1, .swatch--1 { background: var(--split-1); }
+.split-part--2, .swatch--2 { background: var(--split-2); }
+.split-part--3, .swatch--3 { background: var(--split-3); }
+.split-part--4, .swatch--4 { background: var(--split-4); }
+.split-part--5, .swatch--5 { background: var(--split-5); }
+
+.chart-grid { stroke: var(--chart-grid); }
+.chart-grid--zero { stroke: var(--chart-zero); }
+.chart-tick { fill: var(--chart-axis); font-family: var(--font-body); }
+.chart-label { fill: var(--muted); font-family: var(--font-body); }
+.ph-1 { background: var(--placeholder-1); }
+.ph-2 { background: var(--placeholder-2); }
+.ph-3 { background: var(--placeholder-3); }
+.ph-4 { background: var(--placeholder-4); }
+.ph-5 { background: var(--placeholder-5); }
+.ph-6 { background: var(--placeholder-6); }
+.ph-7 { background: var(--placeholder-7); }
+.ph-8 { background: var(--placeholder-8); }
+.ph-9 { background: var(--placeholder-9); }
+.ph-10 { background: var(--placeholder-10); }
+.ph-11 { background: var(--placeholder-11); }
+.ph-12 { background: var(--placeholder-12); }
+.ph-13 { background: var(--placeholder-13); }
+.ph-14 { background: var(--placeholder-14); }
+.ph-15 { background: var(--placeholder-15); }
+.ph-16 { background: var(--placeholder-16); }
+.note--danger { color: var(--danger); }

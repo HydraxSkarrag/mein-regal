@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 <h1><?= e(t('page.edit', ['page' => $heading])) ?></h1>
 
-<div class="chips" style="margin-bottom:18px">
+<div class="chips mb-m">
   <?php foreach (App\Core\Translator::SUPPORTED as $option): ?>
   <a class="chip" href="/<?= e($slug) ?>/edit?lang=<?= e($option) ?>"
      aria-current="<?= $option === $locale ? 'true' : 'false' ?>">
@@ -26,7 +26,7 @@ declare(strict_types=1);
   </a>
   <?php endforeach; ?>
 </div>
-<p class="note" style="margin-top:-8px"><?= e(t('about.perlanguage')) ?></p>
+<p class="note mt-tight"><?= e(t('about.perlanguage')) ?></p>
 
 <?php if (($error ?? '') !== ''): ?>
 <p class="form-error"><?= e($error) ?></p>

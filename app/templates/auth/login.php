@@ -2,8 +2,8 @@
 /** Sign-in form. */
 declare(strict_types=1);
 ?>
-<div class="card" style="max-width:400px;margin:32px auto">
-  <h1 style="margin-bottom:18px"><?= e(t('auth.signin')) ?></h1>
+<div class="card w-form">
+  <h1 class="mb-m"><?= e(t('auth.signin')) ?></h1>
 
   <?php if (($error ?? '') !== ''): ?>
   <p class="form-error"><?= e($error) ?></p>

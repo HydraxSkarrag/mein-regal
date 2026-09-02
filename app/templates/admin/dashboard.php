@@ -93,7 +93,7 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
   </div>
 </div>
 
-<div class="stat-grid" style="margin-top:1.5rem">
+<div class="stat-grid mt-m">
   <div class="panel">
     <h2><?= e(t('stats.acquired')) ?></h2>
     <?= $view->render('partials.chart_split', [
@@ -121,7 +121,7 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
 </div>
 
 <h2><?= e(t('stats.coverage')) ?></h2>
-<p class="note" style="margin-top:0"><?= e(t('stats.coverage.note')) ?></p>
+<p class="note mt-0"><?= e(t('stats.coverage.note')) ?></p>
 <?php
   $total = max(1, (int) ($coverage['total'] ?? 1));
   $fields = $coverage;
@@ -136,15 +136,14 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
       'rating' => t('book.rating'), 'notes' => t('book.notes'),
   ];
 ?>
-<ul class="bars" style="max-width:560px">
+<ul class="bars w-read">
 <?php foreach ($fields as $field => $filled): ?>
   <li>
     <div class="row">
       <span><?= e($labels[$field] ?? $field) ?></span>
       <span class="n"><?= e($formatter->number((int) round($filled / $total * 100))) ?> %</span>
     </div>
-    <div class="bar"><div class="bar-fill<?= $filled / $total < 0.4 ? ' bar-fill--muted' : '' ?>"
-      style="width: <?= round($filled / $total * 100, 1) ?>%"></div></div>
+    <div class="bar"><div class="bar-fill <?= e($styles->width($filled / $total * 100)) ?><?= $filled / $total < 0.4 ? ' bar-fill--muted' : '' ?>"></div></div>
   </li>
 <?php endforeach; ?>
 </ul>

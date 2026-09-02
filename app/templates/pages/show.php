@@ -20,7 +20,7 @@ $legal = $slug !== PageRepository::ABOUT;
 <?php if ($written): ?>
 <div class="prose"><?= Text::prose($page['body']) ?></div>
   <?php if ($legal && ($page['locale'] ?? $locale) !== $locale): ?>
-  <p class="note" style="margin-top:24px"><?= e(t('page.only.language', ['language' => t('lang.' . $page['locale'])])) ?></p>
+  <p class="note mt-l"><?= e(t('page.only.language', ['language' => t('lang.' . $page['locale'])])) ?></p>
   <?php endif; ?>
 <?php else: ?>
 <p class="<?= $legal ? 'form-error' : 'empty' ?>">
@@ -35,5 +35,5 @@ $legal = $slug !== PageRepository::ABOUT;
 <?php endif; ?>
 
 <?php if ($signedIn): ?>
-<p style="margin-top:28px"><a href="/<?= e($slug) ?>/edit?lang=<?= e($locale) ?>"><?= e(t('book.edit')) ?></a></p>
+<p class="mt-l"><a href="/<?= e($slug) ?>/edit?lang=<?= e($locale) ?>"><?= e(t('book.edit')) ?></a></p>
 <?php endif; ?>

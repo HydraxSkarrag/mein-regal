@@ -49,7 +49,7 @@ usort(
 <div class="tag-tools">
   <form class="panel" method="get" action="/admin/tags/merge">
     <h2><?= e(t('tags.merge.heading')) ?></h2>
-    <p class="note" style="margin-top:0"><?= e(t('tags.merge.hint')) ?></p>
+    <p class="note mt-0"><?= e(t('tags.merge.hint')) ?></p>
     <div class="field">
       <label for="merge-from"><?= e(t('tags.merge.from')) ?></label>
       <select id="merge-from" name="from">
@@ -71,7 +71,7 @@ usort(
 
   <form class="panel" method="get" action="/admin/tags/field">
     <h2><?= e(t('tags.field.heading')) ?></h2>
-    <p class="note" style="margin-top:0"><?= e(t('tags.field.hint')) ?></p>
+    <p class="note mt-0"><?= e(t('tags.field.hint')) ?></p>
     <div class="field">
       <label for="field-tag"><?= e(t('tags.field.tag')) ?></label>
       <select id="field-tag" name="tag">

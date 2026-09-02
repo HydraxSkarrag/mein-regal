@@ -41,13 +41,13 @@ declare(strict_types=1);
   <div>
     <h1><?= e($book['title']) ?></h1>
     <?php if (($book['subtitle'] ?? null) !== null): ?>
-    <p style="color:var(--muted);margin:2px 0 12px"><?= e($book['subtitle']) ?></p>
+    <p class="lede"><?= e($book['subtitle']) ?></p>
     <?php endif; ?>
 
     <?php if ($contributors !== []): ?>
-    <p style="margin:6px 0 18px">
+    <p class="byline">
       <?php foreach ($contributors as $index => $person): ?>
-        <?= $index > 0 ? ' · ' : '' ?><a href="/?author=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a><?php if ($person['role'] !== 'author'): ?><span style="color:var(--muted)"> (<?= e(t('role.' . $person['role'])) ?>)</span><?php endif; ?>
+        <?= $index > 0 ? ' · ' : '' ?><a href="/?author=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a><?php if ($person['role'] !== 'author'): ?><span class="muted"> (<?= e(t('role.' . $person['role'])) ?>)</span><?php endif; ?>
       <?php endforeach; ?>
     </p>
     <?php endif; ?>
@@ -117,7 +117,7 @@ declare(strict_types=1);
     </table>
 
     <?php if ($tags !== []): ?>
-    <div class="chips" style="margin-top:18px">
+    <div class="chips mt-s">
       <?php foreach ($tags as $tag): ?>
       <a class="chip" href="/?tag=<?= e(rawurlencode($tag['slug'])) ?>"><?= e($tag['name']) ?></a>
       <?php endforeach; ?>

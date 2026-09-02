@@ -73,9 +73,18 @@ final class Response
         return $this->headers;
     }
 
-    public function send(): void
+    /**
+     * @param string $csp the Content-Security-Policy, or "" for none. It is
+     *                    passed in rather than set per response because every
+     *                    response wants the same one, and a route that forgot
+     *                    it would be the one route that mattered.
+     */
+    public function send(string $csp = ''): void
     {
         http_response_code($this->status);
+        if ($csp !== '') {
+            header('Content-Security-Policy: ' . $csp);
+        }
         foreach ($this->headers as $name => $value) {
             header($name . ': ' . $value);
         }

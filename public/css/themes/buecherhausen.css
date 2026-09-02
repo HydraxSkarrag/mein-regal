@@ -1,0 +1,31 @@
+/* Bücherhausen - the look this shelf was first drawn in.
+ *
+ * Red on near-white, Inter over IBM Plex Serif, taken from the blog at
+ * buecherhausen.de so the two sites read as one family. It used to be the
+ * default in style.css, which was wrong in the same way shipping somebody's
+ * logo would be: a repository that carefully keeps out a wordmark should not
+ * hand out the palette either. Now it is a theme like any other.
+ *
+ *   'theme' => 'buecherhausen'
+ *
+ * Only the tokens that differ from the neutral default are here. The fonts
+ * are not among them - Inter and IBM Plex Serif are open faces that ship
+ * with the application, not part of anybody's brand.
+ */
+:root {
+  --accent: #ed002f;
+  --accent-dark: #c2001f;
+  --accent-ring: rgba(237, 0, 47, 0.12);
+  --accent-ring-strong: rgba(237, 0, 47, 0.3);
+  --accent-shadow: rgba(237, 0, 47, 0.34);
+
+  --bg: #f9fefd;
+
+  /* One hue stepped down to the border grey, so a split bar reads as
+     "most of this, then less, then the rest". */
+  --split-1: #ed002f;
+  --split-2: #f2506e;
+  --split-3: #f7899d;
+  --split-4: #fabecb;
+  --split-5: #e4e4e7;
+}

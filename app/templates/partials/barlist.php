@@ -19,7 +19,7 @@ $label = $label ?? static fn (string $key): string => $key;
       <span class="n"><?= e($formatter->number($count)) ?></span>
     </div>
     <div class="bar">
-      <div class="bar-fill" style="width: <?= e((string) round($count / $max * 100, 1)) ?>%"></div>
+      <div class="bar-fill <?= e($styles->width($count / $max * 100)) ?>"></div>
     </div>
   </li>
 <?php endforeach; ?>
