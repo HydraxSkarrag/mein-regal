@@ -19,8 +19,16 @@ that is the whole price.
 - **Covers** from the free sources, or photographed yourself.
 - **The shelf** with search, filters and sorting; public to read, editing behind
   the login.
+- **Genres and labels.** An import brings hundreds of "genres" that are not
+  genres - a binding, an age range, a shop category. Each one is filed as a
+  genre or as a label by hand, and the ones that are really a field of the book
+  are folded into that field. Removals and merges survive the next import.
 - **Statistics** in public — `'public_stats' => false` keeps them to yourself —
   and a **dashboard** with data quality and a to-do list in private.
+- **Review links.** Point it at a WordPress blog and it matches the blog's posts
+  against the shelf - on the ISBN in the post first, on title and author second -
+  and links each book to the review of it. Undecided matches are listed rather
+  than guessed at.
 - **Export** in three formats and a **backup** of database, catalogue and covers.
 - Interface in German and English — `'language_switcher' => false` drops the
   switch for a shelf that is only read in one — and about, imprint and privacy
@@ -66,6 +74,15 @@ belongs next to `app/`, never inside `public/`, and never in the repository.
 
 Leaving `blog_url` and `blog_name` empty is fine — the link to a blog then simply
 does not appear. A shelf does not have to belong to one.
+
+Four settings decide what the installation is rather than how it looks:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `public_stats` | `true` | statistics for visitors; `false` puts them behind the login and drops them from the sitemap |
+| `language_switcher` | `true` | the choice of German or English; `false` serves `locale` and nothing else |
+| `review_blog_url` | empty | the WordPress blog `bin/reviews.php` matches against. Empty means nothing is ever contacted |
+| `ai_crawlers` | `false` | whether crawlers collecting training text are welcome. `false` writes a `Disallow` for each into `robots.txt`; search engines are unaffected |
 
 ### 4. Your own logo
 
@@ -151,9 +168,22 @@ php bin/export.php --format=full          # every column, UTF-8
 php bin/export.php --format=json          # everything, contributors and tags too
 php bin/backup.php --keep=30              # database, catalogue and covers
 php bin/enrich.php --limit=100            # fill in missing covers and details
+php bin/covers.php                        # what the covers look like, and why some are missing
+php bin/covers.php --refresh              # fetch the sources' larger renditions
+php bin/covers.php --prune                # cover files nothing points at any more
+php bin/reviews.php --fetch               # match the blog's posts against the shelf
 php bin/check.php                         # are the data sources reachable?
 php tests/run.php                         # the tests
 ```
+
+`bin/covers.php` and `bin/reviews.php` write nothing until `--commit`, and say
+first what they would do and to which book.
+
+`bin/reviews.php` refuses to run without `review_blog_url` in `config.php`. It is
+the only thing in the project that talks to the blog: no page loads anything from
+it, and the nightly job does not call it. What it writes is the review link and,
+where a post names one and the shelf does not, the ISBN. A link that points
+somewhere other than the configured blog is left alone - somebody typed it.
 
 Every script that touches the database takes `--sqlite=/path/to/file` and then
 runs against a throwaway database without a `config.php` — which is also how the
@@ -205,6 +235,10 @@ in the way of libraries sits ready in `public/js/`.
 - **`owner_id` is always part of the filter**, even while there is one collection.
 - **Source and comments in English.** German belongs in the interface translations
   and in the legal texts, which are content rather than code.
+- **Form fields are cleaned in one place.** `App\Core\Input` turns what was
+  typed into what the database may hold. Writing a second `intOrNull` next to
+  the first is how the scanner and the edit form came to disagree about whether
+  a page count with a trailing space counts.
 - **Owner-written text is never HTML.** It is stored as typed and rendered by
   `App\Core\Markup`, which escapes everything before it writes a single tag. If
   you find yourself adding an HTML filter, something has gone wrong.

@@ -97,8 +97,10 @@ CREATE TABLE IF NOT EXISTS books (
     notes         TEXT NULL,
     audio_minutes SMALLINT UNSIGNED NULL,
 
-    -- Address of the review on the blog, where there is one. Filled in by
-    -- hand for now; a later automatic match can complete it.
+    -- Address of the review on the blog, where there is one. Editable by
+    -- hand; bin/reviews.php fills it in wholesale by matching the blog's
+    -- posts against the shelf, and only ever overwrites a link that already
+    -- points at the configured blog.
     review_url VARCHAR(500) NULL,
 
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -173,10 +175,13 @@ CREATE TABLE IF NOT EXISTS book_tags (
     KEY idx_bt_tag (tag_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- covers: own photos are stored as files, third-party images are LINKED and
--- never copied. is_public follows from the source and decides whether a
--- logged-out visitor sees the image - hotlinking a third party would leak the
--- visitor's IP and cost the cookie-banner-free setup.
+-- covers: what decides whether an image may be shown to everyone is not where
+-- it came from but whether we host it. A cover that was fetched is downloaded,
+-- re-encoded and stored under path, and external_url keeps the address it came
+-- from, for attribution and so the same picture is not fetched twice. Only a
+-- row that has nothing but external_url stays private - embedding it would
+-- hand the visitor's IP to a third party and cost the cookie-banner-free
+-- setup. is_public encodes that rule once, so no template has to remember it.
 CREATE TABLE IF NOT EXISTS covers (
     id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
     book_id INT UNSIGNED NOT NULL,
