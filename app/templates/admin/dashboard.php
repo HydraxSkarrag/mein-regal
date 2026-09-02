@@ -21,6 +21,7 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
   <span class="count"><a href="/stats"><?= e(t('stats.public')) ?></a></span>
 </div>
 
+<?= $view->render('partials.legal_hint') ?>
 <?= $view->render('partials.brand_hint') ?>
 
 <div class="metrics">

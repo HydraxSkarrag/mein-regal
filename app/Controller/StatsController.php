@@ -90,6 +90,9 @@ final class StatsController
             'todo'          => $this->todo($owner),
             'bulkDated'     => $this->bulkDatedCount($owner),
             'recentlyAdded' => $this->recentlyAdded($owner),
+            // The legal texts ship as drafts and say so; this is the same
+            // reminder somewhere it will actually be seen.
+            'legalOpen'     => $this->app->pages->unfinishedLegal($owner),
             'view'          => $this->app->view,
         ]);
 
