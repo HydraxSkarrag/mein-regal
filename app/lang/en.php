@@ -410,7 +410,7 @@ return [
 
     'tags.title'         => 'Genres and labels',
     'tags.count'         => '{genres} of {total} are genres',
-    'tags.hint'          => 'Ticked means genre; everything else counts as a label and appears in its own list. Ordered by how common they are: the number on the right is how many books carry the entry - start at the top, because further down most of them sit on a single book. The × removes an entry.',
+    'tags.hint'          => 'Ticked means genre; everything else counts as a label and appears in its own list. The number on the right is how many books carry the entry - many of them sit on a single book. The × removes an entry.',
     'tags.saved'         => 'Saved. {count} genres; everything else counts as a label.',
 
     'tags.remove'            => 'remove',

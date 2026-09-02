@@ -19,12 +19,13 @@ declare(strict_types=1);
 $live = array_values(array_filter($tags, static fn (array $t): bool => $t['dropped_at'] === null));
 $dropped = array_values(array_filter($tags, static fn (array $t): bool => $t['dropped_at'] !== null));
 
-/* Two orders, because the two are used differently.
+/* Everything on this screen is looked at by name.
  *
- * The checkbox list stays in order of size: that is the order in which the
- * work pays off. A dropdown is used to find one particular name among three
- * hundred and eighty, and for that only the alphabet helps. Folded, so that
- * Ärzte sits with A rather than after Z. */
+ * The list started out ordered by size, on the theory that the biggest tags
+ * are where the work pays off - which is true and useless: with three
+ * hundred and eighty entries in three columns, the question is always "where
+ * is this one", and only the alphabet answers that. Folded, so that Ärzte
+ * sits with A rather than after Z. */
 $byName = $live;
 usort(
     $byName,
@@ -98,7 +99,7 @@ usort(
   <p class="note"><?= e(t('tags.hint')) ?></p>
 
   <ul class="tag-sort">
-    <?php foreach ($live as $tag): ?>
+    <?php foreach ($byName as $tag): ?>
     <li>
       <input type="hidden" name="genre[<?= e((string) $tag['id']) ?>]" value="0">
       <input type="checkbox" id="tag-<?= e((string) $tag['id']) ?>"

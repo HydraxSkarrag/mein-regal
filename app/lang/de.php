@@ -413,7 +413,7 @@ return [
 
     'tags.title'         => 'Genres und Schlagwörter',
     'tags.count'         => '{genres} von {total} als Genre',
-    'tags.hint'          => 'Angekreuzt heißt Genre; alles andere zählt als Schlagwort und erscheint in der eigenen Liste. Sortiert nach Häufigkeit: Die Zahl rechts sagt, an wie vielen Büchern der Eintrag hängt – oben anfangen lohnt sich, unten hängt vieles an einem einzigen Buch. Das × entfernt einen Eintrag.',
+    'tags.hint'          => 'Angekreuzt heißt Genre; alles andere zählt als Schlagwort und erscheint in der eigenen Liste. Die Zahl rechts sagt, an wie vielen Büchern der Eintrag hängt – viele hängen an einem einzigen. Das × entfernt einen Eintrag.',
     'tags.saved'         => 'Gespeichert. {count} Genres, alles andere zählt als Schlagwort.',
 
     'tags.remove'            => 'entfernen',
