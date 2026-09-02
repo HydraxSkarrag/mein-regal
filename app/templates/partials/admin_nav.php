@@ -9,6 +9,10 @@
  * rather than removed, because a menu that drops the page you are on tells
  * you less, not more.
  *
+ * Only what is not already in the header: scanning has its own entry up
+ * there on every page, and listing it twice makes the second one look like a
+ * different thing.
+ *
  * @var string $adminCurrent which entry is the page being shown
  */
 declare(strict_types=1);
@@ -17,7 +21,6 @@ $entries = [
     'admin' => ['url' => '/admin',       'label' => t('nav.admin')],
     'data'  => ['url' => '/admin/data',  'label' => t('maintenance.title')],
     'tags'  => ['url' => '/admin/tags',  'label' => t('tags.title')],
-    'scan'  => ['url' => '/scan',        'label' => t('nav.scan')],
 ];
 $current = $adminCurrent ?? '';
 ?>
