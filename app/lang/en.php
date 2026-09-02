@@ -404,7 +404,7 @@ return [
 
     'tags.title'         => 'Genres and labels',
     'tags.count'         => '{genres} of {total} are genres',
-    'tags.hint'          => 'Ticked means genre; everything else counts as a label and appears in its own list. The number on the right is how many books carry the tag - start at the top, because further down most of them sit on a single book.',
+    'tags.hint'          => 'Ticked means genre; everything else counts as a label and appears in its own list. Ordered by how common they are: the number on the right is how many books carry the entry - start at the top, because further down most of them sit on a single book. The × removes an entry.',
     'tags.saved'         => 'Saved. {count} genres; everything else counts as a label.',
 
     'tags.remove'            => 'remove',
@@ -419,6 +419,7 @@ return [
     'tags.dropped.heading'   => 'Removed',
     'tags.dropped.hint'      => 'Not deleted, only hidden - with all their links.',
 
+    'tags.sort.heading'      => 'Sorting',
     'tags.merge.heading'     => 'Merge',
     'tags.merge.hint'        => 'Two spellings of one genre. The first disappears and its books get the second.',
     'tags.merge.from'        => 'This one goes',
@@ -431,7 +432,7 @@ return [
     'tags.merged'            => 'Done: {count} books now carry "{into}", and "{from}" was removed.',
 
     'tags.field.heading'     => 'Fold into a field',
-    'tags.field.hint'        => 'For tags that are really a field - "Paperback" says nothing the binding does not.',
+    'tags.field.hint'        => 'Some tags only repeat what a field of the book already records: "Paperback" is the binding, "English books" the language. Here the value is written into the field - only where it is empty - and the tag is removed afterwards.',
     'tags.field.tag'         => 'Tag',
     'tags.field.field'       => 'Field',
     'tags.field.value'       => 'Value',
@@ -442,4 +443,13 @@ return [
     'tags.field.then'        => 'The tag is removed afterwards - restorable.',
     'tags.field.do'          => 'Fold in',
     'tags.field.done'        => '{field} set: {filled}. Contradicting and left unchanged: {conflicting}',
+
+    'tags.purge'             => 'delete for good',
+    'tags.purge.title'       => 'Delete "{name}" for good?',
+    'tags.purge.warning'     => 'Links deleted with it: {count}',
+    'tags.purge.final'       => 'This cannot be undone.',
+    'tags.purge.imports'     => 'The name is free again afterwards: an import mentioning it creates the tag anew.',
+    'tags.purge.do'          => 'Delete for good',
+    'tags.purged'            => '"{name}" is deleted.',
+    'tags.merge.forward'     => 'Imports mentioning "{from}" will attach their books to "{into}" from now on.',
 ];

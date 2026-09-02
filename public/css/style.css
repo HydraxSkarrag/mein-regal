@@ -1201,10 +1201,11 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .tag-sort .n { color: var(--muted); font-variant-numeric: tabular-nums; }
 .tag-sort input:checked + label { font-weight: 600; }
+/* A button at each end of a list this long, and neither of them sticky: a
+   bar pinned to the bottom of the window sat on top of the sentence that
+   explains what the checkboxes mean, which is the one thing somebody opening
+   this screen needs to read first. */
 .tag-sort-actions { padding: 10px 0; background: var(--bg); }
-/* Only the one at the foot follows you down the list; making both sticky
-   parked the top button on top of the bottom one. */
-.tag-sort-actions:last-child { position: sticky; bottom: 0; }
 
 /* The private area's own menu. Always all of it, with the current page
    marked rather than dropped. */
@@ -1258,4 +1259,8 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   font: inherit;
   text-decoration: underline;
 }
+
+.tag-sort--dropped li { gap: 10px; }
+.tag-purge { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+.tag-purge:hover { color: var(--accent); }
 

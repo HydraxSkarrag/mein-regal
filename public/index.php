@@ -120,6 +120,8 @@ $app->router->post('/admin/tags/merge', $tags->merge(...));
 $app->router->get('/admin/tags/{id}/remove', $tags->confirmRemove(...));
 $app->router->post('/admin/tags/{id}/remove', $tags->remove(...));
 $app->router->post('/admin/tags/{id}/restore', $tags->restore(...));
+$app->router->get('/admin/tags/{id}/purge', $tags->confirmPurge(...));
+$app->router->post('/admin/tags/{id}/purge', $tags->purge(...));
 $app->router->get('/admin/tags/field', $tags->confirmField(...));
 $app->router->post('/admin/tags/{id}/field', $tags->fillField(...));
 $app->router->post('/admin/import', $data->import(...));

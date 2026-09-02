@@ -407,7 +407,7 @@ return [
 
     'tags.title'         => 'Genres und Schlagwörter',
     'tags.count'         => '{genres} von {total} als Genre',
-    'tags.hint'          => 'Angekreuzt heißt Genre; alles andere zählt als Schlagwort und erscheint in der eigenen Liste. Die Zahl rechts sagt, an wie vielen Büchern das Schlagwort hängt – oben anfangen lohnt sich, unten hängt vieles an einem einzigen Buch.',
+    'tags.hint'          => 'Angekreuzt heißt Genre; alles andere zählt als Schlagwort und erscheint in der eigenen Liste. Sortiert nach Häufigkeit: Die Zahl rechts sagt, an wie vielen Büchern der Eintrag hängt – oben anfangen lohnt sich, unten hängt vieles an einem einzigen Buch. Das × entfernt einen Eintrag.',
     'tags.saved'         => 'Gespeichert. {count} Genres, alles andere zählt als Schlagwort.',
 
     'tags.remove'            => 'entfernen',
@@ -422,6 +422,7 @@ return [
     'tags.dropped.heading'   => 'Entfernt',
     'tags.dropped.hint'      => 'Nicht gelöscht, nur ausgeblendet – mit allen Zuordnungen.',
 
+    'tags.sort.heading'      => 'Einsortieren',
     'tags.merge.heading'     => 'Zusammenführen',
     'tags.merge.hint'        => 'Zwei Schreibweisen desselben Genres. Das erste verschwindet, seine Bücher bekommen das zweite.',
     'tags.merge.from'        => 'Dieses verschwindet',
@@ -434,7 +435,7 @@ return [
     'tags.merged'            => 'Übernommen: {count} Bücher haben jetzt „{into}", „{from}" ist entfernt.',
 
     'tags.field.heading'     => 'Ins Feld übernehmen',
-    'tags.field.hint'        => 'Für Schlagwörter, die eigentlich ein Feld sind – „Taschenbücher" sagt nichts, was die Ausgabe nicht sagt.',
+    'tags.field.hint'        => 'Manche Schlagwörter wiederholen nur, was ein eigenes Feld des Buches schon festhält: „Taschenbücher" ist die Ausgabe, „Englische Bücher" die Sprache. Hier wird der Wert ins Feld geschrieben – nur dort, wo es leer ist – und das Schlagwort danach entfernt.',
     'tags.field.tag'         => 'Schlagwort',
     'tags.field.field'       => 'Feld',
     'tags.field.value'       => 'Wert',
@@ -445,4 +446,13 @@ return [
     'tags.field.then'        => 'Danach wird das Schlagwort entfernt – wiederherstellbar.',
     'tags.field.do'          => 'Übernehmen',
     'tags.field.done'        => '{field} gesetzt: {filled}. Widersprüchlich und unverändert: {conflicting}',
+
+    'tags.purge'             => 'endgültig löschen',
+    'tags.purge.title'       => '„{name}" endgültig löschen?',
+    'tags.purge.warning'     => 'Zuordnungen, die dabei gelöscht werden: {count}',
+    'tags.purge.final'       => 'Das lässt sich nicht rückgängig machen.',
+    'tags.purge.imports'     => 'Der Name ist danach wieder frei: Ein Import, der ihn erwähnt, legt das Schlagwort neu an.',
+    'tags.purge.do'          => 'Endgültig löschen',
+    'tags.purged'            => '„{name}" ist gelöscht.',
+    'tags.merge.forward'     => 'Importe, die „{from}" erwähnen, hängen die Bücher künftig an „{into}".',
 ];

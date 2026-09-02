@@ -54,24 +54,56 @@ final class TagRepository
     }
 
     /**
-     * Put a tag on a book - unless the tag has been thrown out.
+     * Put a tag on a book, honouring what was decided about that tag.
      *
      * The check sits here rather than in the importer because every path
      * leads through this method: import, scanner, and the edit form. A tag
      * removed by hand would otherwise come back on the next import, along
      * with the books that carried it, which is exactly what the removal was
      * meant to stop.
+     *
+     * A merged tag is not refused but followed: a book arriving with "Comic"
+     * gets "Comics", because that is what the merge said should happen to
+     * everything carrying the old name - not only to the books that happened
+     * to be in the shelf that afternoon.
      */
     public function link(int $bookId, int $tagId): void
     {
-        $dropped = $this->pdo->prepare('SELECT 1 FROM tags WHERE id = ? AND dropped_at IS NOT NULL');
-        $dropped->execute([$tagId]);
-        if ($dropped->fetchColumn() !== false) {
+        $tagId = $this->resolve($tagId);
+        if ($tagId === null) {
             return;
         }
 
         $sql = $this->dialect->insertIgnore('book_tags', ['book_id', 'tag_id']);
         $this->pdo->prepare($sql)->execute([$bookId, $tagId]);
+    }
+
+    /**
+     * Which tag a link should really point at: null when it was removed.
+     *
+     * Merges can chain - A into B, later B into C - so this follows the
+     * trail, with a limit in case one ever points back at itself.
+     */
+    private function resolve(int $tagId): ?int
+    {
+        $statement = $this->pdo->prepare('SELECT dropped_at, merged_into FROM tags WHERE id = ?');
+
+        for ($hops = 0; $hops < 10; $hops++) {
+            $statement->execute([$tagId]);
+            $row = $statement->fetch();
+            if ($row === false) {
+                return null;
+            }
+            if ($row['dropped_at'] === null) {
+                return $tagId;
+            }
+            if ($row['merged_into'] === null) {
+                return null;
+            }
+            $tagId = (int) $row['merged_into'];
+        }
+
+        return null;
     }
 
     /**
@@ -276,12 +308,47 @@ final class TagRepository
         $statement->execute([date('Y-m-d H:i:s'), $ownerId, $tagId]);
     }
 
+    /**
+     * Put a tag back into use, and stop it forwarding.
+     *
+     * A restored tag stands on its own again: leaving merged_into set would
+     * mean a name that is visible in the list while everything mentioning it
+     * quietly lands somewhere else.
+     */
     public function restore(int $ownerId, int $tagId): void
     {
         $statement = $this->pdo->prepare(
-            'UPDATE tags SET dropped_at = NULL WHERE owner_id = ? AND id = ?'
+            'UPDATE tags SET dropped_at = NULL, merged_into = NULL WHERE owner_id = ? AND id = ?'
         );
         $statement->execute([$ownerId, $tagId]);
+    }
+
+    /**
+     * Delete a tag for good, with its links.
+     *
+     * The one thing here that cannot be undone, and the one thing that does
+     * not survive an import: the name is free again afterwards, so an export
+     * mentioning it creates a new tag. Right for something that was never
+     * meant to exist, wrong for anything that was.
+     */
+    public function purge(int $ownerId, int $tagId): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $this->pdo->prepare(
+                'DELETE FROM book_tags WHERE tag_id IN (SELECT id FROM tags WHERE id = ? AND owner_id = ?)'
+            )->execute([$tagId, $ownerId]);
+            $this->pdo->prepare('UPDATE tags SET merged_into = NULL WHERE merged_into = ? AND owner_id = ?')
+                ->execute([$tagId, $ownerId]);
+            $this->pdo->prepare('DELETE FROM tags WHERE id = ? AND owner_id = ?')
+                ->execute([$tagId, $ownerId]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -331,8 +398,8 @@ final class TagRepository
             }
 
             $this->pdo->prepare(
-                'UPDATE tags SET dropped_at = ? WHERE owner_id = ? AND id = ?'
-            )->execute([date('Y-m-d H:i:s'), $ownerId, $fromId]);
+                'UPDATE tags SET dropped_at = ?, merged_into = ? WHERE owner_id = ? AND id = ?'
+            )->execute([date('Y-m-d H:i:s'), $intoId, $ownerId, $fromId]);
 
             $this->pdo->commit();
         } catch (\Throwable $e) {

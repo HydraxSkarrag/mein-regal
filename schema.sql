@@ -156,6 +156,11 @@ CREATE TABLE IF NOT EXISTS tags (
     -- book_tags stay: deleting them would let the next import recreate the
     -- tag, and keeping them makes restoring it a single update.
     dropped_at DATETIME NULL,
+    -- Where this tag was merged into, if it was. An import mentioning the
+    -- old name links the book to the surviving tag instead of dropping the
+    -- mention on the floor - the merge is a decision about the collection,
+    -- and it has to outlive the import that comes after it.
+    merged_into INT UNSIGNED NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uniq_tags_owner_slug (owner_id, slug),
     KEY idx_tags_owner_kind (owner_id, kind)

@@ -151,6 +151,44 @@ final class TagController
         return Response::redirect('/admin/tags');
     }
 
+    /** GET - the one action here that cannot be taken back. */
+    public function confirmPurge(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+        $tag = $this->app->tags->find($this->app->ownerId, (int) ($params['id'] ?? 0));
+        if ($tag === null || $tag['dropped_at'] === null) {
+            return $this->app->notFound();
+        }
+
+        return $this->confirm(
+            t('tags.purge.title', ['name' => $tag['name']]),
+            t('tags.purge.warning', ['count' => (int) $tag['book_count']]),
+            [t('tags.purge.final'), t('tags.purge.imports')],
+            '/admin/tags/' . (int) $tag['id'] . '/purge',
+            t('tags.purge.do')
+        );
+    }
+
+    public function purge(Request $request, array $params): Response
+    {
+        $guard = $this->guardWrite($request);
+        if ($guard !== null) {
+            return $guard;
+        }
+        $tag = $this->app->tags->find($this->app->ownerId, (int) ($params['id'] ?? 0));
+        if ($tag === null || $tag['dropped_at'] === null) {
+            return $this->app->notFound();
+        }
+
+        $this->app->tags->purge($this->app->ownerId, (int) $tag['id']);
+        $this->app->session->flash(t('tags.purged', ['name' => $tag['name']]), 'ok');
+
+        return Response::redirect('/admin/tags');
+    }
+
     /** GET - which books would gain which tag, before anything moves. */
     public function confirmMerge(Request $request): Response
     {
@@ -176,7 +214,11 @@ final class TagController
         return $this->confirm(
             t('tags.merge.title', ['from' => $from['name'], 'into' => $into['name']]),
             t('tags.merge.warning', ['count' => $gaining, 'into' => $into['name'], 'from' => $from['name']]),
-            [t('tags.merge.kept', ['from' => $from['name']]), t('tags.remove.reversible')],
+            [
+                t('tags.merge.kept', ['from' => $from['name']]),
+                t('tags.merge.forward', ['from' => $from['name'], 'into' => $into['name']]),
+                t('tags.remove.reversible'),
+            ],
             '/admin/tags/merge',
             t('tags.merge.do'),
             ['from' => (string) $from['id'], 'into' => (string) $into['id']]

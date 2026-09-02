@@ -238,3 +238,66 @@ try {
     $threw = true;
 }
 Assert::same('only whitelisted fields can be written this way', $threw, true);
+
+Assert::group('A merge outlives the import that follows it');
+
+/*
+ * Dropping the source kept it out of the lists and out of the next import -
+ * and that was not enough. A book arriving with "Comic" ended up with no
+ * comic tag at all, rather than with "Comics", which is what the merge said
+ * should happen to everything carrying the old name.
+ */
+$later = $books2->insert(1, ['title' => 'Neu importiert', 'isbn13' => '9783499006548']);
+$tags2->link($later, $comic);
+
+Assert::same(
+    'a book mentioning the old name lands on the new one',
+    (int) $pdo2->query('SELECT COUNT(*) FROM book_tags WHERE book_id = ' . $later . ' AND tag_id = ' . $comics)->fetchColumn(),
+    1
+);
+Assert::same(
+    'and not on the old one',
+    (int) $pdo2->query('SELECT COUNT(*) FROM book_tags WHERE book_id = ' . $later . ' AND tag_id = ' . $comic)->fetchColumn(),
+    0
+);
+
+// Merges chain: A into B, later B into C, and A still has to end up at C.
+$graphic = $tags2->findOrCreate(1, 'Graphic Novel');
+$tags2->merge(1, $comics, $graphic);
+$evenLater = $books2->insert(1, ['title' => 'Noch neuer', 'isbn13' => '9783596036202']);
+$tags2->link($evenLater, $comic);
+Assert::same(
+    'a chain of merges is followed to the end',
+    (int) $pdo2->query('SELECT COUNT(*) FROM book_tags WHERE book_id = ' . $evenLater . ' AND tag_id = ' . $graphic)->fetchColumn(),
+    1
+);
+
+// A restored tag stands on its own again - a name visible in the list while
+// everything mentioning it lands elsewhere would be worse than either state.
+$tags2->restore(1, $comic);
+$restored = $books2->insert(1, ['title' => 'Nach dem Zurückholen', 'isbn13' => '9783442155286']);
+$tags2->link($restored, $comic);
+Assert::same(
+    'and stops forwarding',
+    (int) $pdo2->query('SELECT COUNT(*) FROM book_tags WHERE book_id = ' . $restored . ' AND tag_id = ' . $comic)->fetchColumn(),
+    1
+);
+
+Assert::group('Deleting for good');
+
+$junk = $tags2->findOrCreate(1, 'TestX');
+$tags2->link($one, $junk);
+$tags2->drop(1, $junk);
+$tags2->purge(1, $junk);
+
+Assert::same('the row is gone', $tags2->find(1, $junk), null);
+Assert::same(
+    'and its links with it',
+    (int) $pdo2->query('SELECT COUNT(*) FROM book_tags WHERE tag_id = ' . $junk)->fetchColumn(),
+    0
+);
+
+// The honest part of deleting: the name is free again, so the next import
+// mentioning it makes a new tag. Right for something that was never meant to
+// exist, wrong for anything that was - which is why the screen says so.
+Assert::true('the name can be created again', $tags2->findOrCreate(1, 'TestX') !== $junk);
