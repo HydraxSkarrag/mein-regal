@@ -93,8 +93,9 @@ $value = static fn (?string $v): string => $v ?? '';
           <label for="language"><?= e(t('book.language')) ?></label>
           <select id="language" name="language">
             <option value=""><?= e(t('common.unknown')) ?></option>
-            <option value="ger"<?= $book['language'] === 'ger' ? ' selected' : '' ?>><?= e(t('lang.ger')) ?></option>
-            <option value="eng"<?= $book['language'] === 'eng' ? ' selected' : '' ?>><?= e(t('lang.eng')) ?></option>
+            <?php foreach ($languages as $code): ?>
+            <option value="<?= e($code) ?>"<?= $book['language'] === $code ? ' selected' : '' ?>><?= e(App\Core\Formatter::language($code)) ?></option>
+            <?php endforeach; ?>
           </select>
         </div>
       </div>

@@ -29,6 +29,9 @@ final class BookController
 {
     private const STATUSES  = ['read', 'unread', 'abandoned', 'reading'];
     private const BINDINGS  = ['hardcover', 'paperback', 'ebook', 'audiobook'];
+
+    /** The two worth offering unprompted; the rest come from the shelf itself. */
+    private const LANGUAGES = ['ger', 'eng'];
     private const ACQUIRED  = ['purchase', 'review_copy', 'gift', 'prize', 'loan', 'swap'];
     private const ROLES     = ['author', 'illustrator', 'translator', 'editor', 'narrator'];
 
@@ -116,7 +119,10 @@ final class BookController
                 'publisher'        => $this->orNull($request->post('publisher'), 255),
                 'published_year'   => $this->intOrNull($request->post('published_year'), 1400, 2100),
                 'page_count'       => $this->intOrNull($request->post('page_count'), 1, 30000),
-                'language'         => $this->orNull($request->post('language'), 3),
+                'language'         => $this->oneOf(
+                    $request->post('language'),
+                    $this->languageOptions($book['language'] ?? null)
+                ),
                 'binding'          => $this->oneOf($request->post('binding'), self::BINDINGS),
                 'price'            => $this->priceOrNull($request->post('price')),
                 'acquisition_type' => $this->oneOf($request->post('acquisition_type'), self::ACQUIRED),
@@ -317,6 +323,33 @@ final class BookController
         return Response::redirect('/book/' . $book['slug'] . '/edit');
     }
 
+    /**
+     * Which languages the dropdown may offer.
+     *
+     * It used to offer German and English and nothing else, while the DNB
+     * hands out chi, fre, gmh, mul and zxx as readily as ger. A book in one
+     * of those had no matching option, so the browser showed the empty one -
+     * and saving the form, without anyone touching that field, wiped the
+     * language. A list that cannot show a value must not be allowed to
+     * decide it, so whatever the book carries is always among the options.
+     *
+     * @return list<string>
+     */
+    private function languageOptions(?string $current): array
+    {
+        $codes = self::LANGUAGES;
+        foreach (array_keys($this->app->books->countBy($this->app->ownerId, 'language')) as $code) {
+            if ($code !== '' && !in_array($code, $codes, true)) {
+                $codes[] = (string) $code;
+            }
+        }
+        if ($current !== null && $current !== '' && !in_array($current, $codes, true)) {
+            $codes[] = $current;
+        }
+
+        return $codes;
+    }
+
     /** Why the file did not arrive, in words the person can act on. */
     private function uploadMessage(int $error): string
     {
@@ -379,6 +412,7 @@ final class BookController
             'cover'        => $this->app->covers->bestFor($bookId, true),
             'statuses'     => self::STATUSES,
             'bindings'     => self::BINDINGS,
+            'languages'    => $this->languageOptions($book['language'] ?? null),
             'acquired'     => self::ACQUIRED,
             'roles'        => self::ROLES,
             'error'        => $error,

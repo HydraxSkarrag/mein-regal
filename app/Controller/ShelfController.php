@@ -14,6 +14,15 @@ use App\Repository\TagRepository;
  */
 final class ShelfController
 {
+    /**
+     * How many entries a sidebar list shows before "all of them" takes over.
+     *
+     * One number for every list rather than fourteen here and twelve there:
+     * a sidebar is scanned, not read, and lists of different lengths make it
+     * look like the shorter ones are complete.
+     */
+    private const FACET_ROWS = 10;
+
     private const PER_PAGE = 60;
 
     public function __construct(private readonly Application $app)
@@ -28,6 +37,14 @@ final class ShelfController
             'tag'      => $request->query('tag'),
             'author'   => $request->query('author'),
             'binding'  => $this->oneOf($request->query('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
+            /* Whatever the sources have actually put in the field, rather
+               than a list of languages someone thought of: the DNB delivers
+               gmh and zxx as readily as ger, and a filter that cannot name
+               them would leave those books unreachable. */
+            'language' => $this->oneOf(
+                $request->query('language'),
+                array_keys($this->app->books->countBy($this->app->ownerId, 'language'))
+            ),
             'review'   => $this->oneOf($request->query('review'), ['yes', 'no']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
@@ -48,6 +65,10 @@ final class ShelfController
             'search' => $request->query('q'),
             'status' => 'unread',
             'tag'    => $request->query('tag'),
+            'language' => $this->oneOf(
+                $request->query('language'),
+                array_keys($this->app->books->countBy($this->app->ownerId, 'language'))
+            ),
             'sort'   => $this->oneOf($request->query('sort'), ['recent', 'title', 'year', 'rating', 'read'], 'recent'),
         ];
 
@@ -105,11 +126,12 @@ final class ShelfController
             'offset'        => $offset,
             'covers'        => $this->app->covers->bestForMany($ids, $signedIn),
             'authorLines'   => $this->authorLines($ids),
-            'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, 14, TagRepository::KIND_GENRE),
+            'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, self::FACET_ROWS, TagRepository::KIND_GENRE),
             'tagTotal'      => $this->app->tags->count($this->app->ownerId, TagRepository::KIND_GENRE),
-            'labels'        => $this->app->tags->listWithCounts($this->app->ownerId, 10, TagRepository::KIND_LABEL),
+            'labels'        => $this->app->tags->listWithCounts($this->app->ownerId, self::FACET_ROWS, TagRepository::KIND_LABEL),
             'labelTotal'    => $this->app->tags->count($this->app->ownerId, TagRepository::KIND_LABEL),
-            'topAuthors'    => $this->app->authors->listWithCounts($this->app->ownerId, 12),
+            'topAuthors'    => $this->app->authors->listWithCounts($this->app->ownerId, self::FACET_ROWS),
+            'languageCounts' => $this->app->books->countBy($this->app->ownerId, 'language'),
             'authorTotal'   => $this->app->authors->count($this->app->ownerId),
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
             'bindingCounts' => $this->app->books->countBy($this->app->ownerId, 'binding'),

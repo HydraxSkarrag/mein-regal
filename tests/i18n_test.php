@@ -131,3 +131,20 @@ Assert::true(
 // learns it exists.
 $sample = file_get_contents(dirname(__DIR__) . '/config.sample.php') ?: '';
 Assert::true('the sample config offers it', str_contains($sample, "'language_switcher'"));
+
+Assert::group('A language code the list has never heard of');
+
+/*
+ * The sources hand out MARC codes, and not only the two anybody thinks of:
+ * the shelf holds gmh (Middle High German), mul (multilingual) and zxx ("no
+ * linguistic content", which is what a wimmelbook gets). The edit form
+ * offered German and English alone, so a book in any of the others had no
+ * matching option, the browser showed the empty one, and saving the form
+ * wiped the language without anybody touching that field.
+ */
+Assert::same('a translated code reads as a word', Formatter::language('ger'), 'Deutsch');
+Assert::same('and so does an unusual one', Formatter::language('gmh'), 'Mittelhochdeutsch');
+
+// An unknown code is shown as itself. "XYZ" tells a reader something;
+// "lang.xyz" - the raw translation key - tells them nothing at all.
+Assert::same('an unknown code stays readable', Formatter::language('xyz'), 'XYZ');

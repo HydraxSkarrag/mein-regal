@@ -103,6 +103,23 @@ final class Formatter
      *
      * @return array{full: int, half: bool, empty: int, text: string}
      */
+    /**
+     * A language code as a word, or the code itself.
+     *
+     * The sources hand out MARC codes - ger, eng, but also gmh for Middle
+     * High German, mul for multilingual and zxx for "no linguistic content",
+     * which is what a wimmelbook gets. Only the common ones are translated;
+     * an untranslated code is shown as it stands rather than as the raw
+     * translation key, because "GMH" tells a reader something and
+     * "lang.gmh" tells them nothing.
+     */
+    public static function language(string $code): string
+    {
+        $label = t('lang.' . $code);
+
+        return $label === 'lang.' . $code ? strtoupper($code) : $label;
+    }
+
     public static function stars(int|float|string|null $rating): ?array
     {
         if ($rating === null || $rating === '') {

@@ -132,6 +132,28 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
+    <?php
+      /* Language, capped like every other list here. The field is empty for
+         books nobody has looked up yet, and an "unknown" entry filtering to
+         a thousand books says nothing about them - so only the languages
+         that are actually recorded get a row. */
+      $languages = array_filter(
+          $languageCounts ?? [],
+          static fn ($count, $code): bool => $code !== '' && $count > 0,
+          ARRAY_FILTER_USE_BOTH
+      );
+    ?>
+    <?php if (count($languages) > 1): ?>
+    <h2><?= e(t('filter.language')) ?></h2>
+    <ul>
+      <?php foreach (array_slice($languages, 0, 10, true) as $code => $count): ?>
+      <li><a href="<?= e($urlFor(['language' => ($filters['language'] ?? '') === $code ? '' : $code])) ?>"
+             aria-current="<?= ($filters['language'] ?? '') === $code ? 'true' : 'false' ?>">
+        <span><?= e(App\Core\Formatter::language((string) $code)) ?></span><span class="n"><?= e($formatter->number($count)) ?></span></a></li>
+      <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
+
     <?php if ($hasFilters): ?>
     <p style="margin-top:18px"><a href="/"><?= e(t('filter.reset')) ?></a></p>
     <?php endif; ?>
