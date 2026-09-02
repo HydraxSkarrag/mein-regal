@@ -147,8 +147,14 @@ CREATE TABLE IF NOT EXISTS tags (
     owner_id INT UNSIGNED NOT NULL,
     name     VARCHAR(190) NOT NULL,
     slug     VARCHAR(190) NOT NULL,
+    -- genre | label. Everything is a label until somebody says otherwise:
+    -- the export mixed real genres with age ranges, bindings and shop
+    -- categories, and defaulting the other way would let every import grow
+    -- the genre list again.
+    kind     VARCHAR(10) NOT NULL DEFAULT 'label',
     PRIMARY KEY (id),
-    UNIQUE KEY uniq_tags_owner_slug (owner_id, slug)
+    UNIQUE KEY uniq_tags_owner_slug (owner_id, slug),
+    KEY idx_tags_owner_kind (owner_id, kind)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS book_tags (

@@ -66,6 +66,20 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </ul>
 
+    <?php if ($labels !== []): ?>
+    <h2 class="sidebar-head">
+      <span><?= e(t('filter.label')) ?></span>
+      <a class="facet-all" href="/labels"><?= e(t('facets.all', ['count' => $formatter->number($labelTotal)])) ?></a>
+    </h2>
+    <ul>
+      <?php foreach ($labels as $tag): ?>
+      <li><a href="<?= e($urlFor(['tag' => ($filters['tag'] ?? '') === $tag['slug'] ? '' : $tag['slug']])) ?>"
+             aria-current="<?= ($filters['tag'] ?? '') === $tag['slug'] ? 'true' : 'false' ?>">
+        <span><?= e($tag['name']) ?></span><span class="n"><?= e($formatter->number((int) $tag['book_count'])) ?></span></a></li>
+      <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
+
     <h2 class="sidebar-head">
       <span><?= e(t('filter.author')) ?></span>
       <a class="facet-all" href="/authors"><?= e(t('facets.all', ['count' => $formatter->number($authorTotal)])) ?></a>

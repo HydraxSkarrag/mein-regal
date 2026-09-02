@@ -7,6 +7,7 @@ use App\Core\Isbn;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
+use App\Repository\TagRepository;
 
 /**
  * The shelf and a single book - the public half of the site.
@@ -104,8 +105,10 @@ final class ShelfController
             'offset'        => $offset,
             'covers'        => $this->app->covers->bestForMany($ids, $signedIn),
             'authorLines'   => $this->authorLines($ids),
-            'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, 14),
-            'tagTotal'      => $this->app->tags->count($this->app->ownerId),
+            'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, 14, TagRepository::KIND_GENRE),
+            'tagTotal'      => $this->app->tags->count($this->app->ownerId, TagRepository::KIND_GENRE),
+            'labels'        => $this->app->tags->listWithCounts($this->app->ownerId, 10, TagRepository::KIND_LABEL),
+            'labelTotal'    => $this->app->tags->count($this->app->ownerId, TagRepository::KIND_LABEL),
             'topAuthors'    => $this->app->authors->listWithCounts($this->app->ownerId, 12),
             'authorTotal'   => $this->app->authors->count($this->app->ownerId),
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
@@ -137,16 +140,39 @@ final class ShelfController
      * Every genre there is.
      *
      * The sidebar lists the biggest fourteen because a sidebar has to stop
-     * somewhere, which left three hundred and sixty-seven of them reachable
-     * only by guessing the URL. This is where the heading points.
+     * somewhere, which left the rest of them reachable only by guessing the
+     * URL. This is where the heading points.
      */
     public function genres(): Response
     {
-        $rows = $this->app->tags->listAllByName($this->app->ownerId);
+        $rows = $this->app->tags->listAllByName($this->app->ownerId, TagRepository::KIND_GENRE);
 
         return $this->renderFacets(
             t('filter.genre'),
             'genres',
+            array_map(static fn (array $tag): array => [
+                'label' => $tag['name'],
+                'sort'  => $tag['name'],
+                'count' => (int) $tag['book_count'],
+                'url'   => '/?tag=' . rawurlencode($tag['slug']),
+            ], $rows)
+        );
+    }
+
+    /**
+     * Everything that is not a genre.
+     *
+     * Age ranges, bindings, subjects, shop categories - useful to filter by,
+     * useless in a list meant to answer "what kind of book is this". Same
+     * page, same filter, its own address.
+     */
+    public function labels(): Response
+    {
+        $rows = $this->app->tags->listAllByName($this->app->ownerId, TagRepository::KIND_LABEL);
+
+        return $this->renderFacets(
+            t('filter.label'),
+            'labels',
             array_map(static fn (array $tag): array => [
                 'label' => $tag['name'],
                 'sort'  => $tag['name'],

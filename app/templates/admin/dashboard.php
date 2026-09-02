@@ -18,6 +18,7 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
   <span class="count"><?= e(t('auth.hello', ['name' => $user['display_name'] ?? ''])) ?></span>
   <span class="count"><a href="/stats"><?= e(t('stats.public')) ?></a></span>
   <span class="count"><a href="/admin/data"><?= e(t('maintenance.title')) ?></a></span>
+  <span class="count"><a href="/admin/tags"><?= e(t('tags.title')) ?></a></span>
 </div>
 
 <?= $view->render('partials.brand_hint') ?>

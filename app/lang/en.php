@@ -38,6 +38,7 @@ return [
 
     'filter.status'      => 'Status',
     'filter.genre'       => 'Genre',
+    'filter.label'       => 'Labels',
     'filter.binding'     => 'Edition',
     'filter.rating'      => 'Rating',
     'filter.language'    => 'Language',
@@ -390,4 +391,9 @@ return [
                             . 'are in the repository.',
     'project.repository' => 'View the source',
     'project.licence'    => 'Source under the MIT licence. Logo, covers and book data are not included.',
+
+    'tags.title'         => 'Genres and labels',
+    'tags.count'         => '{genres} of {total} are genres',
+    'tags.hint'          => 'Ticked means genre; everything else counts as a label and appears in its own list. The number on the right is how many books carry the tag - start at the top, because further down most of them sit on a single book.',
+    'tags.saved'         => 'Saved. {count} genres; everything else counts as a label.',
 ];

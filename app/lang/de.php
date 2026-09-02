@@ -38,6 +38,7 @@ return [
 
     'filter.status'      => 'Status',
     'filter.genre'       => 'Genre',
+    'filter.label'       => 'Schlagwörter',
     'filter.binding'     => 'Ausgabe',
     'filter.rating'      => 'Bewertung',
     'filter.language'    => 'Sprache',
@@ -393,4 +394,9 @@ return [
                             . 'Anleitung liegt im Repository.',
     'project.repository' => 'Zum Quellcode',
     'project.licence'    => 'Quellcode unter MIT-Lizenz. Logo, Cover und Buchdaten gehören nicht dazu.',
+
+    'tags.title'         => 'Genres und Schlagwörter',
+    'tags.count'         => '{genres} von {total} als Genre',
+    'tags.hint'          => 'Angekreuzt heißt Genre; alles andere zählt als Schlagwort und erscheint in der eigenen Liste. Die Zahl rechts sagt, an wie vielen Büchern das Schlagwort hängt – oben anfangen lohnt sich, unten hängt vieles an einem einzigen Buch.',
+    'tags.saved'         => 'Gespeichert. {count} Genres, alles andere zählt als Schlagwort.',
 ];

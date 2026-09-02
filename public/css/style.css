@@ -1169,3 +1169,36 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .pager-page,
   .pager-step { min-width: 34px; padding: 6px 8px; font-size: 0.85rem; }
 }
+
+/* Sorting tags into genres and labels.
+ *
+ * Three hundred and eighty rows, so they are laid out in columns rather than
+ * one long column: the point of the screen is to see the big ones together
+ * and work down, not to scroll past a hundred one-book tags to find the save
+ * button - which is why there is one at each end. */
+.tag-sort {
+  list-style: none;
+  margin: 18px 0;
+  padding: 0;
+  columns: 2;
+  column-gap: 28px;
+}
+@media (min-width: 900px) { .tag-sort { columns: 3; } }
+.tag-sort li {
+  break-inside: avoid;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+}
+.tag-sort label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+  font-weight: 400;
+}
+.tag-sort .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag-sort input:checked + label { font-weight: 600; }
+.tag-sort-actions { position: sticky; bottom: 0; padding: 10px 0; background: var(--bg); }
