@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\CoverStorage;
+use App\Core\Input;
 use App\Core\Isbn;
 use App\Core\Request;
 use App\Core\Response;
@@ -115,24 +116,24 @@ final class BookController
                 'isbn13'           => $isbn13,
                 'isbn10'           => $isbn13 !== null ? Isbn::to10($isbn13) : null,
                 'title'            => mb_substr($title, 0, 500),
-                'subtitle'         => $this->orNull($request->post('subtitle'), 500),
-                'publisher'        => $this->orNull($request->post('publisher'), 255),
-                'published_year'   => $this->intOrNull($request->post('published_year'), 1400, 2100),
-                'page_count'       => $this->intOrNull($request->post('page_count'), 1, 30000),
-                'language'         => $this->oneOf(
+                'subtitle'         => Input::text($request->post('subtitle'), 500),
+                'publisher'        => Input::text($request->post('publisher'), 255),
+                'published_year'   => Input::int($request->post('published_year'), 1400, 2100),
+                'page_count'       => Input::int($request->post('page_count'), 1, 30000),
+                'language'         => Input::oneOf(
                     $request->post('language'),
                     $this->languageOptions($book['language'] ?? null)
                 ),
-                'binding'          => $this->oneOf($request->post('binding'), self::BINDINGS),
-                'price'            => $this->priceOrNull($request->post('price')),
-                'acquisition_type' => $this->oneOf($request->post('acquisition_type'), self::ACQUIRED),
-                'acquired_at'      => $this->dateOrNull($request->post('acquired_at')),
-                'reading_status'   => $this->oneOf($request->post('reading_status'), self::STATUSES) ?? 'unread',
-                'started_at'       => $this->dateOrNull($request->post('started_at')),
-                'finished_at'      => $this->dateOrNull($request->post('finished_at')),
-                'rating'           => $this->ratingOrNull($request->post('rating')),
-                'notes'            => $this->orNull($request->post('notes'), 65535),
-                'review_url'       => $this->urlOrNull($request->post('review_url')),
+                'binding'          => Input::oneOf($request->post('binding'), self::BINDINGS),
+                'price'            => Input::price($request->post('price')),
+                'acquisition_type' => Input::oneOf($request->post('acquisition_type'), self::ACQUIRED),
+                'acquired_at'      => Input::date($request->post('acquired_at')),
+                'reading_status'   => Input::oneOf($request->post('reading_status'), self::STATUSES) ?? 'unread',
+                'started_at'       => Input::date($request->post('started_at')),
+                'finished_at'      => Input::date($request->post('finished_at')),
+                'rating'           => Input::rating($request->post('rating')),
+                'notes'            => Input::text($request->post('notes'), 65535),
+                'review_url'       => Input::url($request->post('review_url')),
             ]);
 
             $this->app->books->replaceAuthors(
@@ -479,74 +480,5 @@ final class BookController
         }
 
         return array_values(array_unique($tags));
-    }
-
-    private function orNull(string $value, int $maxLength): ?string
-    {
-        $value = trim($value);
-
-        return $value === '' ? null : mb_substr($value, 0, $maxLength);
-    }
-
-    /** Only http(s), so a stored link cannot become a javascript: URL. */
-    private function urlOrNull(string $value): ?string
-    {
-        $value = trim($value);
-        if ($value === '') {
-            return null;
-        }
-        if (filter_var($value, FILTER_VALIDATE_URL) === false) {
-            return null;
-        }
-        $scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
-
-        return in_array($scheme, ['http', 'https'], true) ? mb_substr($value, 0, 500) : null;
-    }
-
-    /** Half steps from 0.5 to 5.0; anything else is discarded. */
-    private function ratingOrNull(string $value): ?float
-    {
-        $value = str_replace(',', '.', trim($value));
-        if ($value === '' || !is_numeric($value)) {
-            return null;
-        }
-        $rating = round((float) $value * 2) / 2;
-
-        return $rating >= 0.5 && $rating <= 5.0 ? $rating : null;
-    }
-
-    private function intOrNull(string $value, int $min, int $max): ?int
-    {
-        $value = trim($value);
-        if ($value === '' || !ctype_digit($value)) {
-            return null;
-        }
-        $number = (int) $value;
-
-        return $number >= $min && $number <= $max ? $number : null;
-    }
-
-    private function dateOrNull(string $value): ?string
-    {
-        $value = trim($value);
-
-        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : null;
-    }
-
-    private function priceOrNull(string $value): ?float
-    {
-        $value = str_replace(',', '.', trim($value));
-        if ($value === '' || !is_numeric($value)) {
-            return null;
-        }
-        $price = (float) $value;
-
-        return $price > 0 ? round($price, 2) : null;
-    }
-
-    /** @param list<string> $allowed */
-    private function oneOf(string $value, array $allowed): ?string
-    {
-        return in_array($value, $allowed, true) ? $value : null;
     }
 }

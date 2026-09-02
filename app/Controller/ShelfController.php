@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Core\Input;
 use App\Core\Isbn;
 use App\Core\Request;
 use App\Core\Response;
@@ -518,9 +519,17 @@ final class ShelfController
         ];
     }
 
-    /** @param list<string> $allowed */
+    /**
+     * A query-string filter: one of a fixed list, or "" when it is not set.
+     *
+     * The empty string rather than NULL, because "" is what an absent query
+     * parameter already is and what buildWhere() reads as "no filter". That
+     * is the only difference from Input::oneOf, which this defers to.
+     *
+     * @param list<string> $allowed
+     */
     private function oneOf(string $value, array $allowed, string $default = ''): string
     {
-        return in_array($value, $allowed, true) ? $value : $default;
+        return Input::oneOf($value, $allowed, $default) ?? $default;
     }
 }

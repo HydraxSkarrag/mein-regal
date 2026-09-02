@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\CoverStorage;
+use App\Core\Input;
 use App\Core\Isbn;
 use App\Core\Request;
 use App\Core\Response;
@@ -147,19 +148,19 @@ final class ScanController
                 'isbn13'         => $isbn,
                 'isbn10'         => $isbn !== null ? Isbn::to10($isbn) : null,
                 'title'          => mb_substr($title, 0, 500),
-                'subtitle'       => $this->orNull($request->post('subtitle'), 500),
-                'publisher'      => $this->orNull($request->post('publisher'), 255),
-                'published_year' => $this->intOrNull($request->post('published_year'), 1400, 2100),
-                'page_count'     => $this->intOrNull($request->post('page_count'), 1, 30000),
-                'language'       => $this->orNull($request->post('language'), 3),
-                'binding'        => $this->oneOf($request->post('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
-                'price'          => $this->priceOrNull($request->post('price')),
-                'acquisition_type' => $this->oneOf(
+                'subtitle'       => Input::text($request->post('subtitle'), 500),
+                'publisher'      => Input::text($request->post('publisher'), 255),
+                'published_year' => Input::int($request->post('published_year'), 1400, 2100),
+                'page_count'     => Input::int($request->post('page_count'), 1, 30000),
+                'language'       => Input::text($request->post('language'), 3),
+                'binding'        => Input::oneOf($request->post('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
+                'price'          => Input::price($request->post('price')),
+                'acquisition_type' => Input::oneOf(
                     $request->post('acquisition_type'),
                     ['purchase', 'review_copy', 'gift', 'prize', 'loan', 'swap']
                 ),
                 'acquired_at'    => (new \DateTimeImmutable())->format('Y-m-d'),
-                'reading_status' => $this->oneOf($request->post('reading_status'), ['read', 'unread', 'abandoned', 'reading']) ?? 'unread',
+                'reading_status' => Input::oneOf($request->post('reading_status'), ['read', 'unread', 'abandoned', 'reading']) ?? 'unread',
             ]);
 
             foreach ($this->decodeAuthors($request->post('authors')) as $position => $person) {
@@ -185,7 +186,7 @@ final class ScanController
         // Outside the transaction on purpose: the book is catalogued either
         // way, and a slow or missing cover must not undo that.
         $coverUrl = $request->post('cover_url');
-        $coverSource = $this->oneOf($request->post('cover_source'), ['google', 'openlibrary']);
+        $coverSource = Input::oneOf($request->post('cover_source'), ['google', 'openlibrary']);
         if ($coverUrl !== '' && $coverSource !== null) {
             $this->fetchCover($bookId, $coverUrl, $coverSource, $isbn, $request->post('cover_attribution'));
         }
@@ -273,7 +274,7 @@ final class ScanController
                 $source,
                 $stored['path'],
                 $url,
-                $this->orNull($attribution, 255),
+                Input::text($attribution, 255),
                 $stored['width'],
                 $stored['height']
             );
@@ -419,39 +420,5 @@ final class ScanController
             static fn ($tag): string => mb_substr(trim((string) $tag), 0, 190),
             array_slice($decoded, 0, 8)
         )));
-    }
-
-    private function orNull(string $value, int $maxLength): ?string
-    {
-        $value = trim($value);
-
-        return $value === '' ? null : mb_substr($value, 0, $maxLength);
-    }
-
-    private function intOrNull(string $value, int $min, int $max): ?int
-    {
-        if (!ctype_digit($value)) {
-            return null;
-        }
-        $number = (int) $value;
-
-        return $number >= $min && $number <= $max ? $number : null;
-    }
-
-    private function priceOrNull(string $value): ?float
-    {
-        $value = str_replace(',', '.', trim($value));
-        if ($value === '' || !is_numeric($value)) {
-            return null;
-        }
-        $price = (float) $value;
-
-        return $price > 0 ? round($price, 2) : null;
-    }
-
-    /** @param list<string> $allowed */
-    private function oneOf(string $value, array $allowed): ?string
-    {
-        return in_array($value, $allowed, true) ? $value : null;
     }
 }
