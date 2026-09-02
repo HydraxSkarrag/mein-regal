@@ -36,6 +36,7 @@
   var manualForm = document.getElementById('manual');
   var isbnInput = document.getElementById('isbn');
   var seriesToggle = document.getElementById('series');
+  var readToggle = document.getElementById('read');
   var counter = document.getElementById('counter');
 
   var stream = null;
@@ -389,7 +390,7 @@
     body.append('language', currentBook.language || '');
     body.append('binding', currentBook.binding || '');
     body.append('price', currentBook.price || '');
-    body.append('reading_status', 'unread');
+    body.append('reading_status', readToggle.checked ? 'read' : 'unread');
     body.append('acquisition_type', 'purchase');
     body.append('authors', JSON.stringify(currentBook.authors || []));
     body.append('tags', JSON.stringify(currentBook.tags || []));
@@ -589,6 +590,33 @@
 
   startButton.addEventListener('click', startCamera);
   stopButton.addEventListener('click', stopCamera);
+
+  /* Whether new books count as read is remembered.
+   *
+   * Cataloguing a collection for the first time means one shelf of books
+   * already read, then another of ones waiting - not an alternating sequence.
+   * Ticking the box again after every reload is the sort of small friction
+   * that ends with a hundred books recorded wrongly and an evening spent
+   * correcting them, which is exactly the work the scanner exists to avoid.
+   *
+   * localStorage, not a cookie: it never leaves the browser, so there is
+   * nothing to declare and nobody to ask. Storage can be refused outright in
+   * a private window, and then the default simply stands.
+   */
+  try {
+    readToggle.checked = localStorage.getItem('regal.scan.read') === '1';
+  } catch (error) {
+    // No storage available. Unread it is.
+  }
+
+  readToggle.addEventListener('change', function () {
+    try {
+      localStorage.setItem('regal.scan.read', readToggle.checked ? '1' : '0');
+    } catch (error) {
+      // Not being able to remember it does not stop it applying now.
+    }
+    say(readToggle.checked ? text.markedRead : text.markedUnread, 'ok');
+  });
 
   manualForm.addEventListener('submit', function (event) {
     event.preventDefault();

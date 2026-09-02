@@ -28,6 +28,11 @@ declare(strict_types=1);
     <label for="series"><?= e(t('scan.series')) ?> <span class="note">– <?= e(t('scan.series.hint')) ?></span></label>
   </div>
 
+  <div class="field field--check">
+    <input id="read" type="checkbox">
+    <label for="read"><?= e(t('scan.read')) ?> <span class="note">– <?= e(t('scan.read.hint')) ?></span></label>
+  </div>
+
   <form id="manual" class="card" style="margin-top:18px">
     <div class="field" style="margin-bottom:10px">
       <label for="isbn"><?= e(t('scan.manual')) ?></label>
@@ -63,6 +68,8 @@ declare(strict_types=1);
     'dropCover'   => t('scan.drop.cover'),
     'cancel'      => t('common.cancel'),
     'again'       => t('scan.again'),
+    'markedRead'  => t('scan.read.on'),
+    'markedUnread'=> t('scan.read.off'),
     'nothing'     => t('scan.nothing'),
     'duplicate'   => t('scan.duplicate'),
     'noCamera'    => t('scan.no.camera'),
