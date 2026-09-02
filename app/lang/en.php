@@ -395,7 +395,8 @@ return [
                             . 'sits on your own web space cannot disappear that way.',
     'project.origin.heading' => 'Where it comes from',
     'project.origin'     => 'Written for the bookshelf of {blog} and passed on from there. Every '
-                            . 'installation carries that credit in its footer - that is the whole price.',
+                            . 'installation carries that credit in its footer - not because the licence '
+                            . 'demands it, but so that anyone can see where this came from.',
     'project.how.heading' => 'What it does',
     'project.how.scan'   => 'Scan a barcode with the phone camera, in the browser, without an app.',
     'project.how.sources' => 'Book data from the German National Library, Google Books and Open Library.',

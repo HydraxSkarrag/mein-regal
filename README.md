@@ -7,8 +7,11 @@ It exists because [bookstats.de](https://bookstats.de) shut down, and a collecti
 of 3,042 books grown over years would otherwise have survived only as a CSV file.
 
 Written for the bookshelf of [Bücherhausen](https://www.buecherhausen.de/) and
-passed on from there. Every installation keeps a line in its footer saying so;
-that is the whole price.
+passed on from there. Every installation shows a line in its footer saying so —
+please leave it there. It is a request rather than a condition; the licence
+asks nothing of what a running installation puts on the screen. The names and
+logos are a separate matter and are not licensed with the code — see
+[LICENSE](LICENSE).
 
 ## What it does
 
@@ -341,5 +344,9 @@ quota exhausted, API not enabled, or the key restricted to the wrong thing.
 
 Source under MIT, and that includes the default logo — see [LICENSE](LICENSE).
 Excluded are the bundled fonts and the cover images, which belong to their
-rights holders. Nobody else's brand ships in this repository: an operator's own
-logo lives in `public/assets/brand/`, which is not in version control.
+rights holders, and the names "Mein Regal" and "Bücherhausen" with their
+marks: a copyright licence is not a licence to a name. Publish a modified
+copy freely, under a name of your own.
+
+Nobody else's brand ships in this repository either: an operator's own logo
+lives in `public/assets/brand/`, which is not in version control.

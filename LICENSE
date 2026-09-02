@@ -4,7 +4,7 @@ Bücherregal - Licence
 
 MIT License
 
-Copyright (c) 2026 Bücherhausen
+Copyright (c) 2026 Daniel Kubitza
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,17 @@ SOFTWARE.
 
 The following are NOT part of the software and are not licensed with it:
 
+  * The names "Mein Regal" and "Bücherhausen", and the marks and logos used
+    for them. A copyright licence is not a licence to a name, and this one is
+    not granting one: a modified copy may be published and sold, but not
+    under these names, and nothing may suggest that Bücherhausen made or
+    endorses it. This is the usual arrangement - Linux, Firefox and WordPress
+    all separate the two - and it is the reason the source can be given away
+    without giving away who wrote it.
+
+    It does not require anything of a running installation. See the note on
+    the credit line at the end of this file.
+
   * Anything in public/assets/brand/ - the operator's own logo and icons.
     That folder is excluded from version control and from the deployment, so
     nothing in it travels with this repository; it belongs to whoever made it.
@@ -49,3 +60,24 @@ covered by the MIT licence above. They exist so that a fresh installation has a
 mark of its own rather than borrowing somebody else's - which is also why no
 other brand ships here. To use your own, put it in public/assets/brand/; see
 the README.
+
+
+3) The credit line, and what it is not
+
+Every installation shows a line in its footer reading "Läuft mit Mein Regal,
+von Bücherhausen", linking to the project page and to the blog this was
+written for.
+
+Please leave it there. That is a request and not a condition: the MIT licence
+above governs copies of the source, and it asks nothing of what a running
+installation puts on the screen. Removing the line is permitted, and saying
+otherwise here would be a term nobody intends to enforce dressed up as one
+somebody might.
+
+The reason to keep it is not legal. This was written for one bookshelf and
+given away; the line is how anybody looking at your shelf can find out that
+the software exists and where it came from. It is small, it links out rather
+than shouting, and it costs nothing that matters.
+
+What is not a request is the paragraph above about the names. Keeping the
+credit is a courtesy; calling your own version "Mein Regal" is not.
