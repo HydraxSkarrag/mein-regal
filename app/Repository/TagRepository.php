@@ -53,8 +53,23 @@ final class TagRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * Put a tag on a book - unless the tag has been thrown out.
+     *
+     * The check sits here rather than in the importer because every path
+     * leads through this method: import, scanner, and the edit form. A tag
+     * removed by hand would otherwise come back on the next import, along
+     * with the books that carried it, which is exactly what the removal was
+     * meant to stop.
+     */
     public function link(int $bookId, int $tagId): void
     {
+        $dropped = $this->pdo->prepare('SELECT 1 FROM tags WHERE id = ? AND dropped_at IS NOT NULL');
+        $dropped->execute([$tagId]);
+        if ($dropped->fetchColumn() !== false) {
+            return;
+        }
+
         $sql = $this->dialect->insertIgnore('book_tags', ['book_id', 'tag_id']);
         $this->pdo->prepare($sql)->execute([$bookId, $tagId]);
     }
@@ -74,7 +89,7 @@ final class TagRepository
         $statement = $this->pdo->prepare(
             'SELECT t.name, t.slug, COUNT(bt.book_id) AS n
                FROM tags t LEFT JOIN book_tags bt ON bt.tag_id = t.id
-              WHERE t.owner_id = ?
+              WHERE t.owner_id = ? AND t.dropped_at IS NULL
               GROUP BY t.id, t.name, t.slug
               ORDER BY n DESC, t.name ASC'
         );
@@ -108,7 +123,8 @@ final class TagRepository
             'SELECT t.id, t.name, t.slug, COUNT(bt.book_id) AS book_count
                FROM tags t
                JOIN book_tags bt ON bt.tag_id = t.id
-              WHERE t.owner_id = ?' . ($kind === null ? '' : ' AND t.kind = ?') . '
+              WHERE t.owner_id = ? AND t.dropped_at IS NULL'
+                . ($kind === null ? '' : ' AND t.kind = ?') . '
               GROUP BY t.id, t.name, t.slug
               ORDER BY t.name ASC'
         );
@@ -125,7 +141,8 @@ final class TagRepository
             'SELECT COUNT(*) FROM (
                  SELECT t.id FROM tags t
                    JOIN book_tags bt ON bt.tag_id = t.id
-                  WHERE t.owner_id = ?' . ($kind === null ? '' : ' AND t.kind = ?') . '
+                  WHERE t.owner_id = ? AND t.dropped_at IS NULL'
+                . ($kind === null ? '' : ' AND t.kind = ?') . '
                   GROUP BY t.id
              ) AS used'
         );
@@ -141,7 +158,8 @@ final class TagRepository
             'SELECT t.id, t.name, t.slug, COUNT(bt.book_id) AS book_count
                FROM tags t
                JOIN book_tags bt ON bt.tag_id = t.id
-              WHERE t.owner_id = ?' . ($kind === null ? '' : ' AND t.kind = ?') . '
+              WHERE t.owner_id = ? AND t.dropped_at IS NULL'
+                . ($kind === null ? '' : ' AND t.kind = ?') . '
               GROUP BY t.id, t.name, t.slug
               ORDER BY book_count DESC, t.name ASC
               LIMIT ' . (int) $limit
@@ -160,21 +178,25 @@ final class TagRepository
      * of all the links, and the long tail of one-book tags can be left alone
      * for good.
      *
-     * @return list<array{id: int, name: string, kind: string, book_count: int}>
+     * Removed tags are listed too, marked as such: the point of keeping the
+     * row is that somebody can change their mind, and a list that hides them
+     * offers no way back.
+     *
+     * @return list<array{id: int, name: string, kind: string, dropped_at: ?string, book_count: int}>
      */
     public function listForSorting(int $ownerId): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT t.id, t.name, t.kind, COUNT(bt.book_id) AS book_count
+            'SELECT t.id, t.name, t.kind, t.dropped_at, COUNT(bt.book_id) AS book_count
                FROM tags t
           LEFT JOIN book_tags bt ON bt.tag_id = t.id
               WHERE t.owner_id = ?
-              GROUP BY t.id, t.name, t.kind
+              GROUP BY t.id, t.name, t.kind, t.dropped_at
               ORDER BY book_count DESC, t.name ASC'
         );
         $statement->execute([$ownerId]);
 
-        /** @var list<array{id: int, name: string, kind: string, book_count: int}> */
+        /** @var list<array{id: int, name: string, kind: string, dropped_at: ?string, book_count: int}> */
         return $statement->fetchAll();
     }
 
@@ -222,5 +244,117 @@ final class TagRepository
          * and the number somebody wants to read back is the size of their
          * genre list. */
         return $this->count($ownerId, self::KIND_GENRE);
+    }
+
+    /** One tag with its book count, dropped or not. */
+    public function find(int $ownerId, int $tagId): ?array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT t.id, t.name, t.slug, t.kind, t.dropped_at, COUNT(bt.book_id) AS book_count
+               FROM tags t
+          LEFT JOIN book_tags bt ON bt.tag_id = t.id
+              WHERE t.owner_id = ? AND t.id = ?
+              GROUP BY t.id, t.name, t.slug, t.kind, t.dropped_at'
+        );
+        $statement->execute([$ownerId, $tagId]);
+
+        return $statement->fetch() ?: null;
+    }
+
+    /**
+     * Take a tag out of use without destroying anything.
+     *
+     * The links in book_tags stay exactly as they are; only the tag is
+     * marked. Nothing shows it any more, no import re-links it, and putting
+     * it back is one update - which is the whole reason for not deleting.
+     */
+    public function drop(int $ownerId, int $tagId): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE tags SET dropped_at = ? WHERE owner_id = ? AND id = ? AND dropped_at IS NULL'
+        );
+        $statement->execute([date('Y-m-d H:i:s'), $ownerId, $tagId]);
+    }
+
+    public function restore(int $ownerId, int $tagId): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE tags SET dropped_at = NULL WHERE owner_id = ? AND id = ?'
+        );
+        $statement->execute([$ownerId, $tagId]);
+    }
+
+    /**
+     * Fold one tag into another.
+     *
+     * The links are COPIED rather than moved, and the source is then dropped.
+     * Moving them would make the merge the one step here that cannot be
+     * undone; copying leaves the source exactly as it was, so restoring it
+     * brings its books back with it. What stays behind after such an undo is
+     * that the target keeps the copies - which is what undoing it by hand
+     * would have left too.
+     *
+     * @return array{moved: int, already: int} how many gained the target tag,
+     *                                         and how many already had it
+     */
+    public function merge(int $ownerId, int $fromId, int $intoId): array
+    {
+        if ($fromId === $intoId) {
+            return ['moved' => 0, 'already' => 0];
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $books = $this->pdo->prepare(
+                'SELECT bt.book_id FROM book_tags bt
+                   JOIN tags t ON t.id = bt.tag_id
+                  WHERE bt.tag_id = ? AND t.owner_id = ?'
+            );
+            $books->execute([$fromId, $ownerId]);
+            $bookIds = array_map('intval', $books->fetchAll(PDO::FETCH_COLUMN));
+
+            $has = $this->pdo->prepare('SELECT 1 FROM book_tags WHERE book_id = ? AND tag_id = ?');
+            $insert = $this->pdo->prepare(
+                $this->dialect->insertIgnore('book_tags', ['book_id', 'tag_id'])
+            );
+
+            $moved = 0;
+            $already = 0;
+            foreach ($bookIds as $bookId) {
+                $has->execute([$bookId, $intoId]);
+                if ($has->fetchColumn() !== false) {
+                    $already++;
+                    continue;
+                }
+                $insert->execute([$bookId, $intoId]);
+                $moved++;
+            }
+
+            $this->pdo->prepare(
+                'UPDATE tags SET dropped_at = ? WHERE owner_id = ? AND id = ?'
+            )->execute([date('Y-m-d H:i:s'), $ownerId, $fromId]);
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+
+        return ['moved' => $moved, 'already' => $already];
+    }
+
+    /** The books carrying a tag, for a preview before anything is written. */
+    public function bookIdsFor(int $ownerId, int $tagId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT bt.book_id FROM book_tags bt
+               JOIN books b ON b.id = bt.book_id
+              WHERE bt.tag_id = ? AND b.owner_id = ?'
+        );
+        $statement->execute([$tagId, $ownerId]);
+
+        return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
     }
 }

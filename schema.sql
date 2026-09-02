@@ -152,6 +152,10 @@ CREATE TABLE IF NOT EXISTS tags (
     -- categories, and defaulting the other way would let every import grow
     -- the genre list again.
     kind     VARCHAR(10) NOT NULL DEFAULT 'label',
+    -- Set when the tag was removed by hand. The row and its links in
+    -- book_tags stay: deleting them would let the next import recreate the
+    -- tag, and keeping them makes restoring it a single update.
+    dropped_at DATETIME NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uniq_tags_owner_slug (owner_id, slug),
     KEY idx_tags_owner_kind (owner_id, kind)

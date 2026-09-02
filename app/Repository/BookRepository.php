@@ -454,4 +454,67 @@ final class BookRepository
 
         return array_map('intval', $statement->fetch() ?: []);
     }
+
+    /** Fields a tag may be folded into. Anything else is not a field. */
+    public const FILLABLE_FROM_TAG = ['binding', 'language'];
+
+    /**
+     * Write a value into one field for a set of books, where it is still empty.
+     *
+     * For the tags that are really a field in disguise: "Taschenbücher" says
+     * what binding says, and 90 of its 92 books already say paperback. The
+     * two that say hardcover are not corrected - a shop category is not
+     * better evidence than the record - they are counted and reported, so
+     * somebody can look.
+     *
+     * @param  list<int> $bookIds
+     * @param  bool      $dryRun count what would happen and write nothing
+     * @return array{filled: int, already: int, conflicting: int}
+     */
+    public function fillFieldFor(
+        int $ownerId,
+        array $bookIds,
+        string $field,
+        string $value,
+        bool $dryRun = false
+    ): array
+    {
+        if (!in_array($field, self::FILLABLE_FROM_TAG, true)) {
+            throw new \InvalidArgumentException('Not a fillable field: ' . $field);
+        }
+        if ($bookIds === []) {
+            return ['filled' => 0, 'already' => 0, 'conflicting' => 0];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
+
+        $read = $this->pdo->prepare(
+            "SELECT id, $field AS value FROM books WHERE owner_id = ? AND id IN ($placeholders)"
+        );
+        $read->execute([$ownerId, ...$bookIds]);
+
+        $empty = [];
+        $already = 0;
+        $conflicting = 0;
+        foreach ($read->fetchAll() as $row) {
+            $current = $row['value'];
+            if ($current === null || $current === '') {
+                $empty[] = (int) $row['id'];
+            } elseif ((string) $current === $value) {
+                $already++;
+            } else {
+                $conflicting++;
+            }
+        }
+
+        if ($empty !== [] && !$dryRun) {
+            $slots = implode(',', array_fill(0, count($empty), '?'));
+            $write = $this->pdo->prepare(
+                "UPDATE books SET $field = ? WHERE owner_id = ? AND id IN ($slots)"
+            );
+            $write->execute([$value, $ownerId, ...$empty]);
+        }
+
+        return ['filled' => count($empty), 'already' => $already, 'conflicting' => $conflicting];
+    }
 }
