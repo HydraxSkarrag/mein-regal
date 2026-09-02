@@ -158,6 +158,8 @@ return [
     'stats.no.cover'     => 'Without a cover',
     'stats.no.isbn'      => 'Without an ISBN',
     'stats.no.rating'    => 'Without a rating',
+    'stats.no.genre'     => 'Without a genre',
+    'stats.no.author'    => 'Without an author',
     'stats.bulk.note'    => 'Some acquisition dates come from the bulk entry into Bookstats and are excluded here.',
     'stats.covers'       => 'Cover sources',
 

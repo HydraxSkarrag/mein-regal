@@ -97,10 +97,6 @@ usort(
   <h2><?= e(t('tags.sort.heading')) ?></h2>
   <p class="note"><?= e(t('tags.hint')) ?></p>
 
-  <div class="tag-sort-actions">
-    <button class="btn btn--primary" type="submit"><?= e(t('common.save')) ?></button>
-  </div>
-
   <ul class="tag-sort">
     <?php foreach ($live as $tag): ?>
     <li>

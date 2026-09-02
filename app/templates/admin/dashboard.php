@@ -56,8 +56,17 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
         <span class="n"><?= e($formatter->number($todo['no_isbn'] ?? 0)) ?></span>
       </li>
       <li>
-        <span><a href="/?status=read&amp;sort=read"><?= e(t('stats.no.rating')) ?></a></span>
+        <span><a href="/?missing=rating"><?= e(t('stats.no.rating')) ?></a></span>
         <span class="n"><?= e($formatter->number($todo['no_rating'] ?? 0)) ?></span>
+      </li>
+      <li>
+        <span><a href="/?missing=genre"><?= e(t('stats.no.genre')) ?></a></span>
+        <span class="n"><?= e($formatter->number($todo['no_genre'] ?? 0)) ?>
+          <span class="note">· <?= e($formatter->number($pct((int) ($todo['no_genre'] ?? 0)), 1)) ?> %</span></span>
+      </li>
+      <li>
+        <span><a href="/?missing=author"><?= e(t('stats.no.author')) ?></a></span>
+        <span class="n"><?= e($formatter->number($todo['no_author'] ?? 0)) ?></span>
       </li>
     </ul>
     <p class="note"><?= e(t('stats.enrich.note')) ?></p>

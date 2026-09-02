@@ -49,6 +49,7 @@ final class ShelfController
             'review'   => $this->oneOf($request->query('review'), ['yes', 'no']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
+            'missing'  => $this->oneOf($request->query('missing'), ['genre', 'author', 'rating']),
             'sort'     => $this->oneOf($request->query('sort'), BookRepository::sorts(), 'recent'),
             'dir'      => $this->oneOf($request->query('dir'), ['asc', 'desc']),
         ];

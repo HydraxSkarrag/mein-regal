@@ -213,7 +213,7 @@ final class BookRepository
     /**
      * The shelf listing.
      *
-     * @param array{search?: string, status?: string, tag?: string, author?: string, binding?: string, rating?: int, language?: string, cover?: string, isbn?: string, sort?: string} $filters
+     * @param array{search?: string, status?: string, tag?: string, author?: string, binding?: string, rating?: int, language?: string, cover?: string, isbn?: string, missing?: string, sort?: string, dir?: string} $filters
      * @return array{rows: list<array<string,mixed>>, total: int}
      */
     /**
@@ -335,6 +335,27 @@ final class BookRepository
             $conditions[] = 't.slug = ? AND t.dropped_at IS NULL';
             $parameters[] = $filters['tag'];
         }
+        /* The gaps, as a filter.
+         *
+         * One parameter with a name for each gap rather than three yes/no
+         * ones: nobody ever wants "books that do have an author", and the
+         * dashboard's counts and these lists have to mean the same thing -
+         * a number linking to a list that says something else is worse than
+         * no link.
+         *
+         * "Unrated" means read and unrated. A book nobody has read yet is
+         * not missing its rating; it is waiting.
+         */
+        $missing = $filters['missing'] ?? '';
+        if ($missing === 'genre') {
+            $conditions[] = 'NOT EXISTS (SELECT 1 FROM book_tags bt4 JOIN tags t4 ON t4.id = bt4.tag_id'
+                . "            WHERE bt4.book_id = b.id AND t4.kind = 'genre' AND t4.dropped_at IS NULL)";
+        } elseif ($missing === 'author') {
+            $conditions[] = 'NOT EXISTS (SELECT 1 FROM book_authors ba4 WHERE ba4.book_id = b.id)';
+        } elseif ($missing === 'rating') {
+            $conditions[] = "b.rating IS NULL AND b.reading_status = 'read'";
+        }
+
         // The hundred books with no ISBN are exactly the ones that cannot be
         // looked up automatically, so being able to list them is what makes
         // them findable at all.

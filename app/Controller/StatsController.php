@@ -6,6 +6,7 @@ namespace App\Controller;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
+use App\Repository\TagRepository;
 
 /**
  * Two separate pages, deliberately.
@@ -163,10 +164,31 @@ final class StatsController
         );
         $withoutRating->execute([$owner]);
 
+        /* The same conditions the shelf filters by, so a number and the list
+         * it links to cannot drift apart. A genre thrown out does not count
+         * as one, and a book with nobody on it is not the same as a book
+         * whose author is spelled oddly. */
+        $withoutGenre = $this->app->pdo->prepare(
+            'SELECT COUNT(*) FROM books b
+              WHERE b.owner_id = ?
+                AND NOT EXISTS (SELECT 1 FROM book_tags bt JOIN tags t ON t.id = bt.tag_id
+                                 WHERE bt.book_id = b.id AND t.kind = ? AND t.dropped_at IS NULL)'
+        );
+        $withoutGenre->execute([$owner, TagRepository::KIND_GENRE]);
+
+        $withoutAuthor = $this->app->pdo->prepare(
+            'SELECT COUNT(*) FROM books b
+              WHERE b.owner_id = ?
+                AND NOT EXISTS (SELECT 1 FROM book_authors ba WHERE ba.book_id = b.id)'
+        );
+        $withoutAuthor->execute([$owner]);
+
         return [
             'no_cover'  => (int) $withoutCover->fetchColumn(),
             'no_isbn'   => (int) $withoutIsbn->fetchColumn(),
             'no_rating' => (int) $withoutRating->fetchColumn(),
+            'no_genre'  => (int) $withoutGenre->fetchColumn(),
+            'no_author' => (int) $withoutAuthor->fetchColumn(),
         ];
     }
 

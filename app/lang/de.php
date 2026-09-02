@@ -158,6 +158,8 @@ return [
     'stats.no.cover'     => 'Ohne Cover',
     'stats.no.isbn'      => 'Ohne ISBN',
     'stats.no.rating'    => 'Ohne Bewertung',
+    'stats.no.genre'     => 'Ohne Genre',
+    'stats.no.author'    => 'Ohne Autor:in',
     'stats.bulk.note'    => 'Ein Teil der Erwerbsdaten stammt aus der Sammelerfassung in Bookstats und ist hier ausgenommen.',
     'stats.covers'       => 'Cover-Quellen',
 
