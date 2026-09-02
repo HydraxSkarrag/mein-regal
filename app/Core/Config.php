@@ -44,7 +44,7 @@ final class Config
         return new self($values);
     }
 
-    /** Dot notation: get('legal.email'). */
+    /** Dot notation: get('mail.from'). */
     public function get(string $key, mixed $default = null): mixed
     {
         $cursor = $this->values;
