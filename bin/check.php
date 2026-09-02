@@ -178,6 +178,54 @@ if (isset($config)) {
 ";
     }
 
+    /* The site's own address.
+     *
+     * Left at the sample value the shelf still works perfectly, and every
+     * canonical link, every sitemap entry, every og:url and the Sitemap line
+     * in robots.txt names somebody else's domain. Search engines are then
+     * told the content lives there. Nothing about the site looks wrong. */
+    $url = $config->str('site_url');
+    if ($url === '' || str_contains($url, 'example.org')) {
+        line('Address', false, $url === '' ? 'site_url is empty' : 'site_url is still ' . $url);
+        echo "                         Canonical links, the sitemap and the social cards
+";
+        echo "                         would all point somewhere that is not this site.
+";
+    } else {
+        line('Address', true, $url);
+    }
+
+    /* The nightly job's key. Empty, /cron answers 503 and the backup, the
+       covers and the token cleanup simply never happen - in a log nobody
+       reads, on a schedule nobody watches. */
+    $secret = $config->str('cron_secret');
+    if (strlen($secret) < 20) {
+        line('Cron secret', false, $secret === '' ? 'not set' : 'shorter than 20 characters');
+        echo "                         /cron refuses to run, so there is no nightly backup
+";
+        echo "                         and no cover lookup. Any long random string will do.
+";
+    } else {
+        line('Cron secret', true, 'set, ' . strlen($secret) . ' characters');
+    }
+
+    /* The imprint, but only until the first account exists: after that the
+       text lives in the database and this block is spent. Worth saying while
+       it can still be filled in. */
+    if (trim((string) $config->get('legal.operator', '')) === '') {
+        line('Imprint', false, 'legal.operator is empty');
+        echo "                         If the first account is created now, the imprint
+";
+        echo "                         is written with placeholders in it. Filling this in
+";
+        echo "                         afterwards changes nothing - the text is then edited
+";
+        echo "                         in the browser under /imprint.
+";
+    } else {
+        line('Imprint', true, (string) $config->get('legal.operator', ''));
+    }
+
     /* A theme named in config.php that is not on disk. The shelf still
        renders - it falls back to the neutral default - so nothing breaks
        loudly enough to notice, and the site simply looks wrong. */
