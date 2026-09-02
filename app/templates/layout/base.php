@@ -28,7 +28,15 @@ $current = $current ?? '';
   <meta name="description" content="<?= e($metaDescription ?? t('app.tagline')) ?>">
   <link rel="canonical" href="<?= e($canonical ?? $siteUrl) ?>">
   <?php endif; ?>
-  <meta name="theme-color" content="<?= e($themeColour) ?>">
+  <?php /* Read out of the theme's own --bg, so it cannot drift from what the
+           page actually looks like. Two tags when the theme has two schemes:
+           one fixed colour would sit next to the wrong page half the time. */ ?>
+<?php if ($metaColours['dark'] !== null): ?>
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="<?= e($metaColours['light']) ?>">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="<?= e($metaColours['dark']) ?>">
+<?php else: ?>
+  <meta name="theme-color" content="<?= e($metaColours['light']) ?>">
+<?php endif; ?>
 
   <link rel="stylesheet" href="/css/style.css?v=<?= e($assetVersion) ?>">
 <?php foreach ($themeUrls as $themeUrl): ?>

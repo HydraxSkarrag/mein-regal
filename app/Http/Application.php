@@ -170,7 +170,7 @@ final class Application
         $this->view->share('blogName', $this->config->str('blog_name'));
         $this->view->share('brand', $this->brand);
         $this->view->share('themeUrls', $this->theme->urls());
-        $this->view->share('themeColour', $this->themeColour());
+        $this->view->share('metaColours', $this->theme->metaColours());
         $this->view->share('publicStats', $this->publicStats());
         $this->view->share('multilingual', $this->multilingual());
         $this->view->share('currentPath', $this->request->path);
@@ -211,20 +211,6 @@ final class Application
     public function multilingual(): bool
     {
         return $this->config->bool('language_switcher', true);
-    }
-
-    /**
-     * The colour the browser paints its own chrome with.
-     *
-     * A meta tag and a manifest field, neither of which is CSS, so neither
-     * can read a token out of the stylesheet - a theme that changes the
-     * accent says so here as well. Named after what it does rather than
-     * after the accent, because a dark theme wants its background here and
-     * not its brightest colour.
-     */
-    public function themeColour(): string
-    {
-        return $this->config->str('theme_colour', '#2f5d8f');
     }
 
     /** Cache-busting for CSS and JS; the file's own timestamp is enough. */

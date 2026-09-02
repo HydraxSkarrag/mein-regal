@@ -392,11 +392,13 @@ final class PageController
             'scope'            => '/',
             'display'          => 'standalone',
             'orientation'      => 'portrait',
-            // Both from the theme, not from this file: an installation that
-            // restyles the shelf must not get the original's red back the
-            // moment somebody adds it to a home screen.
-            'background_color' => $this->app->config->str('background_colour', '#fbfbf9'),
-            'theme_color'      => $this->app->themeColour(),
+            /* Both read out of the theme's own --bg, so a restyled shelf
+               does not get the original's colours back the moment somebody
+               adds it to a home screen. JSON takes one value where the page
+               can have two, and the light one is the right one: this paints
+               the splash before any of the page exists. */
+            'background_color' => $this->app->theme->metaColours()['light'],
+            'theme_color'      => $this->app->theme->metaColours()['light'],
             'lang'             => $this->app->translator->locale(),
             'icons'            => $this->manifestIcons(),
             'shortcuts' => [[

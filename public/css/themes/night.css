@@ -16,6 +16,10 @@
  */
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Hands the browser's own parts over as well - scrollbars, form
+       controls, the canvas. Without it they stay light on a dark page. */
+    color-scheme: dark;
+
     --accent: #7cb0e8;
     --accent-dark: #a3c8f0;
     --on-accent: #10131a;

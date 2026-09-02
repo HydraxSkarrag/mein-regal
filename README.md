@@ -111,9 +111,13 @@ appearance is nobody else's business. Web fonts of your own go next to it in
 relative path — never from a font service, which would hand every visitor's
 address to a third party and cost the site its consent-banner-free standing.
 
-Two colours are not CSS and have to be named separately in `config.php`:
-`theme_colour` (the browser's own chrome, and the home-screen tile) and
-`background_colour` (the splash while a home-screen app starts).
+A `<meta name="theme-color">` and the web app manifest are not CSS and cannot
+read a custom property - which is usually where a second copy of the colour
+ends up in a configuration file, and then drifts. They are read out of the
+theme's own `--bg` instead, and a theme that wants the browser chrome in some
+other colour says so with `--meta-theme-colour`. A theme defining both schemes
+gets both tags, so the address bar follows the page rather than sitting next
+to the wrong one half the time.
 
 **Logo and icons** go in `public/assets/brand/`:
 

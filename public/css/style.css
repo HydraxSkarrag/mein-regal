@@ -142,6 +142,13 @@
   --head-spacing: normal;
   --head-transform: none;
 
+  /* What the browser should draw its own parts in: scrollbars, the inside of
+     a date picker, a checkbox, the canvas behind everything. Without this a
+     dark theme is a dark page with light scrollbars and white form controls,
+     and no amount of token juggling fixes it - it is the one thing here that
+     is not ours to paint. A dark theme sets this to dark and gets the lot. */
+  color-scheme: light;
+
   --maxw-prose: 640px;
   --maxw-wide: 1200px;
   --nav-height: 60px;

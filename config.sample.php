@@ -96,13 +96,6 @@ return [
     // is nobody else's business.
     'theme' => '',
 
-    // The colour the browser paints its own chrome with - the address bar on
-    // Android, the tile on a home screen. Neither the meta tag nor the web
-    // app manifest is CSS, so neither can read a token out of a theme: a
-    // theme that changes the accent has to be told here as well.
-    'theme_colour'      => '#2f5d8f',
-    'background_colour' => '#fbfbf9',
-
     // Optional Google Books API key. Without one the shared per-IP quota applies.
     'google_books_key' => '',
 
