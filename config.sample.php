@@ -21,8 +21,25 @@ return [
     'db_dsn' => '',
 
     // Branding. Kept out of the code so a second installation only edits this file.
+    //
+    // site_url is the site's own address and has to be right: canonical
+    // links, the sitemap, the social cards and the Sitemap line in robots.txt
+    // are all built from it. Left at the value below they name a domain that
+    // is not yours, and nothing about the site looks wrong. bin/check.php
+    // says so before you go live.
     'site_name' => 'Mein Regal',
     'site_url'  => 'https://example.org',
+
+    // What the shelf looks like. Empty is the neutral default that ships
+    // with it; a name loads public/css/themes/<name>.css over the top.
+    // Ready-made: 'buecherhausen' (red on near-white, the original look) and
+    // 'night' (the default, but dark when the reader's system is).
+    //
+    // A look of your own goes in public/assets/brand/theme.css, beside the
+    // logo. That file is loaded last and wins, and like the logo it is kept
+    // out of Git and out of the deployment - one installation's appearance
+    // is nobody else's business.
+    'theme' => '',
 
     // Interface language. With the switch below turned off this is the one
     // the site speaks; with it on it is the fallback for missing translations.
@@ -85,16 +102,6 @@ return [
     // it, the ones that do not were never going to.
     'ai_crawlers' => false,
 
-    // What the shelf looks like. Empty is the neutral default that ships
-    // with it; a name loads public/css/themes/<name>.css over the top.
-    // Ready-made: 'buecherhausen' (red on near-white, the original look) and
-    // 'night' (the default, but dark when the reader's system is).
-    //
-    // A look of your own goes in public/assets/brand/theme.css, beside the
-    // logo. That file is loaded last and wins, and like the logo it is kept
-    // out of Git and out of the deployment - one installation's appearance
-    // is nobody else's business.
-    'theme' => '',
 
     // Optional Google Books API key. Without one the shared per-IP quota applies.
     'google_books_key' => '',
