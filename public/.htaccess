@@ -13,7 +13,7 @@ Options -Indexes
 </FilesMatch>
 
 # Nothing but the front controller should ever be requested directly.
-<FilesMatch "\.(sql|md|json|yml|yaml|lock|dist|sample\.php|log)$">
+<FilesMatch "\.(sql|md|json|yml|yaml|lock|dist|sample\.php|log|zip|tar|gz|bak|sqlite)$">
   Require all denied
 </FilesMatch>
 
