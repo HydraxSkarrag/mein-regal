@@ -98,7 +98,7 @@ $current = $current ?? '';
 
     <nav class="header-nav" aria-label="<?= e(t('nav.menu')) ?>">
       <a class="nav-desktop-only" href="/"<?= $current === 'shelf' ? ' aria-current="page"' : '' ?>><?= e(t('nav.shelf')) ?></a>
-      <a class="nav-desktop-only" href="/unread"<?= $current === 'unread' ? ' aria-current="page"' : '' ?>><?= e(t('nav.unread')) ?></a>
+      <a class="nav-desktop-only" href="/?status=unread"<?= $current === 'unread' ? ' aria-current="page"' : '' ?>><?= e(t('nav.unread')) ?></a>
       <?php if ($publicStats || $signedIn): ?>
       <a class="nav-desktop-only" href="/stats"<?= $current === 'stats' ? ' aria-current="page"' : '' ?>><?= e(t('nav.stats')) ?></a>
       <?php endif; ?>
@@ -135,7 +135,6 @@ $current = $current ?? '';
       <a href="/about"><?= e(t('nav.about')) ?></a>
       <a href="/imprint"><?= e(t('legal.imprint')) ?></a>
       <a href="/privacy"><?= e(t('legal.privacy')) ?></a>
-      <a href="/project"><?= e(t('nav.project')) ?></a>
     </nav>
     <?php
       /*
@@ -172,7 +171,7 @@ $current = $current ?? '';
     $navItems = [
       ['key' => 'shelf',  'href' => '/',           'label' => t('nav.shelf')],
       ['key' => 'search', 'href' => '/search',      'label' => t('nav.search')],
-      ['key' => 'unread', 'href' => '/unread',        'label' => t('nav.unread')],
+      ['key' => 'unread', 'href' => '/?status=unread', 'label' => t('nav.unread')],
     ];
     if ($signedIn) {
       $navItems[] = ['key' => 'admin', 'href' => '/admin', 'label' => t('nav.admin')];

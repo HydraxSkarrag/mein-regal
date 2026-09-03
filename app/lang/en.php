@@ -367,7 +367,6 @@ return [
     'legal.imprint'      => 'Imprint',
     'legal.privacy'      => 'Privacy',
 
-    'nav.project'        => 'About the project',
 
     'page.about'         => 'About this shelf',
     'page.imprint'       => 'Imprint',

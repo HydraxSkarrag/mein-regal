@@ -354,7 +354,7 @@ final class PageController
         $xml[] = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         $pages = [
             ['/', '1.0'],
-            ['/unread', '0.6'],
+            ['/?status=unread', '0.6'],
             // The three ways into the shelf that are not the shelf itself.
             // Without them a crawler reaches a book only through the front
             // page, which lists sixty of three thousand.

@@ -55,29 +55,55 @@ final class ShelfController
             'dir'      => $this->oneOf($request->query('dir'), ['asc', 'desc']),
         ];
 
-        $heading = $filters['author'] !== ''
-            ? $this->authorName($filters['author'])
-            : t('shelf.title');
-
-        return $this->renderShelf($request, $filters, $heading, 'shelf');
+        return $this->renderShelf($request, $filters, $this->heading($filters), $this->current($filters));
     }
 
-    /** The pile of unread books - its own view because it is looked at often. */
-    public function unread(Request $request): Response
+    /**
+     * What the page calls itself.
+     *
+     * It follows the filter rather than the route. "SuB" used to be the
+     * heading only at /unread, so the same 331 books were headed "Mein
+     * Regal" when the reader had clicked the chip instead - the same list,
+     * with two names, depending on which of two doors was used.
+     *
+     * @param array<string,mixed> $filters
+     */
+    private function heading(array $filters): string
     {
-        $filters = [
-            'search' => $request->query('q'),
-            'status' => 'unread',
-            'tag'    => $request->query('tag'),
-            'language' => $this->oneOf(
-                $request->query('language'),
-                array_keys($this->app->books->countBy($this->app->ownerId, 'language'))
-            ),
-            'sort'   => $this->oneOf($request->query('sort'), BookRepository::sorts(), 'recent'),
-            'dir'    => $this->oneOf($request->query('dir'), ['asc', 'desc']),
-        ];
+        if (($filters['author'] ?? '') !== '') {
+            return $this->authorName((string) $filters['author']);
+        }
+        $status = (string) ($filters['status'] ?? '');
+        if ($status === '') {
+            return t('shelf.title');
+        }
 
-        return $this->renderShelf($request, $filters, t('nav.unread'), 'unread');
+        // The pile has a name of its own in the navigation, and it is the
+        // name its readers use. The other three are just their status.
+        return $status === 'unread' ? t('nav.unread') : t('status.' . $status);
+    }
+
+    /** Which navigation entry is the one you are on. */
+    private function current(array $filters): string
+    {
+        return ($filters['status'] ?? '') === 'unread' ? 'unread' : 'shelf';
+    }
+
+    /**
+     * The pile of unread books, which used to be a route of its own.
+     *
+     * It was one page too many. The filter lived in the code rather than in
+     * the address, so every sort and facet link in the sidebar - all of which
+     * are built from the address - quietly dropped it: one click on "Titel"
+     * took 331 books to 3,042. Paging had already needed a special case to
+     * work around that, and the sidebar never got one.
+     *
+     * As a status filter it composes with everything else for free, and the
+     * pile keeps its name in the navigation and in the heading.
+     */
+    public function unread(): Response
+    {
+        return Response::redirect('/?status=unread', 301);
     }
 
     /** @param array<string,string> $filters */
@@ -113,7 +139,7 @@ final class ShelfController
          * The base path matters: the old link always pointed at "/", so
          * paging out of the unread pile quietly landed you in the whole
          * shelf. */
-        $base = $current === 'unread' ? '/unread' : '/';
+        $base = '/';
         $kept = array_filter($query, static fn ($v, string $k): bool => $k !== 'page' && $v !== '' && $v !== null, ARRAY_FILTER_USE_BOTH);
 
         $pageUrl = static function (int $number) use ($base, $kept): string {
@@ -158,7 +184,7 @@ final class ShelfController
             'content'   => $body,
             'title'     => $heading,
             'current'   => $current,
-            'canonical' => $this->app->url($current === 'unread' ? '/unread' : '/'),
+            'canonical' => $this->app->url('/'),
             'jsonLd'    => $this->collectionJsonLd($result['total']),
         ]));
     }
