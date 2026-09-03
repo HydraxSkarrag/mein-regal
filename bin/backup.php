@@ -175,10 +175,18 @@ function archiveCovers(string $directory, string $path): int
         if (!$file->isFile() || $file->getExtension() !== 'webp') {
             continue;
         }
-        // Skip the small copies: they are regenerated from the originals.
-        if (str_ends_with($file->getBasename('.webp'), '-klein')) {
-            continue;
-        }
+        /* The small copies go in too.
+         *
+         * They used to be skipped, on the grounds that they are regenerated
+         * from the originals. Nothing regenerates them: they are written
+         * once, by CoverStorage, at the moment a cover is stored, and there
+         * is no command that rebuilds them - nor could there be a useful
+         * one, since the server this restores onto has no shell to run it.
+         *
+         * So an archive without them restored a shelf whose every grid tile
+         * was a broken image, which is the one thing a backup exists to
+         * prevent. They are a tenth of the size of the originals; that is
+         * the whole cost of being able to trust the file. */
         $zip->addFile($file->getPathname(), substr($file->getPathname(), strlen($directory) + 1));
         $count++;
     }
