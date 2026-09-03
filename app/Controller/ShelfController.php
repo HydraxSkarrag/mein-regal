@@ -151,6 +151,10 @@ final class ShelfController
         $pages = max(1, (int) ceil($result['total'] / self::PER_PAGE));
 
         $body = $this->app->view->render('shelf.index', [
+            /* Not "this search found nothing" but "there is nothing yet".
+               Only asked when the page is empty, so a shelf with books on it
+               never pays for the question. */
+            'shelfIsEmpty'  => $books === [] && $this->app->books->countAll($this->app->ownerId) === 0,
             'heading'       => $heading,
             'books'         => $books,
             'total'         => $result['total'],

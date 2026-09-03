@@ -386,6 +386,15 @@ final class BookRepository
     }
 
     /** @return array{with: int, without: int} */
+    /** How many books there are at all, filters aside. */
+    public function countAll(int $ownerId): int
+    {
+        $statement = $this->pdo->prepare('SELECT COUNT(*) FROM books WHERE owner_id = ?');
+        $statement->execute([$ownerId]);
+
+        return (int) $statement->fetchColumn();
+    }
+
     public function countByIsbn(int $ownerId): array
     {
         $statement = $this->pdo->prepare(
