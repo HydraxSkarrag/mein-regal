@@ -64,13 +64,25 @@ jobs:
           echo "Target folder: ${{ github.event.inputs.server_dir }}"
 
       - name: Upload over FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           port: 21
+          # The whole FTP dialogue in the run log.
+          #
+          # The first attempt died with ECONNRESET on the data socket: the
+          # login worked and the state file was checked, and then the very
+          # first directory listing - the first thing that opens a second,
+          # encrypted connection - was reset. Without the dialogue that is
+          # three plausible causes and no way to choose between them; with
+          # it, the PASV reply says which.
+          #
+          # It prints no credentials. Turn it back to standard once the
+          # deployment runs.
+          log-level: verbose
           local-dir: ./
           server-dir: ${{ github.event.inputs.server_dir }}
           # No dangerous-clean-slate: nothing is deleted.
