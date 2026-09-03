@@ -172,7 +172,15 @@ declare(strict_types=1);
   </aside>
 
   <div>
-    <?php if ($books === []): ?>
+    <?php if ($books === [] && $shelfIsEmpty): ?>
+    <?php /* A new installation is not a search that failed. Telling somebody
+             with no books to try a different filter describes a situation
+             they are not in and hides the one thing they should do next. */ ?>
+    <p class="empty"><?= e(t('shelf.nothing.yet')) ?><br>
+      <span class="note"><?= $signedIn
+        ? t('shelf.nothing.yet.hint', ['scan' => '<a href="/scan">' . e(t('nav.scan')) . '</a>'])
+        : e(t('shelf.nothing.yet.visitor')) ?></span></p>
+    <?php elseif ($books === []): ?>
     <p class="empty"><?= e(t('shelf.empty')) ?><br><span class="note"><?= e(t('shelf.empty.hint')) ?></span></p>
     <?php else: ?>
     <ul class="shelf">
