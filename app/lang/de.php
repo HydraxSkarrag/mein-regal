@@ -367,7 +367,6 @@ return [
     'legal.imprint'      => 'Impressum',
     'legal.privacy'      => 'Datenschutz',
 
-    'nav.project'        => 'Über das Projekt',
 
     // The three prose pages. The key is the address, so the navigation, the
     // routes and the editor cannot drift apart.
