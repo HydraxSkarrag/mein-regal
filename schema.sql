@@ -1,4 +1,4 @@
--- Bücherregal - database schema for MySQL / MariaDB.
+-- Mein Regal - database schema for MySQL / MariaDB.
 -- Run once in the all-inkl KAS via phpMyAdmin. This file is NEVER deployed.
 -- For an EXISTING database run the dated files in migrations/ instead.
 --

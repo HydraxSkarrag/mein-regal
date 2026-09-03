@@ -20,9 +20,12 @@ on:
   workflow_dispatch:
     inputs:
       server_dir:
-        description: "Project folder on the server (NOT the document root, the level above it)"
+        description: "Project folder on the server, relative to where FTP logs in - NOT the document root, the level above it"
         required: true
-        default: "/regal/"
+        # No default on purpose. A filled-in one is a wrong answer that only
+        # has to be clicked past: the right value depends on the account, and
+        # deploying to a folder nobody meant scatters an application across
+        # somebody's web space quietly and successfully.
 
 jobs:
   deploy:
