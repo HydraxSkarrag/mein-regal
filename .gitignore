@@ -17,6 +17,12 @@ public/covers/*
 # ship in public/assets/, they belong to whoever made them, and a deploy must
 # never carry one installation's brand into another.
 public/assets/brand/
+# Including a zipped copy of it. One got committed by a careless `git add -A`
+# and sat in the document root, where .htaccess had no rule against .zip -
+# the brand files, downloadable, in a repository whose readme promises the
+# opposite. Packing them up to upload is the normal thing to do; doing it
+# inside public/ is what made it dangerous.
+*.zip
 
 # The library export itself has no place in the repository - not even a
 # private one. Test fixtures are small, synthetic and deliberately kept.
