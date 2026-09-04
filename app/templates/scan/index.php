@@ -20,6 +20,12 @@ declare(strict_types=1);
 <div class="scanner" id="scanner" data-step="choose">
   <h1><?= e(t('scan.title')) ?></h1>
 
+  <?php /* Above the steps, not after them. Anything said here used to land at
+           the very end of the page - which is to say against whichever button
+           happened to be last, "wird gesucht" and "steht jetzt im Regal"
+           alike. A message belongs where the reading starts. */ ?>
+  <div id="status" role="status" aria-live="polite"></div>
+
   <section data-when="choose">
     <div class="scan-modes">
       <button class="btn btn--primary btn--block" type="button" id="pick-camera">
@@ -75,7 +81,6 @@ declare(strict_types=1);
     <div id="result"></div>
   </section>
 
-  <div id="status" role="status" aria-live="polite"></div>
   <p class="note" id="counter" hidden></p>
 </div>
 
