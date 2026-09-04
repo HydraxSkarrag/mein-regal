@@ -32,13 +32,14 @@ final class Config
     {
         $path ??= getenv('REGAL_CONFIG') ?: PROJECT_ROOT . '/config.php';
         if (!is_file($path)) {
-            throw new RuntimeException(
-                'config.php is missing. Copy config.sample.php to config.php and fill it in.'
+            throw new StartupError(
+                'config.php was not found at ' . $path . ' - it belongs beside app/, '
+                . 'one level above the document root. Copy config.sample.php and fill it in.'
             );
         }
         $values = require $path;
         if (!is_array($values)) {
-            throw new RuntimeException('config.php must return an array.');
+            throw new StartupError('config.php does not return an array.');
         }
 
         return new self($values);

@@ -55,6 +55,21 @@ try {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo "Die Anwendung konnte nicht gestartet werden.\n";
+    /*
+     * And, where we know it is safe to, why.
+     *
+     * StartupError is the type for the handful of messages written to be
+     * read by whoever is setting this up: config.php in the wrong place, a
+     * database that will not answer. Anything else keeps its mouth shut,
+     * because a stack trace or a PDO message names paths, queries and users,
+     * and this page is public.
+     *
+     * The alternative was a control panel's log viewer, which on hosting
+     * without a shell is where an answer goes to be looked for.
+     */
+    if ($e instanceof App\Core\StartupError) {
+        echo "\n" . $e->getMessage() . "\n";
+    }
     exit;
 }
 

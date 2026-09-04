@@ -40,9 +40,21 @@ final class Database
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]);
         } catch (PDOException $e) {
-            // The message can contain credentials - never let it reach a page.
+            /* PDO puts the whole DSN in its message, user included, so that
+               goes to the log and nothing else. What the page gets is the
+               fact plus the driver's own code - "2002" is a host that does
+               not answer, "1045" a name or password, "1049" a database that
+               is not there - which is the difference between three guesses
+               and one. */
             error_log('Database connection failed: ' . $e->getMessage());
-            throw new RuntimeException('Database connection failed.', 0, $e);
+            $code = (string) $e->getCode();
+            throw new StartupError(
+                'The database refused the connection' . ($code !== '' ? ' (' . $code . ')' : '')
+                . '. Check db_host, db_name, db_user and db_pass in config.php - on shared '
+                . 'hosting the host is rarely "localhost".',
+                0,
+                $e
+            );
         }
 
         if (self::driver($pdo) === 'sqlite') {
