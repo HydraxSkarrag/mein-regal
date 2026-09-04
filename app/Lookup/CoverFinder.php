@@ -72,13 +72,47 @@ final class CoverFinder
     }
 
     /**
+     * The services that answer with a cover for an ISBN and nothing else -
+     * no metadata lookup, no key, no quota - in the order to ask them.
+     *
+     * MVB goes first for a German ISBN. It is keyed by ISBN like the others,
+     * so its picture belongs to the same edition, but it is the publisher's
+     * own file rather than a scan or a thumbnail - measured at 599 pixels
+     * tall where Google hands back 300 for the same book. For an ISBN from
+     * outside the German market it drops behind Open Library instead: the
+     * same measurement found it answering 2 times in 25 there, which is worth
+     * a last try and not a first one.
+     *
+     * Public because the scanner asks the same question while a book is still
+     * on screen and unsaved, and the order should not be decided twice.
+     *
+     * @return list<array{0: string, 1: string, 2: ?string}> url, source, attribution
+     */
+    public static function coverServices(string $isbn13): array
+    {
+        $mvb = [
+            MvbCoverLookup::coverUrl($isbn13),
+            CoverRepository::SOURCE_MVB,
+            MvbCoverLookup::ATTRIBUTION,
+        ];
+        $openLibrary = [
+            OpenLibraryLookup::coverUrl($isbn13),
+            CoverRepository::SOURCE_OPENLIBRARY,
+            'Cover: Open Library',
+        ];
+
+        return MvbCoverLookup::isLikelyFor($isbn13) ? [$mvb, $openLibrary] : [$openLibrary, $mvb];
+    }
+
+    /**
      * Where to look, in order.
      *
-     * The metadata sources are asked first because a cover they name belongs
-     * to the edition they described. Open Library's cover service comes after
-     * as a catch-all: it holds images for many books whose records never
-     * mention one, and the DNB - the best source for German titles - has no
-     * cover images at all.
+     * A cover named by a metadata source belongs to the edition that source
+     * described, which is worth something - so it sits behind whichever
+     * service is a first choice for this ISBN and in front of the last
+     * resorts. The DNB, the best source there is for German titles, names
+     * none: it holds no cover images at all, which is why the services above
+     * exist in the first place.
      *
      * @return array{0: list<array{0: string, 1: string, 2: ?string}>, 1: array<string, LookupUnavailable>}
      */
@@ -93,20 +127,21 @@ final class CoverFinder
             $found = $known;
         }
 
-        $candidates = [];
+        $services = self::coverServices($isbn13);
+
+        // Only a service that is a first choice for this ISBN goes ahead of
+        // the metadata source's own cover. The rest are the fallback.
+        $first = MvbCoverLookup::isLikelyFor($isbn13) ? [array_shift($services)] : [];
+
+        $metadata = [];
         if ($found !== null && $found->coverUrl !== null) {
-            $candidates[] = [
+            $metadata[] = [
                 $found->coverUrl,
                 $found->coverSource ?? CoverRepository::SOURCE_OPENLIBRARY,
                 $found->attribution,
             ];
         }
-        $candidates[] = [
-            OpenLibraryLookup::coverUrl($isbn13),
-            CoverRepository::SOURCE_OPENLIBRARY,
-            'Cover: Open Library',
-        ];
 
-        return [$candidates, $failures];
+        return [array_merge($first, $metadata, $services), $failures];
     }
 }

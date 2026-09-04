@@ -210,8 +210,9 @@ final class DefaultPages
 
             Die auf dieser Seite gezeigten Buchcover sind urheberrechtlich geschützt und
             gehören den jeweiligen Rechteinhabern. Gezeigt werden selbst aufgenommene
-            Fotografien der eigenen Exemplare sowie Coverabbildungen aus den öffentlichen
-            Verzeichnissen von Google Books und Open Library. Diese werden auf den eigenen
+            Fotografien der eigenen Exemplare sowie Coverabbildungen aus dem Verzeichnis
+            Lieferbarer Bücher (MVB) und aus den öffentlichen Verzeichnissen von Google
+            Books und Open Library. Diese werden auf den eigenen
             Server übernommen und von dort ausgeliefert, jeweils mit Angabe der Quelle;
             eingebunden von fremden Servern wird nichts. Rechteinhaber können die Entfernung
             einer einzelnen Abbildung unter der oben genannten Adresse verlangen. Die
@@ -319,9 +320,10 @@ final class DefaultPages
                 ## Abfragen bei Buchdatenbanken
 
                 Um ein neu erfasstes Buch zu ergänzen, fragt der Server - nicht der Browser
-                der Besucherin - bei der Deutschen Nationalbibliothek, bei Google Books und
-                bei der Open Library nach Titel, Verlag, Umfang und Cover. Übermittelt wird
-                dabei ausschließlich die ISBN des Buches.
+                der Besucherin - bei der Deutschen Nationalbibliothek, beim Coverdienst des
+                Verzeichnisses Lieferbarer Bücher (MVB), bei Google Books und bei der Open
+                Library nach Titel, Verlag, Umfang und Cover. Übermittelt wird dabei
+                ausschließlich die ISBN des Buches.
 
                 Diese Abfragen löst allein die Betreiberin aus, beim Erfassen oder in einem
                 nächtlichen Lauf. Sie finden nicht statt, wenn jemand diese Seite besucht,

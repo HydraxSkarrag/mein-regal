@@ -115,7 +115,7 @@ return [
     'scan.manual'        => 'Enter an ISBN by hand',
     'scan.manual.hint'   => '10 or 13 digits',
     'scan.lookup'        => 'Look up',
-    'scan.sources'      => 'Asking the German National Library, Google Books and Open Library in turn.',
+    'scan.sources'      => 'Asking the German National Library, the German books-in-print directory, Google Books and Open Library in turn.',
     'scan.searching'     => 'Looking it up …',
     'scan.found.via'     => 'Found via {source}',
     'scan.nothing'       => 'Nothing found for this ISBN. You can enter the book by hand.',
@@ -295,6 +295,7 @@ return [
     'cover.removed'              => 'Cover removed.',
     'cover.from.own'             => 'Your own photograph',
     'cover.from.vlbtix'          => 'From VLB-TIX',
+    'cover.from.mvb'             => 'From MVB (German books-in-print directory)',
     'cover.from.google'          => 'From Google Books',
     'cover.from.openlibrary'     => 'From Open Library',
     'scan.shutter'               => 'Take the picture',
@@ -308,7 +309,7 @@ return [
     'scan.nothing.short'       => 'Nothing found',
 
     'cover.search'             => 'Look for a cover online',
-    'cover.search.hint'        => 'Asks Open Library and Google Books for this ISBN. A cover that turns up is stored here, not embedded.',
+    'cover.search.hint'        => 'Asks the German books-in-print directory, Open Library and Google Books for this ISBN. A cover that turns up is stored here, not embedded.',
     'cover.search.found'       => 'Cover found and stored.',
     'cover.search.none'        => 'No cover was found for this ISBN.',
     'cover.search.quota'      => 'Google Books is used up for today. The other sources had no cover - worth trying again tomorrow.',
@@ -408,7 +409,7 @@ return [
                             . 'their way to the source and set up one of their own.',
     'project.how.heading' => 'What it does',
     'project.how.scan'   => 'Scan a barcode with the phone camera, in the browser, without an app.',
-    'project.how.sources' => 'Book data from the German National Library, Google Books and Open Library.',
+    'project.how.sources' => 'Book data from the German National Library, Google Books and Open Library, with covers from the German books-in-print directory.',
     'project.how.covers' => 'Covers are downloaded and served from your own server, never embedded from '
                             . 'someone else\'s - which is why the site needs no cookie banner.',
     'project.how.export' => 'Everything exports to CSV and JSON at any time, so the collection can '
