@@ -113,6 +113,7 @@ return [
     'scan.manual'        => 'Enter an ISBN by hand',
     'scan.manual.hint'   => '10 or 13 digits',
     'scan.lookup'        => 'Look up',
+    'scan.sources'      => 'Asking the German National Library, Google Books and Open Library in turn.',
     'scan.searching'     => 'Looking it up …',
     'scan.found.via'     => 'Found via {source}',
     'scan.nothing'       => 'Nothing found for this ISBN. You can enter the book by hand.',

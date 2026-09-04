@@ -84,6 +84,7 @@ declare(strict_types=1);
 <script type="application/json" id="scan-i18n">
 <?= json_for_script([
     'searching'   => t('scan.searching'),
+    'sources'     => t('scan.sources'),
     'detected'    => t('scan.detected'),
     'nothingShort'=> t('scan.nothing.short'),
     'save'        => t('scan.save'),

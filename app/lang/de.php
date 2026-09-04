@@ -113,6 +113,7 @@ return [
     'scan.manual'        => 'ISBN von Hand eingeben',
     'scan.manual.hint'   => '10 oder 13 Ziffern',
     'scan.lookup'        => 'Suchen',
+    'scan.sources'      => 'Gefragt werden nacheinander die Deutsche Nationalbibliothek, Google Books und Open Library.',
     'scan.searching'     => 'Wird gesucht …',
     'scan.found.via'     => 'Gefunden über {source}',
     'scan.nothing'       => 'Zu dieser ISBN wurde nichts gefunden. Du kannst das Buch von Hand erfassen.',
