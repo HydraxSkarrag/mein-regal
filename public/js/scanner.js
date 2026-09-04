@@ -55,7 +55,7 @@
      line after saving swept the shutter button away before it could be
      pressed. */
   var afterSaveBox = document.createElement('div');
-  statusBox.parentNode.insertBefore(afterSaveBox, statusBox.nextSibling);
+  shell.appendChild(afterSaveBox);
   var manualForm = document.getElementById('manual');
   var isbnInput = document.getElementById('isbn');
   var seriesToggle = document.getElementById('series');
@@ -475,8 +475,8 @@
     counter.hidden = false;
     counter.textContent = text.count.replace('{count}', String(savedCount));
 
-    say(reply.data.message, 'ok');
-    offerCoverPhoto(reply.data.id, reply.data.slug);
+    say('');
+    offerCoverPhoto(reply.data.id, reply.data.slug, reply.data.message);
     currentBook = null;
 
     /* Series mode: straight back to the camera. Cataloguing a shelf means
@@ -509,7 +509,20 @@
    *
    * Choosing a file stays available, and is the only route offered when the
    * camera is not running because the ISBN was typed by hand. */
-  function offerCoverPhoto(bookId, slug) {
+  function offerCoverPhoto(bookId, slug, said) {
+    afterSaveBox.innerHTML = '';
+
+    /* "Erdsee steht jetzt im Regal" belongs to the three buttons underneath
+       it, not to a status line at the other end of the screen. Together they
+       are one block about one book: what happened, and what can still be
+       done about it. */
+    if (said) {
+      var note = document.createElement('p');
+      note.className = 'after-save-said';
+      note.textContent = said;
+      afterSaveBox.appendChild(note);
+    }
+
     var wrapper = document.createElement('div');
     wrapper.className = 'scanner-actions';
 
@@ -520,7 +533,6 @@
       '</label>' +
       '<a class="btn" href="/book/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
 
-    afterSaveBox.innerHTML = '';
     afterSaveBox.appendChild(wrapper);
 
     var startShot = wrapper.querySelector('[data-start-shot]');

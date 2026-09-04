@@ -1540,3 +1540,27 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   border-color: var(--border);
 }
 .after-save--quiet .btn--primary { color: var(--accent); border-color: var(--accent); }
+
+/* What just happened, over the buttons about the book it happened to.
+   Together they are one block: "Erdsee steht jetzt im Regal" and the three
+   things still doable about Erdsee. */
+.after-save-said {
+  margin: 14px 0 8px;
+  font-weight: 600;
+  color: var(--ok);
+}
+.after-save--quiet .after-save-said {
+  margin: 12px 0 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Once a book has gone in, the aiming instructions have been read.
+ *
+ * They are two lines about holding the barcode up to the camera, which is
+ * worth saying to somebody who has not done it yet and is in the way of
+ * somebody on their third book - and those two lines were exactly what
+ * pushed the confirmation and its buttons off the bottom of the screen.
+ */
+.scanner:has(.after-save-said) .scanner-hint { display: none; }
+.scanner:has(.after-save-said) #counter { margin: 6px 0 0; }
