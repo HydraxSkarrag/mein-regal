@@ -1564,3 +1564,13 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
  */
 .scanner:has(.after-save-said) .scanner-hint { display: none; }
 .scanner:has(.after-save-said) #counter { margin: 6px 0 0; }
+
+/* Who else worked on the book, under what they did.
+ *
+ * Translators, illustrators and the voice on an audiobook used to stand in
+ * the byline with their role in brackets, which reads as though they wrote
+ * it. They are credited for a book, not its authors.
+ */
+.credits { list-style: none; margin: 0 0 18px; padding: 0; font-size: 0.9rem; }
+.credits li { margin-top: 2px; }
+.credits-role { color: var(--muted); }
