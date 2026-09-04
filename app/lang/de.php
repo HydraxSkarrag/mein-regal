@@ -47,6 +47,8 @@ return [
     'filter.rating'      => 'Bewertung',
     'filter.language'    => 'Sprache',
     'filter.sort'        => 'Sortierung',
+    'filter.mobile'      => 'Filter und Sortierung',
+    'filter.mobile.on'   => 'aktiv',
     'filter.reset'       => 'Filter zurücksetzen',
 
     'sort.by'            => 'Danach sortieren',

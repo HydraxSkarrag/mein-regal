@@ -47,6 +47,8 @@ return [
     'filter.rating'      => 'Rating',
     'filter.language'    => 'Language',
     'filter.sort'        => 'Sort by',
+    'filter.mobile'      => 'Filter and sorting',
+    'filter.mobile.on'   => 'on',
     'filter.reset'       => 'Clear filters',
 
     'sort.by'            => 'Sort by this',
