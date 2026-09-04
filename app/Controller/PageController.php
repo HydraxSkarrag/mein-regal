@@ -318,7 +318,6 @@ final class PageController
             'Disallow: /*?*dir=',
             'Disallow: /*?*page=',
             'Disallow: /*?*q=',
-            'Disallow: /*?*binding=',
             'Disallow: /*?*missing=',
             'Disallow: /*?*cover=',
             'Disallow: /*?*isbn=',

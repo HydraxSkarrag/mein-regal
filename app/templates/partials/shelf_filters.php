@@ -12,6 +12,22 @@
  * hidden one is out of the accessibility tree as well.
  */
 declare(strict_types=1);
+
+/* A facet that cannot divide the shelf is not a filter, it is a fact.
+ *
+ * "With cover 3.042 / without 0" is a heading, two rows and a click that
+ * changes nothing - and the two yes/no facets get there on their own as the
+ * shelf fills up: the covers arrive over a few nights, the last ISBN gets
+ * typed in one afternoon. So they show themselves only while both halves
+ * exist, and quietly stop taking up room once they do not.
+ *
+ * The exception is a filter somebody is standing in. Hiding the control that
+ * is currently narrowing the shelf would leave them looking at a short list
+ * with no way to see what did it.
+ */
+$splits = static function (array $counts, string $active): bool {
+    return ($counts['with'] > 0 && $counts['without'] > 0) || $active !== '';
+};
 ?>
   <h2><?= e(t('filter.sort')) ?></h2>
   <ul>
@@ -88,6 +104,7 @@ declare(strict_types=1);
       <span><?= e(t('filter.review.no')) ?></span><span class="n"><?= e($formatter->number($reviewCounts['without'])) ?></span></a></li>
   </ul>
 
+  <?php if ($splits($coverCounts, (string) ($filters['cover'] ?? ''))): ?>
   <h2><?= e(t('filter.cover')) ?></h2>
   <ul>
     <li><a href="<?= e($urlFor(['cover' => ($filters['cover'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
@@ -97,7 +114,9 @@ declare(strict_types=1);
            aria-current="<?= ($filters['cover'] ?? '') === 'no' ? 'true' : 'false' ?>">
       <span><?= e(t('filter.cover.no')) ?></span><span class="n"><?= e($formatter->number($coverCounts['without'])) ?></span></a></li>
   </ul>
+  <?php endif; ?>
 
+  <?php if ($splits($isbnCounts, (string) ($filters['isbn'] ?? ''))): ?>
   <h2><?= e(t('filter.isbn')) ?></h2>
   <ul>
     <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
@@ -107,16 +126,13 @@ declare(strict_types=1);
            aria-current="<?= ($filters['isbn'] ?? '') === 'no' ? 'true' : 'false' ?>">
       <span><?= e(t('filter.isbn.no')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['without'])) ?></span></a></li>
   </ul>
+  <?php endif; ?>
 
-  <h2><?= e(t('filter.binding')) ?></h2>
-  <ul>
-    <?php foreach ($bindingCounts as $binding => $count): ?>
-      <?php if ($binding === '') { continue; } ?>
-    <li><a href="<?= e($urlFor(['binding' => ($filters['binding'] ?? '') === $binding ? '' : $binding])) ?>"
-           aria-current="<?= ($filters['binding'] ?? '') === $binding ? 'true' : 'false' ?>">
-      <span><?= e(t('binding.' . $binding)) ?></span><span class="n"><?= e($formatter->number($count)) ?></span></a></li>
-    <?php endforeach; ?>
-  </ul>
+  <?php /* Binding used to have a facet here. Whether a book arrived as a
+           hardback, a paperback or a file is a fact about the object and not
+           about the reading, and nobody browsing a shelf goes looking for the
+           paperbacks. It is still on the book, still on the edit page and
+           still counted in the statistics - it just is not a way in. */ ?>
 
   <?php
     /* Language, capped like every other list here. The field is empty for

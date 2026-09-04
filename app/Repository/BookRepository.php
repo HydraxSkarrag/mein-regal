@@ -213,7 +213,7 @@ final class BookRepository
     /**
      * The shelf listing.
      *
-     * @param array{search?: string, status?: string, tag?: string, author?: string, binding?: string, rating?: int, language?: string, cover?: string, isbn?: string, missing?: string, sort?: string, dir?: string} $filters
+     * @param array{search?: string, status?: string, tag?: string, author?: string, rating?: int, language?: string, cover?: string, isbn?: string, missing?: string, sort?: string, dir?: string} $filters
      * @return array{rows: list<array<string,mixed>>, total: int}
      */
     /**
@@ -307,10 +307,6 @@ final class BookRepository
         if (($filters['status'] ?? '') !== '') {
             $conditions[] = 'b.reading_status = ?';
             $parameters[] = $filters['status'];
-        }
-        if (($filters['binding'] ?? '') !== '') {
-            $conditions[] = 'b.binding = ?';
-            $parameters[] = $filters['binding'];
         }
         if (($filters['language'] ?? '') !== '') {
             $conditions[] = 'b.language = ?';

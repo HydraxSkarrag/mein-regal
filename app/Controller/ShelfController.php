@@ -38,7 +38,6 @@ final class ShelfController
             'status'   => $this->oneOf($request->query('status'), ['read', 'unread', 'abandoned', 'reading']),
             'tag'      => $request->query('tag'),
             'author'   => $request->query('author'),
-            'binding'  => $this->oneOf($request->query('binding'), ['hardcover', 'paperback', 'ebook', 'audiobook']),
             /* Whatever the sources have actually put in the field, rather
                than a list of languages someone thought of: the DNB delivers
                gmh and zxx as readily as ger, and a filter that cannot name
@@ -169,7 +168,6 @@ final class ShelfController
             'languageCounts' => $this->app->books->countBy($this->app->ownerId, 'language'),
             'authorTotal'   => $this->app->authors->count($this->app->ownerId),
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
-            'bindingCounts' => $this->app->books->countBy($this->app->ownerId, 'binding'),
             'reviewCounts'  => $this->app->books->countByReview($this->app->ownerId),
             'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
             'isbnCounts'    => $this->app->books->countByIsbn($this->app->ownerId),
