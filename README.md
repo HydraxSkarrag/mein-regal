@@ -380,11 +380,13 @@ quota exhausted, API not enabled, or the key restricted to the wrong thing.
 
 ## Licence
 
-Source under MIT, and that includes the default logo — see [LICENSE](LICENSE).
-Excluded are the bundled fonts and the cover images, which belong to their
-rights holders, and the name and logo of Bücherhausen, which belong to the
-blog. The name "Mein Regal" is not reserved — it is an ordinary German phrase, and
-your shelf is named in `config.php` anyway.
+Source under MIT, and that includes the default logo — [LICENSE](LICENSE) holds
+the licence and nothing else, so that a machine reading it recognises what it is.
+What it does not cover is in [NOTICE.md](NOTICE.md): the bundled fonts and the
+cover images, which belong to their rights holders, and the name and logo of
+Bücherhausen, which belong to the blog. The name "Mein Regal" is not reserved —
+it is an ordinary German phrase, and your shelf is named in `config.php` anyway.
+The footer credit is asked for there too, as a request rather than a condition.
 
 Nobody else's brand ships in this repository either: an operator's own logo
 lives in `public/assets/brand/`, which is not in version control.
