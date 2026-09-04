@@ -164,6 +164,18 @@ php bin/setup.php --email=you@example.org --name="Your Name"
 Without `--password` one is generated and printed once. After that only its hash
 is stored.
 
+### When it does not start
+
+A page reading "Die Anwendung konnte nicht gestartet werden." means PHP ran
+and the application did not. It names the kind of failure, and writes the
+whole of it - message, file, line and underlying cause - to `boot-error.log`
+beside `config.php`, above the document root. Fetch that with the same FTP
+client that put `config.php` there.
+
+It writes its own file because `error_log()` cannot be relied on: on some
+hosts, all-inkl among them, PHP logs nowhere at all until `error_log` is
+given a path in `.user.ini`. There is a commented line there for it.
+
 ### 6. Import an existing collection
 
 Upload the CSV under *Admin → Data*. First **without** the "really write" box —

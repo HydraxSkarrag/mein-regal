@@ -9,6 +9,7 @@ use App\Core\Config;
 use App\Core\Cookies;
 use App\Core\Csp;
 use App\Core\Csrf;
+use App\Core\ErrorLog;
 use App\Core\Database;
 use App\Core\Formatter;
 use App\Core\HttpCookies;
@@ -231,7 +232,7 @@ final class Application
         try {
             $response = $this->router->dispatch($this->request) ?? $this->notFound();
         } catch (Throwable $e) {
-            error_log('[regal] ' . $e::class . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            ErrorLog::record($e, 'handling ' . $this->request->path);
             $response = $this->serverError();
         }
 

@@ -51,38 +51,7 @@ $request = Request::fromGlobals();
 try {
     $app = new Application(Config::load(), $request);
 } catch (Throwable $e) {
-    error_log('[regal] boot failed: ' . $e->getMessage());
-
-    /*
-     * And a copy where the operator can actually reach it.
-     *
-     * error_log() goes wherever the host has decided, which on shared
-     * hosting is a control panel somebody has to find. This writes the same
-     * thing next to config.php - above the document root, so it is not
-     * fetchable over HTTP, and reachable with the FTP client that put
-     * config.php there in the first place.
-     *
-     * Appending, but not without end: a site that is broken and busy would
-     * otherwise fill the disk with the same sentence. Past 64 KB it stops,
-     * by which point the first entry - the one that matters - is long
-     * written. Failing to write is silent on purpose; a logger that throws
-     * during error handling replaces a diagnosis with a blank page.
-     */
-    $trace = PROJECT_ROOT . '/boot-error.log';
-    if (!is_file($trace) || filesize($trace) < 65536) {
-        @file_put_contents(
-            $trace,
-            sprintf(
-                "[%s] %s\n  %s\n  at %s:%d\n",
-                date('c'),
-                $e::class,
-                $e->getMessage(),
-                $e->getFile(),
-                $e->getLine()
-            ),
-            FILE_APPEND
-        );
-    }
+    App\Core\ErrorLog::record($e, 'starting up');
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     echo "Die Anwendung konnte nicht gestartet werden.\n";
@@ -114,7 +83,7 @@ try {
          */
         echo "\n" . $e::class . "\n";
     }
-    echo "\nDer vollstaendige Grund steht in boot-error.log, neben config.php.\n";
+    echo "\nDer vollstaendige Grund steht in " . App\Core\ErrorLog::FILE . ", neben config.php.\n";
     exit;
 }
 
