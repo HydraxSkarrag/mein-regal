@@ -1,0 +1,46 @@
+name: Tests
+
+# The same two checks the deploy runs, but on every push and every pull
+# request rather than only at the moment of deploying.
+#
+# They already existed. They just sat inside a workflow_dispatch job, so they
+# ran once you had decided to put something on the server - which is late to
+# find out, and never at all for a branch you have not deployed. Since the
+# repository went public there is a second reason: somebody else's pull
+# request gets checked without anyone having to fetch it first.
+#
+# The steps stay in the deploy too. This is the check that tells you early;
+# that one is the gate that will not upload a broken file to the web space,
+# and a gate you can reach without passing this one is not a gate.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+
+      # A typo in a PHP file takes the site down on the server, and the only
+      # way back is a second deploy.
+      - name: Check the syntax of every PHP file
+        run: |
+          set -e
+          find app bin public tests -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l > /dev/null
+          echo "Syntax is fine."
+
+      - name: Tests
+        run: php tests/run.php
