@@ -63,65 +63,69 @@ jobs:
           esac
           echo "Target folder: ${{ github.event.inputs.server_dir }}"
 
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      # lftp rather than an FTP action, because the action could not open a
+      # data connection here at all. The server wants the data channel to
+      # resume the control channel's TLS session - the usual way an FTPS
+      # server checks the two belong together - and the library behind the
+      # action does not do that. lftp does. That is the whole reason.
+      #
+      # ssl:verify-certificate is off: the traffic stays encrypted, but
+      # nothing proves who is on the other end, because the hoster's FTP
+      # certificate does not match the name it is reached under. Worth
+      # writing down rather than pretending about.
+      #
+      # The password goes through the environment, not the command line, so
+      # it is not in the process list of a shared runner.
+      #
+      # The excludes are not the ones in .gitignore. lftp mirrors the file
+      # system, so an ignored file that happens to sit in the working tree
+      # goes up like any other - on a runner that is a fresh clone and the
+      # question never arises, but run from a machine it does. That is how
+      # public/assets/brand.zip, taken out of the repository for sitting in
+      # the document root, would have arrived in the document root.
+      #
+      # NOTE the missing --delete, which is deliberate and load-bearing. A
+      # mirror that removes whatever it does not have locally would take the
+      # covers, the configuration and the brand with it - all of which exist
+      # only on the server, and all of which are excluded from this upload
+      # precisely because they have to survive it. Deleting is what a static
+      # site wants and the opposite of what this one does. Stale files after
+      # a rename are the price, and a cheap one.
       - name: Upload over FTPS
-        # Talk TLS 1.2, not 1.3.
-        #
-        # The server wants the data connection to resume the TLS session of
-        # the control connection - the usual way an FTPS server makes sure
-        # the two belong together. Under TLS 1.2 that works by session id.
-        # Under 1.3 the session ticket only arrives after the handshake, so
-        # there is nothing to resume with, the server sees an unrelated
-        # session on the data channel and resets it. Which is exactly what
-        # the log shows: control socket TLSv1.3, every command answered,
-        # and ECONNRESET on the first data socket.
-        #
-        # Node 24 negotiates 1.3 by default, so it is capped here. The
-        # connection stays encrypted; 1.2 is not a downgrade to plaintext.
         env:
-          NODE_OPTIONS: --tls-max-v1.2
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          # The whole FTP dialogue in the run log.
-          #
-          # The first attempt died with ECONNRESET on the data socket: the
-          # login worked and the state file was checked, and then the very
-          # first directory listing - the first thing that opens a second,
-          # encrypted connection - was reset. Without the dialogue that is
-          # three plausible causes and no way to choose between them; with
-          # it, the PASV reply says which.
-          #
-          # It prints no credentials. Turn it back to standard once the
-          # deployment runs.
-          log-level: verbose
-          local-dir: ./
-          server-dir: ${{ github.event.inputs.server_dir }}
-          # No dangerous-clean-slate: nothing is deleted.
-          #
-          # Excluded is everything that is created on the server or has no
-          # business being there. public/covers/ is top of the list: those are
-          # the cover photographs, which exist only there and which no deploy
-          # may overwrite. public/assets/brand/ is the same case for the site's
-          # own logo and icons: they are not in the repository, and a deploy
-          # that carried them would put one installation's brand on another.
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
-            **/.claude/**
-            **/.DS_Store
-            **/config.php
-            **/config.php.bak
-            **/storage/**
-            **/public/covers/**
-            **/public/assets/brand/**
-            **/tests/**
-            **/router.dev.php
-            **/dev.sh
-            **/config.dev.php
-            **/*.csv
-            **/*.md
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          TARGET: ${{ github.event.inputs.server_dir }}
+        run: |
+          lftp -c "
+            set cmd:fail-exit true;
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ssl:verify-certificate no;
+            set ftp:passive-mode true;
+            set net:max-retries 3;
+            set net:timeout 20;
+            open -u '$FTP_USERNAME' --env-password '$FTP_SERVER';
+            mirror --reverse --verbose --parallel=1 \
+              --exclude '(^|/)\.git' \
+              --exclude '(^|/)\.github/' \
+              --exclude '(^|/)\.claude/' \
+              --exclude '(^|/)\.DS_Store$' \
+              --exclude '(^|/)config\.php$' \
+              --exclude '(^|/)config\.php\.bak$' \
+              --exclude '(^|/)config\.dev\.php$' \
+              --exclude '(^|/)storage/' \
+              --exclude '(^|/)public/covers/' \
+              --exclude '(^|/)public/assets/brand' \
+              --exclude '\.zip$' \
+              --exclude '(^|/)tests/' \
+              --exclude '(^|/)router\.dev\.php$' \
+              --exclude '(^|/)dev\.sh$' \
+              --exclude '\.csv$' \
+              --exclude '\.md$' \
+              ./ '$TARGET';
+          "
