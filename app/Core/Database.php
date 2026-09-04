@@ -45,13 +45,17 @@ final class Database
                fact plus the driver's own code - "2002" is a host that does
                not answer, "1045" a name or password, "1049" a database that
                is not there - which is the difference between three guesses
-               and one. */
+               and one. No advice about what the host "usually" is: it is
+               localhost on some hosts and never on others, and guessing at
+               that in a message is how somebody is sent to change the one
+               setting that was already right. */
             error_log('Database connection failed: ' . $e->getMessage());
             $code = (string) $e->getCode();
             throw new StartupError(
                 'The database refused the connection' . ($code !== '' ? ' (' . $code . ')' : '')
-                . '. Check db_host, db_name, db_user and db_pass in config.php - on shared '
-                . 'hosting the host is rarely "localhost".',
+                . '. Check db_host, db_name, db_user and db_pass in config.php. The number '
+                . 'is the driver\'s own: 2002 is a host that does not answer, 1045 a name '
+                . 'or password, 1049 a database that is not there.',
                 0,
                 $e
             );
