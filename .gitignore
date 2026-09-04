@@ -38,3 +38,7 @@ Thumbs.db
 *.log
 node_modules/
 vendor/
+
+# Written by the front controller when the application cannot start, next to
+# config.php so it can be fetched with an FTP client. Never committed.
+boot-error.log
