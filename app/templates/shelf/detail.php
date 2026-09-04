@@ -44,12 +44,27 @@ declare(strict_types=1);
     <p class="lede"><?= e($book['subtitle']) ?></p>
     <?php endif; ?>
 
-    <?php if ($contributors !== []): ?>
+    <?php if ($authors !== []): ?>
     <p class="byline">
-      <?php foreach ($contributors as $index => $person): ?>
-        <?= $index > 0 ? ' · ' : '' ?><a href="/?author=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a><?php if ($person['role'] !== 'author'): ?><span class="muted"> (<?= e(t('role.' . $person['role'])) ?>)</span><?php endif; ?>
+      <?php foreach ($authors as $index => $person): ?>
+        <?= $index > 0 ? ' · ' : '' ?><a href="/?author=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a>
       <?php endforeach; ?>
     </p>
+    <?php endif; ?>
+
+    <?php /* Everybody else, under what they did. In the byline they read as
+             co-authors, which is what a bracket after a name does. */ ?>
+    <?php if ($otherRoles !== []): ?>
+    <ul class="credits">
+      <?php foreach ($otherRoles as $role => $people): ?>
+      <li>
+        <span class="credits-role"><?= e(t('role.' . $role)) ?>:</span>
+        <?php foreach ($people as $index => $person): ?>
+          <?= $index > 0 ? ', ' : '' ?><a href="/?author=<?= e(rawurlencode($person['name'])) ?>"><?= e($person['name']) ?></a>
+        <?php endforeach; ?>
+      </li>
+      <?php endforeach; ?>
+    </ul>
     <?php endif; ?>
 
     <?php $stars = App\Core\Formatter::stars($book['rating']); ?>

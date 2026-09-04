@@ -370,15 +370,41 @@ final class ShelfController
         $contributors = $this->contributors([$bookId])[$bookId] ?? [];
         $cover = $this->app->covers->bestFor($bookId, $signedIn);
 
-        $authorLine = implode(', ', array_column(
-            array_filter($contributors, static fn (array $p): bool => $p['role'] === 'author'),
-            'name'
+        /* Authors, and then everybody else by what they did.
+         *
+         * They used to share one line, with the role in brackets after the
+         * name - which reads as though a translator wrote the book and
+         * happened to translate it too. A translator, an illustrator and the
+         * voice on an audiobook are credited for a book; they are not its
+         * authors, and a byline that says otherwise is wrong about the one
+         * thing a byline is for.
+         *
+         * A book with no author at all is a real thing - an anthology with an
+         * editor, a picture book credited to its illustrator - so in that
+         * case the others move up rather than leaving nobody named. */
+        $authors = array_values(array_filter(
+            $contributors,
+            static fn (array $p): bool => $p['role'] === 'author'
         ));
+        $others = [];
+        foreach ($contributors as $person) {
+            if ($person['role'] !== 'author') {
+                $others[$person['role']][] = $person;
+            }
+        }
+        if ($authors === [] && $others !== []) {
+            $authors = array_merge(...array_values($others));
+            $others = [];
+        }
+
+        $authorLine = implode(', ', array_column($authors, 'name'));
 
         $body = $this->app->view->render('shelf.detail', [
             'book'          => $book,
             'cover'         => $cover,
             'contributors'  => $contributors,
+            'authors'       => $authors,
+            'otherRoles'    => $others,
             'authorLine'    => $authorLine,
             'tags'          => $this->tagsFor($bookId),
             'isbnFormatted' => $book['isbn13'] !== null ? Isbn::format((string) $book['isbn13']) : '',

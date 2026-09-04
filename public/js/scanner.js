@@ -572,7 +572,7 @@
     afterSaveBox.appendChild(actions);
 
     actions.querySelector('[data-shoot]').addEventListener('click', function () {
-      var shot = grabFullFrame();
+      var shot = grabVisibleFrame();
       if (shot) { reviewShot(bookId, slug, shot); }
     });
     actions.querySelector('[data-cancel]').addEventListener('click', function () {
@@ -638,6 +638,21 @@
 
     hint.textContent = text.aim;
     afterSaveBox.innerHTML = '';
+    frame.classList.remove('scanner-frame--portrait');
+
+    /* And straight back to reading barcodes, if that is what we were doing.
+       A cover is part of putting one book away, not the end of the run - the
+       series used to stop here, on a portrait viewfinder that was no longer
+       looking for anything. */
+    if (seriesToggle.checked && stream) {
+      lastCode = '';
+      step('camera');
+      afterSaveBox.classList.add('after-save--quiet');
+      if (scanning) { tick(); }
+    } else {
+      afterSaveBox.classList.remove('after-save--quiet');
+      step('result');
+    }
 
     var done = document.createElement('div');
     done.className = 'scanner-actions';
@@ -659,12 +674,39 @@
 
   /* The whole frame this time, not the barcode band: a cover fills the
      picture, so cropping would cut it in half. */
-  function grabFullFrame() {
+  /* What the viewfinder showed, not what the camera saw.
+   *
+   * The frame displays the stream with object-fit: cover, so a portrait box
+   * over a landscape camera shows a centre strip and hides the rest. Grabbing
+   * the whole frame then handed back a wide photograph of a room with a book
+   * somewhere in it - the careful framing threw away and the reviewing step
+   * reduced to theatre, since what was approved is not what was kept.
+   *
+   * So the same crop is computed here: cover means the source is scaled until
+   * it fills the box, and what is visible is the middle of whichever
+   * dimension had to overflow.
+   */
+  function grabVisibleFrame() {
     if (!video.videoWidth) { return null; }
+
+    var vw = video.videoWidth;
+    var vh = video.videoHeight;
+    var box = frame.clientHeight > 0 ? frame.clientWidth / frame.clientHeight : vw / vh;
+
+    var sw = vw;
+    var sh = vh;
+    if (vw / vh > box) {
+      sw = vh * box;          // camera wider than the box: sides are hidden
+    } else {
+      sh = vw / box;          // taller than the box: top and bottom are
+    }
+    var sx = (vw - sw) / 2;
+    var sy = (vh - sh) / 2;
+
     var shot = document.createElement('canvas');
-    shot.width = video.videoWidth;
-    shot.height = video.videoHeight;
-    shot.getContext('2d').drawImage(video, 0, 0);
+    shot.width = Math.round(sw);
+    shot.height = Math.round(sh);
+    shot.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, shot.width, shot.height);
 
     return shot;
   }
