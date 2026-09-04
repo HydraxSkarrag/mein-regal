@@ -19,8 +19,31 @@
 
   var frame = document.getElementById('frame');
   var video = document.getElementById('video');
-  var startButton = document.getElementById('start');
+  var shell = document.getElementById('scanner');
+  var pickCamera = document.getElementById('pick-camera');
+  var pickManual = document.getElementById('pick-manual');
+  var backButton = document.getElementById('manual-back');
   var stopButton = document.getElementById('stop');
+
+  /* Which of the screens is on show.
+   *
+   * One at a time, so the found book, the viewfinder and the shutter button
+   * are each at the top rather than stacked under one another - on a phone
+   * that is the difference between reading the answer and scrolling for it.
+   */
+  function step(name) {
+    shell.dataset.step = name;
+    if (name !== 'result' && name !== 'photo') {
+      resultBox.innerHTML = '';
+    }
+    /* Hidden video elements are paused by some browsers, and the stream
+       itself stays live the whole time - only the decode loop stops. So on
+       the way back in, ask it to play again rather than assume. */
+    if (name === 'camera' && video.srcObject) {
+      var resumed = video.play();
+      if (resumed && resumed.catch) { resumed.catch(function () {}); }
+    }
+  }
   var hint = document.getElementById('hint');
   var reticle = document.getElementById('reticle');
   var overlay = document.getElementById('overlay');
@@ -119,8 +142,7 @@
     await video.play();
 
     frame.hidden = false;
-    startButton.hidden = true;
-    stopButton.hidden = false;
+    step('camera');
     hint.textContent = text.aim;
 
     scanning = true;
@@ -139,8 +161,7 @@
     }
     video.srcObject = null;
     frame.hidden = true;
-    startButton.hidden = false;
-    stopButton.hidden = true;
+    step('choose');
   }
 
   async function makeDetector() {
@@ -315,7 +336,7 @@
         afterSaveBox.innerHTML = '';
         var row = document.createElement('div');
         row.className = 'scanner-actions';
-        row.innerHTML = '<a class="btn" style="flex:1" href="/book/' + esc(known.slug) + '">' +
+        row.innerHTML = '<a class="btn btn--grow" href="/book/' + esc(known.slug) + '">' +
           esc(known.title || text.openBook) + '</a>';
         afterSaveBox.appendChild(row);
       }
@@ -342,11 +363,11 @@
 
     var cover = book.cover_url
       ? '<div class="cover"><img src="' + esc(book.cover_url) + '" alt=""></div>'
-      : '<div class="cover cover--placeholder" style="background:#3b4a63"><span class="ph-title">'
+      : '<div class="cover cover--placeholder ph-5"><span class="ph-title">'
         + esc(book.title) + '</span></div>';
 
     resultBox.innerHTML =
-      '<div class="card" style="margin-top:14px">' +
+      '<div class="card result-card">' +
         '<p class="result-source">' + esc(book.source_label || '') + ' · ' + esc(book.isbn_formatted || '') + '</p>' +
         '<div class="result">' + cover +
           '<div>' +
@@ -355,6 +376,15 @@
             (meta ? '<p class="result-meta">' + esc(meta) + '</p>' : '') +
           '</div>' +
         '</div>' +
+        /* The subjects the source came back with, before anything is saved.
+           A classification code or a shop category is easiest to catch here,
+           while the book is still on the screen and nothing has been
+           written - afterwards it is a trip through the tag administration. */
+        ((book.tags || []).length
+          ? '<ul class="result-tags">' + (book.tags || []).map(function (tag) {
+              return '<li>' + esc(tag) + '</li>';
+            }).join('') + '</ul>'
+          : '') +
         '<div class="scanner-actions">' +
           '<button class="btn btn--primary" type="button" id="save">' + esc(text.save) + '</button>' +
           '<button class="btn" type="button" id="skip">' + esc(text.skip) + '</button>' +
@@ -362,6 +392,7 @@
       '</div>';
 
     resultBox.hidden = false;
+    step('result');
     document.getElementById('save').addEventListener('click', save);
     document.getElementById('skip').addEventListener('click', dismiss);
   }
@@ -372,6 +403,7 @@
     lastCode = '';
     resultBox.hidden = true;
     say('');
+    step(scanning ? 'camera' : 'choose');
     if (scanning) { tick(); }
   }
 
@@ -454,8 +486,8 @@
     wrapper.className = 'scanner-actions';
 
     wrapper.innerHTML =
-      (stream ? '<button class="btn btn--primary" type="button" data-start-shot style="flex:1">' + esc(text.shoot) + '</button>' : '') +
-      '<label class="btn"' + (stream ? '' : ' style="flex:1"') + '>' + esc(text.photo) +
+      (stream ? '<button class="btn btn--primary btn--grow" type="button" data-start-shot>' + esc(text.shoot) + '</button>' : '') +
+      '<label class="btn' + (stream ? '' : ' btn--grow') + '">' + esc(text.photo) +
         '<input type="file" accept="image/*" capture="environment" hidden>' +
       '</label>' +
       '<a class="btn" href="/book/' + esc(slug) + '">' + esc(text.openBook) + '</a>';
@@ -478,6 +510,11 @@
      do well against a hidden viewfinder. */
   function beginCoverShot(bookId, slug) {
     resultBox.hidden = true;
+    /* Portrait, because a book is. The same frame reads the barcode, where
+       wide is right; framing a cover in it means either a lot of table or a
+       cover with its head cut off. */
+    frame.classList.add('scanner-frame--portrait');
+    step('photo');
     say('');
     overlaySay('');
     clearReticle();
@@ -487,7 +524,7 @@
     var actions = document.createElement('div');
     actions.className = 'scanner-actions';
     actions.innerHTML =
-      '<button class="btn btn--primary" type="button" data-shoot style="flex:1">' + esc(text.shutter) + '</button>' +
+      '<button class="btn btn--primary btn--grow" type="button" data-shoot>' + esc(text.shutter) + '</button>' +
       '<button class="btn" type="button" data-cancel>' + esc(text.cancel) + '</button>';
     afterSaveBox.appendChild(actions);
 
@@ -497,6 +534,8 @@
     });
     actions.querySelector('[data-cancel]').addEventListener('click', function () {
       hint.textContent = text.aim;
+      frame.classList.remove('scanner-frame--portrait');
+      step('result');
       offerCoverPhoto(bookId, slug);
     });
   }
@@ -516,7 +555,7 @@
     var actions = document.createElement('div');
     actions.className = 'scanner-actions';
     actions.innerHTML =
-      '<button class="btn btn--primary" type="button" data-keep style="flex:1">' + esc(text.keepShot) + '</button>' +
+      '<button class="btn btn--primary btn--grow" type="button" data-keep>' + esc(text.keepShot) + '</button>' +
       '<button class="btn" type="button" data-retake>' + esc(text.retake) + '</button>';
     review.appendChild(actions);
     afterSaveBox.appendChild(review);
@@ -525,6 +564,7 @@
       beginCoverShot(bookId, slug);
     });
     actions.querySelector('[data-keep]').addEventListener('click', function () {
+      frame.classList.remove('scanner-frame--portrait');
       var keep = actions.querySelector('[data-keep]');
       keep.disabled = true;
       shot.toBlob(function (blob) {
@@ -588,7 +628,12 @@
 
   // ----------------------------------------------------------------- wiring
 
-  startButton.addEventListener('click', startCamera);
+  pickCamera.addEventListener('click', startCamera);
+  pickManual.addEventListener('click', function () {
+    step('manual');
+    document.getElementById('isbn').focus();
+  });
+  backButton.addEventListener('click', function () { step('choose'); });
   stopButton.addEventListener('click', stopCamera);
 
   /* Whether new books count as read is remembered.
