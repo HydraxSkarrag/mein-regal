@@ -108,3 +108,79 @@ Assert::same('the first cover stands', $merged->coverUrl, 'https://covers.openli
 Assert::same('with its own source', $merged->coverSource, 'openlibrary');
 Assert::same('and its own credit', $merged->attribution, 'Cover: Open Library');
 Assert::same('while a real gap is still filled', $merged->pageCount, 200);
+
+Assert::group('LookupChain: a cover already in hand stops the hunt');
+
+/* This one condition was the whole of Google's daily thousand.
+ *
+ * A German record comes from the DNB, the DNB holds no cover images at all,
+ * so every German book was incomplete on that single point and every German
+ * book cost a Google query looking for a picture Google usually did not have
+ * either. The run of 4 September stopped on the quota after 837 books.
+ *
+ * The free cover services answer by ISBN alone. Once one of them has
+ * delivered, a missing coverUrl is no longer a reason to ask anybody.
+ */
+$dnbComplete = new BookData(
+    source: 'dnb', isbn13: $german, title: 'Milla und das erfundene Glück',
+    authors: [['name' => 'Rüdiger Bertram', 'role' => 'author']],
+    publisher: 'Ravensburger Buchverlag', publishedYear: 2017, pageCount: 189,
+    language: 'ger', binding: 'hardcover', price: 12.99
+);
+
+$dnb = new FakeSource('dnb', [$german => $dnbComplete]);
+$google = new FakeSource('google', [$german => $googleAnswer]);
+$chain = new LookupChain($dnb, $google, new FakeSource('openlibrary', []));
+
+$chain->find($german);
+Assert::same('without a cover the chain carries on to Google', $google->calls, 1);
+
+$google->calls = 0;
+$outcome = $chain->find($german, true, true);
+Assert::same('with one in hand it stops at the DNB', $google->calls, 0);
+Assert::same('and the record is the DNB\'s, complete', $outcome['result']->pageCount, 189);
+Assert::same('Google was never even tried', $outcome['tried'], ['dnb']);
+
+/* The flag says "a cover exists", not "stop early". A record that is genuinely
+ * short of something a lookup can fill still costs the query it always did -
+ * that is the query being saved for, not saved from. */
+$dnbThin = new BookData(
+    source: 'dnb', isbn13: $german, title: 'Milla und das erfundene Glück',
+    authors: [['name' => 'Rüdiger Bertram', 'role' => 'author']],
+    publishedYear: 2017
+);
+$google->calls = 0;
+$thin = new LookupChain(new FakeSource('dnb', [$german => $dnbThin]), $google, new FakeSource('openlibrary', []));
+$thin->find($german, true, true);
+Assert::same('a missing page count still sends the chain onwards', $google->calls, 1);
+
+Assert::group('LookupChain: a source that is out for today is set aside');
+
+/* Running out of Google used to end the whole nightly run. That was right
+ * while every cover came through the metadata chain and wrong the moment the
+ * free cover services existed: on 5 September, 78% of the books still without
+ * a cover had one waiting at MVB, and none of them needed Google to get it.
+ *
+ * Retiring the source has to be distinguishable from asking it, though. A
+ * source that was never put the question contributes no failure - and an
+ * empty failure list is what the nightly job reads as "every source answered,
+ * and none of them has this book", which locks a book out for thirty days.
+ */
+$google = new FakeSource('google', [$german => $googleAnswer]);
+$chain = new LookupChain(new FakeSource('dnb', []), $google, new FakeSource('openlibrary', []));
+
+Assert::same('to begin with it is asked', $chain->orderFor($german), ['dnb', 'google', 'openlibrary']);
+
+$chain->retire('google');
+
+Assert::same('once retired it is out of the order', $chain->orderFor($german), ['dnb', 'openlibrary']);
+
+$outcome = $chain->find($german);
+Assert::same('and is not called at all', $google->calls, 0);
+Assert::same('nor listed among those tried', $outcome['tried'], ['dnb', 'openlibrary']);
+Assert::same('the book is simply not found', $outcome['result'], null);
+
+/* The trap, stated: this looks exactly like "everyone answered and nobody has
+ * it". Only the caller knows it retired something, which is why bin/enrich.php
+ * keeps its own note and refuses to cache a miss while one is set aside. */
+Assert::same('a retired source leaves no failure behind', $outcome['failures'], []);

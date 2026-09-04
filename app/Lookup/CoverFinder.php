@@ -33,11 +33,62 @@ final class CoverFinder
      */
     public function findFor(int $bookId, string $isbn13, ?BookData $known = null): array
     {
+        [$candidates, $failures] = $this->candidates($isbn13, $known);
+
+        return $this->firstOf($bookId, $isbn13, $candidates, $failures);
+    }
+
+    /**
+     * Only the services that answer by ISBN alone - no metadata lookup.
+     *
+     * Split out because asking these first is what stops Google's daily
+     * thousand being spent on covers. The chain keeps going while a record is
+     * incomplete, and "incomplete" counts a missing cover - so for a German
+     * book, whose record comes from the DNB and whose cover never does, every
+     * single one cost a Google query to look for a picture Google usually did
+     * not have either. Ask the free services first and that query is only
+     * spent when it is metadata that is actually missing.
+     *
+     * @return array{stored: bool, source: ?string, path: ?string, failures: array<string, LookupUnavailable>}
+     */
+    public function fromServices(int $bookId, string $isbn13): array
+    {
+        return $this->firstOf($bookId, $isbn13, self::coverServices($isbn13), []);
+    }
+
+    /**
+     * The cover a metadata source named, and nothing else.
+     *
+     * The other half of the split: what is left to try once the services have
+     * been asked and had nothing.
+     *
+     * @return array{stored: bool, source: ?string, path: ?string, failures: array<string, LookupUnavailable>}
+     */
+    public function fromMetadata(int $bookId, string $isbn13, ?BookData $found): array
+    {
+        if ($found === null || $found->coverUrl === null) {
+            return ['stored' => false, 'source' => null, 'path' => null, 'failures' => []];
+        }
+
+        return $this->firstOf($bookId, $isbn13, [[
+            $found->coverUrl,
+            $found->coverSource ?? CoverRepository::SOURCE_OPENLIBRARY,
+            $found->attribution,
+        ]], []);
+    }
+
+    /**
+     * Take the first candidate that hands back a picture, and keep it.
+     *
+     * @param  list<array{0: string, 1: string, 2: ?string}> $candidates
+     * @param  array<string, LookupUnavailable>              $failures
+     * @return array{stored: bool, source: ?string, path: ?string, failures: array<string, LookupUnavailable>}
+     */
+    private function firstOf(int $bookId, string $isbn13, array $candidates, array $failures): array
+    {
         // A cover thrown out by hand stays out. Only that source is blocked,
         // so the book still gets a chance at a right image from another one.
         $rejected = $this->covers->rejectedSources($bookId);
-
-        [$candidates, $failures] = $this->candidates($isbn13, $known);
 
         foreach ($candidates as [$url, $source, $attribution]) {
             if (in_array($source, $rejected, true)) {

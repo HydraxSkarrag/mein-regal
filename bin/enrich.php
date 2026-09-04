@@ -174,6 +174,9 @@ function enrich(
         'looked_up' => 0, 'covers' => 0, 'metadata' => 0, 'misses' => 0,
         'unavailable' => 0, 'stopped_early' => false, 'stopped_quota' => null,
     ];
+
+    /** @var array<string, true> sources that ran out today and were put aside */
+    $retired = [];
     $deadline = $budgetSeconds > 0 ? microtime(true) + $budgetSeconds : null;
 
     foreach ($books as $book) {
@@ -191,18 +194,48 @@ function enrich(
         $isbn = (string) $book['isbn13'];
         $stats['looked_up']++;
 
-        $outcome = $chain->find($isbn);
+        /* The free cover services before the metadata chain, not after it.
+         *
+         * They answer by ISBN alone - no key, no quota, one request - and the
+         * chain keeps asking sources while a record is incomplete, which
+         * counts a missing cover. A German record comes from the DNB and the
+         * DNB has no cover images, so every German book was incomplete on
+         * that one point and every German book spent one of Google's thousand
+         * daily queries hunting a picture Google usually did not have either.
+         * That is what stopped the run of 4 September after 837 books.
+         *
+         * Asked in this order, the query is spent only when it is metadata
+         * that is genuinely missing. */
+        $hasCover = $covers->bestFor((int) $book['id'], true) !== null;
+        $service = $hasCover ? null : $finder->fromServices((int) $book['id'], $isbn);
+        $coverInHand = $hasCover || ($service['stored'] ?? false);
+
+        $outcome = $chain->find($isbn, true, $coverInHand);
         $found = $outcome['result'];
         $failures = $outcome['failures'];
 
-        /* Out of quota is the one failure that waiting cannot fix. Stop the
-         * run rather than spend the rest of it asking sources that are no
-         * longer answering - and stop before recording anything about this
-         * book, which was never actually looked at. */
-        $quota = LookupChain::quotaExhausted($failures);
-        if ($quota !== null) {
-            $stats['stopped_quota'] = $quota->getMessage();
-            break;
+        /* Out of quota is the one failure that waiting cannot fix - but it is
+         * a fact about one source, and it used to end the whole run.
+         *
+         * That made sense while every cover came through the metadata chain.
+         * It does not now: the free services answer by ISBN alone and share
+         * nobody's quota, and on 5 September 78% of the books still without a
+         * cover had one waiting at MVB. Ending the run over Google would have
+         * left all of them blank for the sake of a source that was not going
+         * to supply them anyway.
+         *
+         * So the source is retired for the rest of the run and the work goes
+         * on without it. Retired is not the same as asked: a source that was
+         * never put the question contributes no failure, and $retired below
+         * keeps that from being written down as "nowhere has this book". */
+        $quotaSource = LookupChain::quotaExhaustedSource($failures);
+        if ($quotaSource !== null) {
+            $stats['stopped_quota'] = LookupChain::quotaExhausted($failures)?->getMessage();
+            $retired[$quotaSource] = true;
+            $chain->retire($quotaSource);
+            if ($verbose) {
+                printf("  %-14s %-44s %s\n", $isbn, '', $quotaSource . ' is out for today - carrying on without it');
+            }
         }
 
         /* Record the attempt, so a book with no record anywhere is not asked
@@ -210,7 +243,7 @@ function enrich(
          * answered. A miss caused by a source that was down is not a fact
          * about the book, and writing it down here is what used to lock the
          * book out for thirty days over a hiccup that lasted two seconds. */
-        if ($found !== null || $failures === []) {
+        if ($found !== null || ($failures === [] && $retired === [])) {
             $remember = $pdo->prepare(
                 'INSERT INTO isbn_cache (isbn, source, http_status, found, payload)
                  VALUES (?, ?, ?, ?, ?)'
@@ -257,9 +290,13 @@ function enrich(
             $stats['metadata']++;
         }
 
-        // One place decides where a cover may come from and what happens
-        // to it - the same code the scanner and the edit page use.
-        if ($finder->findFor((int) $book['id'], $isbn, $found)['stored']) {
+        /* The other half of the same decision. The services have already been
+         * asked above, so all that is left to try is the picture a metadata
+         * source named - and asking the services a second time here would be
+         * two more 404s per book for nothing. */
+        if ($service !== null && $service['stored']) {
+            $stats['covers']++;
+        } elseif (!$hasCover && $finder->fromMetadata((int) $book['id'], $isbn, $found)['stored']) {
             $stats['covers']++;
         }
 
@@ -342,8 +379,12 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
     }
 
     if ($stats['stopped_quota'] !== null) {
-        echo "\nStopped: " . $stats['stopped_quota'] . "\n";
-        echo "Nothing was recorded for the book it stopped on. Run again tomorrow.\n";
+        // Not "stopped" any more: the run carried on without that source, and
+        // the covers it could not have supplied were fetched anyway. What is
+        // left for tomorrow is the metadata behind it.
+        echo "\nOut of quota: " . $stats['stopped_quota'] . "\n";
+        echo "That source was set aside and the rest of the run went on without it.\n";
+        echo "Nothing was written down as missing on its behalf. Run again tomorrow for the rest.\n";
     } elseif ($stats['stopped_early']) {
         echo "\nStopped: time budget reached. The next run continues where this one left off.\n";
     }

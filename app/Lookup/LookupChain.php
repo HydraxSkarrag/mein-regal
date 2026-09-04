@@ -48,10 +48,12 @@ final class LookupChain
     }
 
     /**
-     * @param  bool $fillGaps keep asking after a hit, to complete the record
+     * @param  bool $fillGaps    keep asking after a hit, to complete the record
+     * @param  bool $coverInHand a cover has already been found elsewhere, so a
+     *                           missing one is no longer a reason to keep asking
      * @return array{result: ?BookData, tried: list<string>, failures: array<string, LookupUnavailable>}
      */
-    public function find(string $isbn13, bool $fillGaps = true): array
+    public function find(string $isbn13, bool $fillGaps = true, bool $coverInHand = false): array
     {
         $tried = [];
         $failures = [];
@@ -59,7 +61,7 @@ final class LookupChain
 
         foreach ($this->orderFor($isbn13) as $name) {
             // Stop early once nothing worth filling is left.
-            if ($result !== null && (!$fillGaps || $this->isComplete($result))) {
+            if ($result !== null && (!$fillGaps || $this->isComplete($result, $coverInHand))) {
                 break;
             }
 
@@ -129,16 +131,54 @@ final class LookupChain
         return null;
     }
 
+    /** Which of them said it, so the caller can stop asking that one. */
+    public static function quotaExhaustedSource(array $failures): ?string
+    {
+        foreach ($failures as $name => $failure) {
+            if ($failure->quotaExhausted) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
     /**
-     * "Complete enough to stop asking". A cover counts, because it is the one
-     * field the best German source structurally cannot provide.
+     * Stop asking one source for the rest of this run.
+     *
+     * For the source that has run out until tomorrow. Taking it out is
+     * honest in a way that asking it eight hundred more times is not, and it
+     * keeps its "no" from being mistaken for the book's - a source that was
+     * never asked contributes no failure, so nothing downstream records a
+     * miss it did not observe.
      */
-    private function isComplete(BookData $data): bool
+    public function retire(string $name): void
+    {
+        unset($this->sources[$name]);
+    }
+
+    /**
+     * Enough that there is nothing left worth another source's time.
+     *
+     * A missing cover counts - a record without a picture is not finished,
+     * and for a long time asking the next source was the only way to get one.
+     * It stops counting the moment the caller says a cover is already in
+     * hand, which is what the free cover services are for: they answer by
+     * ISBN alone and cost nothing, so once one of them has delivered there is
+     * no reason left to spend a metadata query looking for a picture.
+     *
+     * That single condition was the whole of Google's daily thousand. Every
+     * German book has its record from the DNB, the DNB holds no cover images
+     * at all, so every German book was incomplete on this one point and every
+     * German book cost a query - usually to be handed a 300 pixel thumbnail,
+     * often to be handed nothing.
+     */
+    private function isComplete(BookData $data, bool $coverInHand = false): bool
     {
         return $data->title !== null
             && $data->authors !== []
             && $data->publishedYear !== null
             && $data->pageCount !== null
-            && $data->coverUrl !== null;
+            && ($coverInHand || $data->coverUrl !== null);
     }
 }
