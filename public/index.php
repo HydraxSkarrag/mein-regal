@@ -69,6 +69,20 @@ try {
      */
     if ($e instanceof App\Core\StartupError) {
         echo "\n" . $e->getMessage() . "\n";
+    } else {
+        /*
+         * Not one of ours, so the message stays in the log - but the type
+         * does not give anything away and narrows it to one line. "Error"
+         * is a class that could not be loaded, so a file did not arrive;
+         * "PDOException" is the database answering badly; anything else is
+         * itself the answer to "where do I even look".
+         *
+         * Without this the page says the same sentence for every possible
+         * cause, which is how a deployment ends up being diagnosed by
+         * changing one thing at a time.
+         */
+        echo "\n" . $e::class . "\n";
+        echo "Der Grund steht im Fehlerprotokoll der Domain, als \"[regal] boot failed\".\n";
     }
     exit;
 }
