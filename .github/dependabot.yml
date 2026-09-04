@@ -1,0 +1,17 @@
+# The project has no dependencies. The workflow that deploys it does.
+#
+# No Composer, no npm, no build step - that is the point of it, and it is why
+# there is nothing here for those ecosystems to watch. But the deployment runs
+# actions/checkout and setup-php, and a pinned major version stops moving the
+# moment nobody looks at it. This is the one place a version can go stale
+# without anyone noticing, so it is the one place worth watching.
+#
+# Monthly, because two actions do not need a weekly pull request.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "Actions:"
