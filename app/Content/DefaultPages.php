@@ -50,6 +50,9 @@ final class DefaultPages
     /** Likewise for the cookie list, which is built from list items. */
     private const HOLD_COOKIES = '{{cookies}}';
 
+    /** The supervisory authority, which follows from where the operator is. */
+    private const HOLD_AUTHORITY = '{{authority}}';
+
     /**
      * @return array<string, array{title: string, body: string}>
      */
@@ -71,8 +74,12 @@ final class DefaultPages
             'privacy' => [
                 'title' => 'Datenschutzerklärung',
                 'body'  => str_replace(
-                    [self::HOLD_ADDRESS, self::HOLD_COOKIES],
-                    [$address, self::cookies($config->bool('language_switcher', true))],
+                    [self::HOLD_ADDRESS, self::HOLD_COOKIES, self::HOLD_AUTHORITY],
+                    [
+                        $address,
+                        self::cookies($config->bool('language_switcher', true)),
+                        self::mark('', 'Name und Anschrift der zuständigen Aufsichtsbehörde'),
+                    ],
                     self::unwrap(self::privacy($address, $host, $siteName))
                 ),
             ],
@@ -227,8 +234,16 @@ final class DefaultPages
            has run and the renderer turns a newline inside a paragraph into a
            line break. List items keep their own lines, which is the point of
            holding this back until then. */
-        $items = ['- **Sitzungs-Cookie** – nur nach dem Anmelden. Es hält die Sitzung'
-            . ' der angemeldeten Person und wird beim Abmelden gelöscht.'];
+        /* Set on every visit, not on signing in: the session starts in the
+           application's constructor, because the login form itself needs a
+           CSRF token and there is nowhere else to keep one. Checked against
+           a live installation rather than assumed - an anonymous request
+           comes back with regal_session on it. The text said otherwise,
+           which is a privacy policy describing a different program. */
+        $items = ['- **Sitzungs-Cookie** – wird bei jedem Besuch gesetzt. Es enthält'
+            . ' ausschließlich eine zufällige Kennung und trägt den Schutz vor'
+            . ' Formularmissbrauch, kurze Statusmeldungen und die gewählte Sprache.'
+            . ' Es wird beim Schließen des Browsers gelöscht.'];
         if ($multilingual) {
             $items[] = '- **Sprach-Cookie** – merkt sich, ob die Oberfläche auf Deutsch'
                 . ' oder Englisch angezeigt werden soll. Es enthält ausschließlich diese'
@@ -244,7 +259,10 @@ final class DefaultPages
             . implode("\n", $items) . "\n\n"
             . 'Wer angemeldet bleibt, erhält zusätzlich ein Anmelde-Token als Cookie. Es'
             . ' enthält keine personenbezogenen Angaben, sondern eine Zufallszeichenfolge,'
-            . ' und wird bei jeder Nutzung ausgetauscht.';
+            . " und wird bei jeder Nutzung ausgetauscht.\n\n"
+            . 'Cookies lassen sich im Browser jederzeit löschen und für diese Seite'
+            . ' abschalten. Ohne das Sitzungs-Cookie funktionieren Anmeldung und Formulare'
+            . ' nicht; das Lesen des Regals bleibt möglich.';
     }
 
     private static function privacy(string $address, string $host, string $siteName): string
@@ -256,11 +274,10 @@ final class DefaultPages
            somebody is. */
         return self::draftNotice(
             'Zu prüfen ist außerdem, ob stimmt, was hier behauptet wird: dass mit dem'
-                . ' Hoster ein Vertrag zur Auftragsverarbeitung besteht, wie lange er die'
-                . ' Server-Logs wirklich aufbewahrt, und dass die Seite tatsächlich nichts'
-                . ' von fremden Servern nachlädt. Letzteres gilt für diese Anwendung im'
-                . ' Auslieferungszustand und endet mit der ersten eingebundenen fremden'
-                . ' Schrift, Karte oder Statistik.'
+                . ' Hoster ein Vertrag zur Auftragsverarbeitung besteht, und dass die Seite'
+                . ' tatsächlich nichts von fremden Servern nachlädt. Letzteres gilt für'
+                . ' diese Anwendung im Auslieferungszustand und endet mit der ersten'
+                . ' eingebundenen fremden Schrift, Karte oder Statistik.'
         )
             . "## Verantwortliche\n\n" . self::HOLD_ADDRESS . "\n\n"
             . "## Hosting\n\n"
@@ -273,8 +290,13 @@ final class DefaultPages
                 gespeichert: aufgerufene Adresse, Zeitpunkt, übertragene Datenmenge,
                 Browsertyp und IP-Adresse. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO;
                 das berechtigte Interesse liegt im sicheren und störungsfreien Betrieb.
-                Diese Daten werden nach sieben Tagen gelöscht und nicht mit anderen Daten
-                zusammengeführt.
+                Diese Daten werden nicht mit anderen Daten zusammengeführt und nicht
+                ausgewertet.
+
+                Die Speicherdauer bestimmt der Hoster, der diese Protokolle im Rahmen der
+                Auftragsverarbeitung führt. Sie werden gelöscht, sobald sie für den sicheren
+                und störungsfreien Betrieb nicht mehr erforderlich sind. Nennt der Hoster
+                eine konkrete Frist, gehört sie hierher.
 
                 ## Cookies
 
@@ -294,19 +316,38 @@ final class DefaultPages
                 ausgeliefert. Es werden keine Bilder von fremden Servern nachgeladen; beim
                 Betrachten des Regals entsteht daher keine Verbindung zu Dritten.
 
+                ## Abfragen bei Buchdatenbanken
+
+                Um ein neu erfasstes Buch zu ergänzen, fragt der Server - nicht der Browser
+                der Besucherin - bei der Deutschen Nationalbibliothek, bei Google Books und
+                bei der Open Library nach Titel, Verlag, Umfang und Cover. Übermittelt wird
+                dabei ausschließlich die ISBN des Buches.
+
+                Diese Abfragen löst allein die Betreiberin aus, beim Erfassen oder in einem
+                nächtlichen Lauf. Sie finden nicht statt, wenn jemand diese Seite besucht,
+                und es werden dabei keine Daten von Besucherinnen und Besuchern übermittelt.
+                Google Books wird von Google LLC in den USA betrieben; da die Anfragen vom
+                Server stammen und nur eine ISBN enthalten, sind davon keine
+                personenbezogenen Daten Dritter betroffen.
+
                 ## Verwaltungsbereich
 
                 Das Erfassen und Bearbeiten von Büchern steht ausschließlich der Betreiberin
-                nach Anmeldung zur Verfügung. Daten von Besucherinnen und Besuchern werden
-                dabei nicht verarbeitet.
+                nach Anmeldung zur Verfügung. Gespeichert werden dabei ihre E-Mail-Adresse,
+                ihr Name, ein Passwort-Hashwert und die Zeitpunkte der Anmeldeversuche -
+                Letzteres, um wiederholte Fehlversuche zu bremsen. Daten von Besucherinnen
+                und Besuchern werden dabei nicht verarbeitet.
 
                 ## Ihre Rechte
 
                 Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16),
                 Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18),
                 Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21). Wenden Sie sich
-                dafür an die oben genannte Adresse. Zudem besteht ein Beschwerderecht bei
-                einer Datenschutz-Aufsichtsbehörde.
+                dafür an die oben genannte Adresse.
+
+                Ihnen steht zudem ein Beschwerderecht bei einer
+                Datenschutz-Aufsichtsbehörde zu. Zuständig ist die Behörde des
+                Bundeslandes, in dem die oben genannte Anschrift liegt: {{authority}}
 
                 ## Verschlüsselung
 
