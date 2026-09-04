@@ -296,9 +296,28 @@
   }
 
   async function lookup(isbn) {
-    say(text.searching);
+    /* Its own step rather than a line under the back button.
+     *
+     * "Wird gesucht …" used to appear in the status bar at the very bottom -
+     * against the button you had just left, which is neither where you are
+     * looking nor enough to sit through. Three sources are asked in turn and
+     * that takes a couple of seconds; a screen that says which ones, for
+     * which ISBN, with something moving, is the difference between waiting
+     * and wondering whether the tap registered. */
+    resultBox.innerHTML =
+      '<div class="card result-card searching">' +
+        '<p class="searching-title">' + esc(text.searching) + '</p>' +
+        '<p class="searching-isbn">' + esc(isbn) + '</p>' +
+        '<div class="searching-bar" role="progressbar" aria-valuetext="' + esc(text.searching) + '">' +
+          '<div class="searching-bar-run"></div>' +
+        '</div>' +
+        '<p class="note searching-sources">' + esc(text.sources) + '</p>' +
+      '</div>';
+    resultBox.hidden = false;
+    step('result');
+
+    say('');
     overlaySay(text.detected, 'busy');
-    resultBox.hidden = true;
     afterSaveBox.innerHTML = '';
 
     var body = new FormData();
@@ -466,7 +485,16 @@
     if (seriesToggle.checked && stream) {
       lastCode = '';
       resultBox.hidden = true;
+      /* Back to the viewfinder, not just back to reading barcodes. Without
+         this the step stayed on the result, so the camera was hidden while
+         it scanned - which is every part of a series scan except the part
+         you can see. The cover buttons stay reachable underneath, quietly:
+         they are the way out, not the next thing to do. */
+      step('camera');
+      afterSaveBox.classList.add('after-save--quiet');
       if (scanning) { tick(); }
+    } else {
+      afterSaveBox.classList.remove('after-save--quiet');
     }
   }
 
@@ -514,6 +542,9 @@
        wide is right; framing a cover in it means either a lot of table or a
        cover with its head cut off. */
     frame.classList.add('scanner-frame--portrait');
+    /* Out of the quiet series styling: the shutter is the thing to press
+       now, not a way out of something else. */
+    afterSaveBox.classList.remove('after-save--quiet');
     step('photo');
     say('');
     overlaySay('');
