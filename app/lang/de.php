@@ -405,13 +405,16 @@ return [
     'project.origin.heading' => 'Herkunft',
     'project.origin'     => 'Geschrieben für das Bücherregal von {blog} und von dort weitergegeben. '
                             . 'Jede Installation trägt diesen Hinweis im Fuß – nicht, weil die Lizenz es '
-                            . 'verlangt, sondern damit man sieht, woher sie kommt.',
+                            . 'verlangt, sondern damit man von einem fremden Regal aus hierher findet '
+                            . 'und sich selbst eines einrichten kann.',
     'project.how.heading' => 'Was sie kann',
     'project.how.scan'   => 'Barcode mit der Handykamera scannen, direkt im Browser, ohne App.',
     'project.how.sources' => 'Buchdaten von der Deutschen Nationalbibliothek, Google Books und Open Library.',
     'project.how.covers' => 'Cover werden heruntergeladen und selbst ausgeliefert, nie von fremden Servern '
                             . 'eingebunden – deshalb braucht die Seite kein Cookie-Banner.',
-    'project.how.export' => 'Jederzeit vollständig exportierbar als CSV und JSON. Der Ausgang ist Teil des Entwurfs.',
+    'project.how.export' => 'Jederzeit vollständig exportierbar als CSV und JSON – die Sammlung '
+                            . 'lässt sich also jederzeit mitnehmen. Das war von Anfang an so gedacht: '
+                            . 'Der Anlass für dieses Regal war ein Dienst, der zumachte.',
     'project.self.heading' => 'Selbst installieren',
     'project.self'       => 'Es braucht PHP und MySQL, sonst nichts: kein Composer, kein Build, kein '
                             . 'Shell-Zugang. Damit läuft es auch auf einfachen Webhosting-Tarifen. Die '

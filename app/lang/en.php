@@ -402,13 +402,16 @@ return [
     'project.origin.heading' => 'Where it comes from',
     'project.origin'     => 'Written for the bookshelf of {blog} and passed on from there. Every '
                             . 'installation carries that credit in its footer - not because the licence '
-                            . 'demands it, but so that anyone can see where this came from.',
+                            . 'demands it, but so that somebody looking at a stranger\'s shelf can find '
+                            . 'their way here and set up one of their own.',
     'project.how.heading' => 'What it does',
     'project.how.scan'   => 'Scan a barcode with the phone camera, in the browser, without an app.',
     'project.how.sources' => 'Book data from the German National Library, Google Books and Open Library.',
     'project.how.covers' => 'Covers are downloaded and served from your own server, never embedded from '
                             . 'someone else\'s - which is why the site needs no cookie banner.',
-    'project.how.export' => 'Everything exports to CSV and JSON at any time. The way out is part of the design.',
+    'project.how.export' => 'Everything exports to CSV and JSON at any time, so the collection can '
+                            . 'always be taken elsewhere. That was the point from the start: this '
+                            . 'shelf exists because a service shut down.',
     'project.self.heading' => 'Install it yourself',
     'project.self'       => 'It needs PHP and MySQL and nothing else: no Composer, no build step, no shell '
                             . 'access. That is what lets it run on plain shared hosting. The instructions '
