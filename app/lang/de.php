@@ -405,8 +405,8 @@ return [
     'project.origin.heading' => 'Herkunft',
     'project.origin'     => 'Geschrieben für das Bücherregal von {blog} und von dort weitergegeben. '
                             . 'Jede Installation trägt diesen Hinweis im Fuß – nicht, weil die Lizenz es '
-                            . 'verlangt, sondern damit man von einem fremden Regal aus hierher findet '
-                            . 'und sich selbst eines einrichten kann.',
+                            . 'verlangt, sondern damit man von einem fremden Regal aus zum Quellcode '
+                            . 'findet und sich selbst eines einrichten kann.',
     'project.how.heading' => 'Was sie kann',
     'project.how.scan'   => 'Barcode mit der Handykamera scannen, direkt im Browser, ohne App.',
     'project.how.sources' => 'Buchdaten von der Deutschen Nationalbibliothek, Google Books und Open Library.',
