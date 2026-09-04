@@ -403,7 +403,7 @@ return [
     'project.origin'     => 'Written for the bookshelf of {blog} and passed on from there. Every '
                             . 'installation carries that credit in its footer - not because the licence '
                             . 'demands it, but so that somebody looking at a stranger\'s shelf can find '
-                            . 'their way here and set up one of their own.',
+                            . 'their way to the source and set up one of their own.',
     'project.how.heading' => 'What it does',
     'project.how.scan'   => 'Scan a barcode with the phone camera, in the browser, without an app.',
     'project.how.sources' => 'Book data from the German National Library, Google Books and Open Library.',
