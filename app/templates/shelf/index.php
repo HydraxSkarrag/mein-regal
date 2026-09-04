@@ -38,138 +38,34 @@ declare(strict_types=1);
 </div>
 
 <div class="layout-with-sidebar">
-  <aside class="sidebar">
-    <h2><?= e(t('filter.sort')) ?></h2>
-    <ul>
-      <?php foreach (App\Repository\BookRepository::sorts() as $sort): ?>
-        <?php
-          /* Clicking the sort you are already on turns it round. Picking a
-             different one starts from its own natural direction - newest
-             first for a date, A to Z for a title - because that is what
-             somebody means when they pick it without saying more. */
-          $active = ($filters['sort'] ?? 'recent') === $sort;
-          $natural = App\Repository\BookRepository::naturalDirection($sort);
-          $current = $active && ($filters['dir'] ?? '') !== '' ? $filters['dir'] : $natural;
-          $next = $active ? ($current === 'asc' ? 'desc' : 'asc') : '';
-        ?>
-      <li><a href="<?= e($urlFor(['sort' => $sort, 'dir' => $next])) ?>"
-             aria-current="<?= $active ? 'true' : 'false' ?>"
-             title="<?= e(t($active ? ('sort.turn.' . ($current === 'asc' ? 'desc' : 'asc')) : 'sort.by')) ?>">
-        <?= e(t('sort.' . $sort)) ?><?php if ($active): ?><span class="sort-dir" aria-hidden="true"><?= $current === 'asc' ? '↑' : '↓' ?></span><?php endif; ?></a></li>
-      <?php endforeach; ?>
-    </ul>
-
-    <?php /*
-       * The sidebar shows the biggest few. Making the heading itself a quiet
-       * link hid the other 367 just as thoroughly as having no link at all -
-       * nothing about a heading suggests it can be clicked. The way out is
-       * its own control, with the number on it: it says both that there is
-       * more and how much more.
-       */ ?>
-    <h2 class="sidebar-head">
-      <span><?= e(t('filter.genre')) ?></span>
-      <a class="facet-all" href="/genres"><?= e(t('facets.all', ['count' => $formatter->number($tagTotal)])) ?></a>
-    </h2>
-    <ul>
-      <?php foreach ($tags as $tag): ?>
-      <li><a href="<?= e($urlFor(['tag' => ($filters['tag'] ?? '') === $tag['slug'] ? '' : $tag['slug']])) ?>"
-             aria-current="<?= ($filters['tag'] ?? '') === $tag['slug'] ? 'true' : 'false' ?>">
-        <span><?= e($tag['name']) ?></span><span class="n"><?= e($formatter->number((int) $tag['book_count'])) ?></span></a></li>
-      <?php endforeach; ?>
-    </ul>
-
-    <?php if ($labels !== []): ?>
-    <h2 class="sidebar-head">
-      <span><?= e(t('filter.label')) ?></span>
-      <a class="facet-all" href="/labels"><?= e(t('facets.all', ['count' => $formatter->number($labelTotal)])) ?></a>
-    </h2>
-    <ul>
-      <?php foreach ($labels as $tag): ?>
-      <li><a href="<?= e($urlFor(['tag' => ($filters['tag'] ?? '') === $tag['slug'] ? '' : $tag['slug']])) ?>"
-             aria-current="<?= ($filters['tag'] ?? '') === $tag['slug'] ? 'true' : 'false' ?>">
-        <span><?= e($tag['name']) ?></span><span class="n"><?= e($formatter->number((int) $tag['book_count'])) ?></span></a></li>
-      <?php endforeach; ?>
-    </ul>
-    <?php endif; ?>
-
-    <h2 class="sidebar-head">
-      <span><?= e(t('filter.author')) ?></span>
-      <a class="facet-all" href="/authors"><?= e(t('facets.all', ['count' => $formatter->number($authorTotal)])) ?></a>
-    </h2>
-    <ul>
-      <?php foreach ($topAuthors as $person): ?>
-      <li><a href="<?= e($urlFor(['author' => ($filters['author'] ?? '') === $person['name'] ? '' : $person['name']])) ?>"
-             aria-current="<?= ($filters['author'] ?? '') === $person['name'] ? 'true' : 'false' ?>">
-        <span><?= e($person['name']) ?></span><span class="n"><?= e($formatter->number((int) $person['book_count'])) ?></span></a></li>
-      <?php endforeach; ?>
-    </ul>
-
-    <h2><?= e(t('filter.review')) ?></h2>
-    <ul>
-      <li><a href="<?= e($urlFor(['review' => ($filters['review'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
-             aria-current="<?= ($filters['review'] ?? '') === 'yes' ? 'true' : 'false' ?>">
-        <span><?= e(t('filter.review.yes')) ?></span><span class="n"><?= e($formatter->number($reviewCounts['with'])) ?></span></a></li>
-      <li><a href="<?= e($urlFor(['review' => ($filters['review'] ?? '') === 'no' ? '' : 'no'])) ?>"
-             aria-current="<?= ($filters['review'] ?? '') === 'no' ? 'true' : 'false' ?>">
-        <span><?= e(t('filter.review.no')) ?></span><span class="n"><?= e($formatter->number($reviewCounts['without'])) ?></span></a></li>
-    </ul>
-
-    <h2><?= e(t('filter.cover')) ?></h2>
-    <ul>
-      <li><a href="<?= e($urlFor(['cover' => ($filters['cover'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
-             aria-current="<?= ($filters['cover'] ?? '') === 'yes' ? 'true' : 'false' ?>">
-        <span><?= e(t('filter.cover.yes')) ?></span><span class="n"><?= e($formatter->number($coverCounts['with'])) ?></span></a></li>
-      <li><a href="<?= e($urlFor(['cover' => ($filters['cover'] ?? '') === 'no' ? '' : 'no'])) ?>"
-             aria-current="<?= ($filters['cover'] ?? '') === 'no' ? 'true' : 'false' ?>">
-        <span><?= e(t('filter.cover.no')) ?></span><span class="n"><?= e($formatter->number($coverCounts['without'])) ?></span></a></li>
-    </ul>
-
-    <h2><?= e(t('filter.isbn')) ?></h2>
-    <ul>
-      <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
-             aria-current="<?= ($filters['isbn'] ?? '') === 'yes' ? 'true' : 'false' ?>">
-        <span><?= e(t('filter.isbn.yes')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['with'])) ?></span></a></li>
-      <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'no' ? '' : 'no'])) ?>"
-             aria-current="<?= ($filters['isbn'] ?? '') === 'no' ? 'true' : 'false' ?>">
-        <span><?= e(t('filter.isbn.no')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['without'])) ?></span></a></li>
-    </ul>
-
-    <h2><?= e(t('filter.binding')) ?></h2>
-    <ul>
-      <?php foreach ($bindingCounts as $binding => $count): ?>
-        <?php if ($binding === '') { continue; } ?>
-      <li><a href="<?= e($urlFor(['binding' => ($filters['binding'] ?? '') === $binding ? '' : $binding])) ?>"
-             aria-current="<?= ($filters['binding'] ?? '') === $binding ? 'true' : 'false' ?>">
-        <span><?= e(t('binding.' . $binding)) ?></span><span class="n"><?= e($formatter->number($count)) ?></span></a></li>
-      <?php endforeach; ?>
-    </ul>
-
-    <?php
-      /* Language, capped like every other list here. The field is empty for
-         books nobody has looked up yet, and an "unknown" entry filtering to
-         a thousand books says nothing about them - so only the languages
-         that are actually recorded get a row. */
-      $languages = array_filter(
-          $languageCounts ?? [],
-          static fn ($count, $code): bool => $code !== '' && $count > 0,
-          ARRAY_FILTER_USE_BOTH
-      );
-    ?>
-    <?php if (count($languages) > 1): ?>
-    <h2><?= e(t('filter.language')) ?></h2>
-    <ul>
-      <?php foreach (array_slice($languages, 0, 10, true) as $code => $count): ?>
-      <li><a href="<?= e($urlFor(['language' => ($filters['language'] ?? '') === $code ? '' : $code])) ?>"
-             aria-current="<?= ($filters['language'] ?? '') === $code ? 'true' : 'false' ?>">
-        <span><?= e(App\Core\Formatter::language((string) $code)) ?></span><span class="n"><?= e($formatter->number($count)) ?></span></a></li>
-      <?php endforeach; ?>
-    </ul>
-    <?php endif; ?>
-
-    <?php if ($hasFilters): ?>
-    <p class="mt-s"><a href="/"><?= e(t('filter.reset')) ?></a></p>
-    <?php endif; ?>
+  <?php
+    /* Everything the filters need, handed over once. A partial gets what it
+       is given and nothing else - which is the whole point of them, and also
+       why the first attempt rendered a page that could not call $urlFor. */
+    $filterData = compact(
+        'filters', 'urlFor', 'hasFilters', 'formatter',
+        'tags', 'tagTotal', 'labels', 'labelTotal', 'topAuthors', 'authorTotal',
+        'bindingCounts', 'languageCounts', 'languages',
+        'coverCounts', 'isbnCounts', 'reviewCounts'
+    );
+  ?>
+  <aside class="sidebar filters">
+<?= $view->render('partials.shelf_filters', $filterData) ?>
   </aside>
+
+  <?php /* The same controls on a phone, folded away. The sidebar is beside
+           the shelf on a wide screen and simply gone below 900px, which left
+           sorting and every facet unreachable there - the shelf had filters
+           and the device most used to read it could not touch them. */ ?>
+  <details class="filters-drawer filters">
+    <summary>
+      <span class="filters-drawer-label"><?= e(t('filter.mobile')) ?></span>
+      <?php if ($hasFilters): ?><span class="filters-drawer-on"><?= e(t('filter.mobile.on')) ?></span><?php endif; ?>
+    </summary>
+    <div class="filters-drawer-body">
+<?= $view->render('partials.shelf_filters', $filterData) ?>
+    </div>
+  </details>
 
   <div>
     <?php if ($books === [] && $shelfIsEmpty): ?>

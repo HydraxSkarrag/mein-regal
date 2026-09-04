@@ -354,18 +354,21 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   }
   .sidebar { position: sticky; top: 20px; }
 }
-.sidebar { font-size: 0.9rem; }
-.sidebar h2 { font-size: 0.8rem; text-transform: none; color: var(--muted);
+/* The filters look the same wherever they are shown - beside the shelf on a
+   wide screen, inside the drawer on a phone. The rules used to name the
+   corner they sat in, so the drawer got raw bullets and underlined links. */
+.filters { font-size: 0.9rem; }
+.filters h2 { font-size: 0.8rem; text-transform: none; color: var(--muted);
   font-family: var(--font-body); font-weight: 400; margin: 18px 0 6px; }
-.sidebar ul { list-style: none; margin: 0; padding: 0; }
-.sidebar li { margin: 0 0 2px; }
-.sidebar a {
+.filters ul { list-style: none; margin: 0; padding: 0; }
+.filters li { margin: 0 0 2px; }
+.filters a {
   display: flex; justify-content: space-between; gap: 10px;
   text-decoration: none; color: var(--text); padding: 3px 0;
 }
-.sidebar a:hover { color: var(--accent); }
-.sidebar a[aria-current="true"] { color: var(--accent); }
-.sidebar .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.filters a:hover { color: var(--accent); }
+.filters a[aria-current="true"] { color: var(--accent); }
+.filters .n { color: var(--muted); font-variant-numeric: tabular-nums; }
 @media (max-width: 899px) { .sidebar { display: none; } }
 
 /* ---- The shelf ------------------------------------------------------ */
@@ -1574,3 +1577,68 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .credits { list-style: none; margin: 0 0 18px; padding: 0; font-size: 0.9rem; }
 .credits li { margin-top: 2px; }
 .credits-role { color: var(--muted); }
+
+/* The filters on a phone.
+ *
+ * The sidebar is beside the shelf on a wide screen and display:none below
+ * 900px - so sorting, genres, language and every other facet were not merely
+ * out of the way there, they were unreachable. On the device the shelf is
+ * most often read on.
+ *
+ * A <details> rather than a panel that slides: it opens and closes without a
+ * line of JavaScript, it is a disclosure widget to a screen reader without
+ * being told, and it survives a policy that forbids inline anything.
+ */
+.filters-drawer { display: none; }
+
+@media (max-width: 899px) {
+  .filters-drawer { display: block; margin-bottom: 18px; }
+
+  .filters-drawer > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-weight: 600;
+  }
+  .filters-drawer > summary::-webkit-details-marker { display: none; }
+
+  /* A chevron that turns, so shut and open look different at a glance. */
+  .filters-drawer > summary .filters-drawer-label::after {
+    content: " ▾";
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .filters-drawer[open] > summary .filters-drawer-label::after { content: " ▴"; }
+
+  /* Whether anything is filtering right now, without opening it. A drawer
+     that hides an active filter is how you end up wondering where half the
+     shelf went. */
+  .filters-drawer-on {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--on-accent);
+    background: var(--accent);
+    border-radius: 999px;
+    padding: 2px 9px;
+  }
+
+  /* One box around the lot, not one around each heading: the rule used to
+     name every child of the details, and the partial's children are a
+     heading, a list, a heading, a list. */
+  .filters-drawer-body {
+    padding: 4px 14px 12px;
+    border: 1px solid var(--border);
+    border-top: 0;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    background: var(--surface);
+  }
+  .filters-drawer h2 { font-size: 0.95rem; margin-top: 16px; }
+  .filters-drawer ul { margin-bottom: 14px; }
+}
