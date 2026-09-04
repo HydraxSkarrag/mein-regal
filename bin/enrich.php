@@ -4,6 +4,7 @@
  *
  *   php bin/enrich.php --limit=200
  *   php bin/enrich.php --limit=200 --sqlite=/tmp/x.sqlite
+ *   php bin/enrich.php --again --limit=200   after adding a source
  *
  * Meant for the nightly cron. The 3,042 books imported from Bookstats arrived
  * without covers and with holes in their metadata; asking for all of them at
@@ -21,6 +22,7 @@ require_once dirname(__DIR__) . '/app/bootstrap.php';
 use App\Core\Config;
 use App\Core\CoverStorage;
 use App\Core\Database;
+use App\Core\Isbn;
 use App\Lookup\CoverFinder;
 use App\Lookup\DnbLookup;
 use App\Lookup\GoogleBooksLookup;
@@ -32,10 +34,88 @@ use App\Repository\CoverRepository;
 use App\Repository\TagRepository;
 
 /**
+ * Give a book that only carries an ISBN-10 its ISBN-13 as well.
+ *
+ * The two are the same number written twice - 978, the first nine digits, a
+ * recomputed check digit - so this invents nothing. It matters because every
+ * worklist in the application is keyed on isbn13: a book without one was
+ * silently excluded from enrichment, from the cover sources and from the
+ * scanner's duplicate check, with no sign anywhere that it had been skipped.
+ *
+ * Anything that is not a valid ISBN-10 is left alone. The column also holds
+ * the odd Amazon number carried over from the old export, and an ASIN is not
+ * an ISBN however much it looks like one.
+ *
+ * @return int how many were numbered
+ */
+function completeIsbns(PDO $pdo, int $ownerId): int
+{
+    $rows = $pdo->prepare(
+        "SELECT id, isbn10 FROM books
+          WHERE owner_id = ? AND isbn10 IS NOT NULL AND isbn10 <> ''
+            AND (isbn13 IS NULL OR isbn13 = '')"
+    );
+    $rows->execute([$ownerId]);
+
+    $write = $pdo->prepare('UPDATE books SET isbn13 = ?, updated_at = ? WHERE id = ?');
+    $numbered = 0;
+    foreach ($rows->fetchAll() as $row) {
+        $isbn13 = Isbn::to13((string) $row['isbn10']);
+        if ($isbn13 === null) {
+            continue;
+        }
+        $write->execute([$isbn13, date('Y-m-d H:i:s'), (int) $row['id']]);
+        $numbered++;
+    }
+
+    return $numbered;
+}
+
+/**
+ * Let the still-empty books be asked about again, ahead of their thirty days.
+ *
+ * The wait exists so consecutive nightly runs move forward instead of
+ * grinding over the same failures, and it is right for what it was written
+ * for: a book nobody has a record of today will not have gained one by
+ * tomorrow. It is wrong for exactly one event - a new source being added.
+ * Then every previous "nowhere has this" was an answer about a smaller set of
+ * places, and the shelf would otherwise sit out a month waiting to find out.
+ *
+ * Only the books that still want something are reopened. A book already
+ * carrying a cover and a full record has nothing to gain from being asked.
+ *
+ * @return int how many were reopened
+ */
+function reopen(PDO $pdo, int $ownerId): int
+{
+    $statement = $pdo->prepare(
+        'DELETE FROM isbn_cache
+           WHERE isbn IN (
+                 SELECT b.isbn13 FROM books b
+                  WHERE b.owner_id = ? AND b.isbn13 IS NOT NULL
+                    AND NOT EXISTS (
+                          SELECT 1 FROM covers c
+                           WHERE c.book_id = b.id AND c.rejected_at IS NULL AND c.path IS NOT NULL
+                        )
+               )'
+    );
+    $statement->execute([$ownerId]);
+
+    return $statement->rowCount();
+}
+
+/**
  * @param array<string,mixed> $options
  */
-function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbose = true, int $budgetSeconds = 0): array
-{
+function enrich(
+    PDO $pdo,
+    Config $config,
+    int $limit,
+    int $ownerId,
+    bool $verbose = true,
+    int $budgetSeconds = 0,
+    bool $again = false
+): array {
     $http = new HttpClient($config->str('api_contact'));
     $chain = new LookupChain(
         new DnbLookup($http),
@@ -47,6 +127,8 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
     $tags = new TagRepository($pdo);
     $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
     $finder = new CoverFinder($chain, $covers, $storage);
+
+    $stats = ['numbered' => completeIsbns($pdo, $ownerId), 'reopened' => $again ? reopen($pdo, $ownerId) : 0];
 
     /* What still wants asking about.
      *
@@ -88,7 +170,7 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
     $statement->execute([$ownerId, (new DateTimeImmutable('-30 days'))->format('Y-m-d H:i:s')]);
     $books = $statement->fetchAll();
 
-    $stats = [
+    $stats += [
         'looked_up' => 0, 'covers' => 0, 'metadata' => 0, 'misses' => 0,
         'unavailable' => 0, 'stopped_early' => false, 'stopped_quota' => null,
     ];
@@ -201,7 +283,7 @@ function enrich(PDO $pdo, Config $config, int $limit, int $ownerId, bool $verbos
 // Only when this file is the program being run - including it for its
 // functions must not start a run of its own.
 if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
-    $options = getopt('', ['limit::', 'owner::', 'sqlite::', 'budget::', 'quiet']);
+    $options = getopt('', ['limit::', 'owner::', 'sqlite::', 'budget::', 'quiet', 'again']);
     $limit = max(1, min(1000, (int) ($options['limit'] ?? 100)));
     $budget = max(0, (int) ($options['budget'] ?? 0));
     $ownerId = (int) ($options['owner'] ?? 1);
@@ -237,7 +319,11 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
     }
 
     $started = microtime(true);
-    $stats = enrich($pdo, $config, $limit, $ownerId, !isset($options['quiet']), $budget);
+    $stats = enrich($pdo, $config, $limit, $ownerId, !isset($options['quiet']), $budget, isset($options['again']));
+
+    if ($stats['reopened'] > 0) {
+        printf("%d book(s) that had been asked about recently were reopened.\n", $stats['reopened']);
+    }
 
     printf(
         "\nLooked up %d | covers %d | details filled in %d | no match %d | source unavailable %d | %.1f s\n",
@@ -248,6 +334,12 @@ if (PHP_SAPI === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FILE__) {
         $stats['unavailable'],
         microtime(true) - $started
     );
+
+    // Only worth a line when it did something. It is a one-off for almost
+    // every shelf: after the first run there is nothing left to number.
+    if ($stats['numbered'] > 0) {
+        printf("%d book(s) carried only an ISBN-10 and now carry both.\n", $stats['numbered']);
+    }
 
     if ($stats['stopped_quota'] !== null) {
         echo "\nStopped: " . $stats['stopped_quota'] . "\n";
