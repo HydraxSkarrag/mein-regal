@@ -307,6 +307,18 @@ in the way of libraries sits ready in `public/js/`.
 Through GitHub Actions (*Actions → Deploy → Run workflow*), not automatically on
 every commit. Required secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`.
 
+`server_dir` is **relative to where FTP logs in**, and it is the folder above
+the document root — the level holding `app/` and `public/`, not `public/`
+itself. An FTP user restricted to the project folder therefore uses `/`. The
+workflow refuses a value ending in `public/`, which is the mistake that
+publishes the whole source.
+
+It transfers with `lftp` rather than an FTP action. The action could not open
+a data connection at all: the server requires the data channel to resume the
+control channel's TLS session, and the library behind it does not — the
+symptom is `ECONNRESET (data socket)` after a login that worked perfectly.
+There is deliberately no `--delete`; see the comments in the workflow.
+
 The repository root is uploaded into the project folder. Never touched:
 `config.php`, `storage/` and `public/covers/` — the cover photographs, which exist
 only on the server.

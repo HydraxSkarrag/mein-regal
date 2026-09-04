@@ -216,7 +216,7 @@ foreach ($draft as $slug => $page) {
 // statements of fact and are in truth tasks.
 Assert::true(
     'the privacy policy names what has to be verified',
-    str_contains($draft['privacy']['body'], 'Auftragsverarbeitung besteht, wie lange er die')
+    str_contains($draft['privacy']['body'], 'Auftragsverarbeitung besteht, und dass die Seite')
 );
 
 Assert::group('The seeded texts describe this installation');
@@ -253,3 +253,47 @@ Assert::same(
 $html = App\Core\Text::prose($draft['privacy']['body']);
 Assert::true('the cookies render as list items', str_contains($html, '<li><strong>Sitzungs-Cookie</strong>'));
 Assert::same('with no escape sequence left in the text', str_contains($html, 'u{'), false);
+
+Assert::group('The seeded privacy policy describes this program');
+
+$seed = App\Content\DefaultPages::all(
+    new App\Core\Config(['site_name' => 'Testregal']),
+    'Erika Mustermann',
+    'post@example.org'
+)['privacy']['body'];
+
+// The session starts in the constructor - the login form needs a CSRF token
+// and there is nowhere else to keep one - so the cookie is set for everybody,
+// not on signing in. Checked against a live installation; the text used to
+// describe a different program.
+Assert::true(
+    'the session cookie is described as set on every visit',
+    str_contains($seed, 'wird bei jedem Besuch gesetzt')
+);
+Assert::same(
+    'and not as something the login does',
+    str_contains($seed, 'nur nach dem Anmelden'),
+    false
+);
+
+// "Deleted after seven days" was in here with nothing behind it. The hoster
+// decides, and Art. 13(2)(a) allows naming the criterion when the period
+// cannot be given.
+Assert::same('no invented retention period', str_contains($seed, 'sieben Tagen gelöscht'), false);
+Assert::true(
+    'the criterion is given instead',
+    str_contains($seed, 'Die Speicherdauer bestimmt der Hoster')
+);
+
+// The one place data goes to a third country, and it was not mentioned at all.
+Assert::true(
+    'the lookups have their own section',
+    str_contains($seed, '## Abfragen bei Buchdatenbanken')
+);
+Assert::true('naming what is sent', str_contains($seed, 'ausschließlich die ISBN'));
+Assert::true('and that a visit does not trigger them', str_contains($seed, 'nicht statt, wenn jemand'));
+
+// Which authority is competent follows from the operator's address, so it is
+// marked like every other thing the application cannot know.
+Assert::true('the supervisory authority is asked for', str_contains($seed, 'Aufsichtsbehörde'));
+Assert::same('nothing is left unsubstituted', str_contains($seed, '{{'), false);
