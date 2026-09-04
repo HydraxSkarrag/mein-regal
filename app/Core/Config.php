@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use ParseError;
 use RuntimeException;
 
 /**
@@ -37,9 +38,27 @@ final class Config
                 . 'one level above the document root. Copy config.sample.php and fill it in.'
             );
         }
-        $values = require $path;
+        /* A typo in config.php is the likeliest way a first installation
+           fails, because on hosting without a shell the file is written in
+           whatever editor the control panel offers - and those highlight
+           PHP loosely enough that a missing comma or quote looks fine. The
+           bare word "ParseError" on a page is not much help; the line
+           number is nearly the whole answer. */
+        try {
+            $values = require $path;
+        } catch (ParseError $e) {
+            throw new StartupError(
+                'config.php has a syntax error on line ' . $e->getLine() . ': ' . $e->getMessage()
+                . ' - a missing comma, quote or bracket, usually.',
+                0,
+                $e
+            );
+        }
         if (!is_array($values)) {
-            throw new StartupError('config.php does not return an array.');
+            throw new StartupError(
+                'config.php does not return an array. It has to end with a return statement: '
+                . "return [ 'db_host' => '...', ... ];"
+            );
         }
 
         return new self($values);
