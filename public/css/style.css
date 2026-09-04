@@ -1433,3 +1433,59 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .ph-15 { background: var(--placeholder-15); }
 .ph-16 { background: var(--placeholder-16); }
 .note--danger { color: var(--danger); }
+
+/* --------------------------------------------------- scanner, on a phone --
+ *
+ * The scanner builds its cards in JavaScript, and those used to carry
+ * style attributes - which the Content-Security-Policy discards, so the
+ * buttons never got the width they were written to have. Classes instead.
+ */
+.btn--grow { flex: 1; }
+.result-card { margin-top: 14px; }
+
+/* The tags a lookup came back with, shown before anything is saved: a
+   classification code or a shop category is easiest to catch here, while
+   the book is still on the screen and nothing has been written yet. */
+.result-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.result-tags li {
+  font-size: 0.78rem;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
+
+/* One step at a time.
+ *
+ * The sections are switched by data-step on .scanner, from scanner.js. Only
+ * the matching one is in the layout, which is what keeps the found book, the
+ * viewfinder and the shutter button each at the top of the screen instead of
+ * stacked below one another - on a phone the difference between reading the
+ * answer and scrolling for it.
+ */
+.scanner [data-when] { display: none; }
+.scanner[data-step="choose"] [data-when="choose"],
+.scanner[data-step="camera"] [data-when="camera"],
+.scanner[data-step="manual"] [data-when="manual"],
+.scanner[data-step="result"] [data-when="result"] { display: block; }
+
+/* Photographing a cover needs the viewfinder and the shutter at once. The
+   buttons live outside the steps, right below, so the frame comes back on
+   screen and its "back" button steps aside. */
+.scanner[data-step="photo"] [data-when="camera"] { display: block; }
+.scanner[data-step="photo"] [data-when="camera"] .scanner-actions { display: none; }
+
+.scan-modes { display: grid; gap: 10px; margin-top: 18px; }
+.scan-modes .btn { padding-block: 14px; font-size: 1rem; }
+
+/* A barcode is wider than it is tall and a book is not.
+ *
+ * The same viewfinder served both, which is right for the barcode on the back
+ * and wrong for a photograph of the cover: portrait is the shape of the
+ * thing being photographed, and framing it inside a landscape box means
+ * either a lot of table or a cover with its head cut off.
+ */
+.scanner-frame--portrait { aspect-ratio: 2 / 3; max-width: 320px; margin-inline: auto; }
+.scanner-frame--portrait video,
+.scanner-frame--portrait img { width: 100%; height: 100%; object-fit: cover; }

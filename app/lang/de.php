@@ -104,6 +104,9 @@ return [
     'book.edit'          => 'Bearbeiten',
 
     'scan.title'         => 'Buch erfassen',
+    'scan.mode.camera'     => 'Barcode scannen',
+    'scan.mode.manual'     => 'ISBN eingeben',
+    'scan.back'            => 'Zurück',
     'scan.start'         => 'Kamera starten',
     'scan.stop'          => 'Kamera stoppen',
     'scan.aim'           => 'Barcode auf der Rückseite anvisieren – am Rechner das Buch dicht vor die Kamera halten.',

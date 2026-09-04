@@ -504,8 +504,18 @@ final class DnbLookup implements LookupSource
     {
         $tags = [];
         foreach ($this->allValues($dc, 'subject') as $value) {
-            // "K Kinder- und Jugendliteratur" - drop the leading group letter.
-            $clean = trim(preg_replace('/^[A-Z]\s+/', '', trim($value)) ?? $value);
+            /* The DNB writes its subject groups with their notation in front:
+               "K Kinder- und Jugendliteratur" in the old letters, "830
+               Deutsche Literatur" in the numeric ones. The notation is a
+               classification code, not part of the name, and on a shelf it
+               reads as noise.
+ 
+               Three digits, because that is what the groups are - "20.
+               Jahrhundert" and "1968" are subjects somebody might genuinely
+               file a book under, and neither is a code. */
+            $clean = trim($value);
+            $clean = preg_replace('/^[A-Z]\s+/', '', $clean) ?? $clean;
+            $clean = trim(preg_replace('/^\d{3}(\.\d+)?\s+/', '', $clean) ?? $clean);
             if ($clean !== '') {
                 $tags[] = $clean;
             }

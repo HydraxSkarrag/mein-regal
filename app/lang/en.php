@@ -104,6 +104,9 @@ return [
     'book.edit'          => 'Edit',
 
     'scan.title'         => 'Add a book',
+    'scan.mode.camera'     => 'Scan a barcode',
+    'scan.mode.manual'     => 'Type an ISBN',
+    'scan.back'            => 'Back',
     'scan.start'         => 'Start camera',
     'scan.stop'          => 'Stop camera',
     'scan.aim'           => 'Point at the barcode on the back - on a computer, hold the book close to the camera.',
