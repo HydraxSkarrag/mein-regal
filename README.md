@@ -65,8 +65,12 @@ readable over HTTP.** That is the one setting that has to be right.
 
 ### 2. Create the database
 
-Load `schema.sql` once through phpMyAdmin. Later changes are dated files in
-`migrations/`, applied the same way.
+Load `schema.sql` once through phpMyAdmin. That is the whole of it — a new
+installation needs nothing else, and there is no migration to catch up on.
+
+`migrations/` holds a dated `.sql` file per schema change made *after* a
+release, applied the same way, by hand. They are not run automatically: there
+is no runner, because there is no shell here to call one.
 
 ### 3. Configure
 
