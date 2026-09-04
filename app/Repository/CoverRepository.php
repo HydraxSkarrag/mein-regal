@@ -27,6 +27,7 @@ final class CoverRepository
 {
     public const SOURCE_OWN         = 'own';
     public const SOURCE_VLBTIX      = 'vlbtix';
+    public const SOURCE_MVB         = 'mvb';
     public const SOURCE_GOOGLE      = 'google';
     public const SOURCE_OPENLIBRARY = 'openlibrary';
 
@@ -35,14 +36,16 @@ final class CoverRepository
      * Preference order when a book has more than one cover.
      *
      * Provenance decides: a photograph of the actual copy first, then the
-     * publishers' own service. The two free web sources share a rank on
-     * purpose - they are equally permitted and equally attributed, so there is
-     * nothing left to prefer between them except the picture itself, and that
-     * is settled by size in compare().
+     * publishers' own files - VLB-TIX and the MVB directory are the same
+     * pictures reached two different ways. The two free web sources share a
+     * rank on purpose - they are equally permitted and equally attributed, so
+     * there is nothing left to prefer between them except the picture itself,
+     * and that is settled by size in compare().
      */
     private const PRIORITY = [
         self::SOURCE_OWN         => 0,
         self::SOURCE_VLBTIX      => 1,
+        self::SOURCE_MVB         => 1,
         self::SOURCE_GOOGLE      => 2,
         self::SOURCE_OPENLIBRARY => 2,
     ];

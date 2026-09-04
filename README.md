@@ -332,12 +332,23 @@ only on the server.
 | Source | For | Terms |
 |---|---|---|
 | [DNB](https://services.dnb.de/sru/dnb) | German titles | metadata CC0, no key needed |
+| [MVB](https://portal.dnb.de/opac/mvb/cover?isbn=9783404178025) | German covers | the publishers' own files, by way of the DNB's catalogue; no key needed |
 | [Google Books](https://developers.google.com/books) | English titles, covers | own key needed, free, ~1,000 requests a day |
 | [Open Library](https://openlibrary.org/developers/api) | English titles, covers | open, backlink appreciated |
 
 Covers are **downloaded and served from your own server**, not embedded. Looking
 at the shelf therefore opens no connection to anyone else. Source and backlink are
 stored and shown per image.
+
+MVB is what makes a German shelf look finished. The DNB is complete for German
+titles but holds no pictures; Google has never scanned most German books and
+hands back a 300-pixel record thumbnail. Measured over 160 books that Google and
+Open Library had both failed on, MVB had a cover for 143 of them, at 599 pixels
+tall. It is asked first for a `978-3` ISBN and last for any other, because the
+same measurement found it answering 2 times in 25 outside the German market.
+
+Its address is not a documented interface, so treat it as a source that may one
+day stop answering — the covers already stored are unaffected either way.
 
 ### Setting up a Google key
 

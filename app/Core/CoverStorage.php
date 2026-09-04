@@ -76,6 +76,9 @@ final class CoverStorage
         'books.google.com',
         'books.googleusercontent.com',
         'lh3.googleusercontent.com',
+        // The German National Library's catalogue, which serves the book
+        // trade's own cover files beside its records.
+        'portal.dnb.de',
     ];
 
     /** Internet Archive storage nodes are numbered: ia601504.us.archive.org. */

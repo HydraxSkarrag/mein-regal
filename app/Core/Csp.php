@@ -45,6 +45,7 @@ final class Csp
         'https://covers.openlibrary.org',
         'https://archive.org',
         'https://*.archive.org',
+        'https://portal.dnb.de',
     ];
 
     private string $nonce;

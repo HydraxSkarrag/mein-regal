@@ -115,7 +115,7 @@ return [
     'scan.manual'        => 'ISBN von Hand eingeben',
     'scan.manual.hint'   => '10 oder 13 Ziffern',
     'scan.lookup'        => 'Suchen',
-    'scan.sources'      => 'Gefragt werden nacheinander die Deutsche Nationalbibliothek, Google Books und Open Library.',
+    'scan.sources'      => 'Gefragt werden nacheinander die Deutsche Nationalbibliothek, das Verzeichnis Lieferbarer Bücher, Google Books und Open Library.',
     'scan.searching'     => 'Wird gesucht …',
     'scan.found.via'     => 'Gefunden über {source}',
     'scan.nothing'       => 'Zu dieser ISBN wurde nichts gefunden. Du kannst das Buch von Hand erfassen.',
@@ -295,6 +295,7 @@ return [
     'cover.removed'              => 'Cover entfernt.',
     'cover.from.own'             => 'Eigenes Foto',
     'cover.from.vlbtix'          => 'Von VLB-TIX',
+    'cover.from.mvb'             => 'Von MVB (Verzeichnis Lieferbarer Bücher)',
     'cover.from.google'          => 'Von Google Books',
     'cover.from.openlibrary'     => 'Von Open Library',
     'scan.shutter'               => 'Auslösen',
@@ -308,7 +309,7 @@ return [
     'scan.nothing.short'       => 'Nichts gefunden',
 
     'cover.search'             => 'Cover im Netz suchen',
-    'cover.search.hint'        => 'Fragt Open Library und Google Books nach dieser ISBN. Gefundene Bilder werden hier gespeichert, nicht eingebettet.',
+    'cover.search.hint'        => 'Fragt das Verzeichnis Lieferbarer Bücher, Open Library und Google Books nach dieser ISBN. Gefundene Bilder werden hier gespeichert, nicht eingebettet.',
     'cover.search.found'       => 'Cover gefunden und gespeichert.',
     'cover.search.none'        => 'Zu dieser ISBN wurde kein Cover gefunden.',
     'cover.search.quota'      => 'Google Books ist für heute ausgeschöpft. Die anderen Quellen hatten kein Cover – morgen noch einmal versuchen.',
@@ -411,7 +412,7 @@ return [
                             . 'findet und sich selbst eines einrichten kann.',
     'project.how.heading' => 'Was sie kann',
     'project.how.scan'   => 'Barcode mit der Handykamera scannen, direkt im Browser, ohne App.',
-    'project.how.sources' => 'Buchdaten von der Deutschen Nationalbibliothek, Google Books und Open Library.',
+    'project.how.sources' => 'Buchdaten von der Deutschen Nationalbibliothek, Google Books und Open Library, Cover dazu aus dem Verzeichnis Lieferbarer Bücher.',
     'project.how.covers' => 'Cover werden heruntergeladen und selbst ausgeliefert, nie von fremden Servern '
                             . 'eingebunden – deshalb braucht die Seite kein Cookie-Banner.',
     'project.how.export' => 'Jederzeit vollständig exportierbar als CSV und JSON – die Sammlung '

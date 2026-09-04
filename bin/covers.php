@@ -4,7 +4,7 @@
  *
  *   php bin/covers.php                          what is stored, and how big it is
  *   php bin/covers.php --refresh                fetch the small ones again, bigger,
- *                                               and ask the other source about
+ *                                               and ask the other sources about
  *                                               whatever is still too small
  *   php bin/covers.php --refresh --limit=50     a few at a time
  *   php bin/covers.php --prune                  list files no cover row points at
@@ -37,6 +37,7 @@ use App\Core\Config;
 use App\Core\CoverStorage;
 use App\Core\Database;
 use App\Lookup\GoogleBooksLookup;
+use App\Lookup\MvbCoverLookup;
 use App\Lookup\OpenLibraryLookup;
 use App\Repository\CoverRepository;
 
@@ -221,21 +222,53 @@ function refresh(PDO $pdo, string $directory, int $ownerId, int $minimum, int $l
 }
 
 /**
- * Ask the other free source about the covers that are still too small.
+ * Ask the other free sources about the covers that are still too small.
  *
  * A rendition is only ever as big as what that source holds, and for many
- * German titles Google holds 300 pixels and no more. Open Library often has a
- * different scan of the same edition, and its cover service answers by ISBN
- * alone - no lookup, no API key, no quota. Where its picture is the larger
- * one it is stored alongside the existing cover rather than replacing it:
- * both are permitted and both are attributed, so nothing is lost by keeping
- * the pair, and the repository shows whichever is bigger.
+ * German titles Google holds 300 pixels and no more. Two services answer by
+ * ISBN alone - no lookup, no API key, no quota - and are asked in turn:
+ *
+ *   MVB           the publishers' own cover files, by way of the German
+ *                 National Library's catalogue. Measured against 50 books
+ *                 whose only cover was a 300-pixel one from Google, it had a
+ *                 larger picture for 45 of them.
+ *   Open Library  often a different scan of the same edition, and the last
+ *                 resort for an ISBN from outside the German market, where
+ *                 MVB has next to nothing.
+ *
+ * Where a picture is the larger one it is stored alongside the existing cover
+ * rather than replacing it: all of them are permitted and all are attributed,
+ * so nothing is lost by keeping several, and the repository shows the best.
  *
  * A source thrown out by hand for a book is never asked again, here as
  * everywhere else.
  */
 function alternates(PDO $pdo, string $directory, int $ownerId, int $minimum, int $limit): void
 {
+    foreach ([
+        [CoverRepository::SOURCE_MVB, MvbCoverLookup::coverUrl(...), MvbCoverLookup::ATTRIBUTION, 'MVB'],
+        [CoverRepository::SOURCE_OPENLIBRARY, OpenLibraryLookup::coverUrl(...), 'Cover: Open Library', 'Open Library'],
+    ] as [$source, $urlFor, $attribution, $name]) {
+        alternate($pdo, $directory, $ownerId, $minimum, $limit, $source, $urlFor, $attribution, $name);
+    }
+}
+
+/**
+ * One of those sources, over every cover still below the wanted width.
+ *
+ * @param callable(string): string $urlFor
+ */
+function alternate(
+    PDO $pdo,
+    string $directory,
+    int $ownerId,
+    int $minimum,
+    int $limit,
+    string $source,
+    callable $urlFor,
+    string $attribution,
+    string $name
+): void {
     $storage = new CoverStorage($directory);
     $covers = new CoverRepository($pdo);
 
@@ -254,16 +287,16 @@ function alternates(PDO $pdo, string $directory, int $ownerId, int $minimum, int
 
     $work = [];
     foreach ($statement->fetchAll() as $row) {
-        // Nothing to gain where Open Library is already the cover on show,
+        // Nothing to gain where this source is already the cover on show,
         // and nothing to reopen where it was thrown out.
         $existing = $pdo->prepare('SELECT 1 FROM covers WHERE book_id = ? AND source = ?');
-        $existing->execute([(int) $row['id'], CoverRepository::SOURCE_OPENLIBRARY]);
+        $existing->execute([(int) $row['id'], $source]);
         if ($existing->fetchColumn() === false) {
             $work[] = $row;
         }
     }
 
-    printf("\n%d covers below %dpx to ask Open Library about.\n\n", count($work), $minimum);
+    printf("\n%d covers below %dpx to ask %s about.\n\n", count($work), $minimum, $name);
 
     $better = 0;
     $worse = 0;
@@ -273,13 +306,11 @@ function alternates(PDO $pdo, string $directory, int $ownerId, int $minimum, int
         $best = (int) $row['best'];
 
         try {
-            $stored = $storage->storeRemote(
-                OpenLibraryLookup::coverUrl($isbn),
-                $isbn . '-' . CoverRepository::SOURCE_OPENLIBRARY
-            );
+            $stored = $storage->storeRemote($urlFor($isbn), $isbn . '-' . $source);
         } catch (Throwable $e) {
-            // Open Library answers for a book it has no cover for with a
-            // one-pixel image, which the placeholder check refuses.
+            // A source with nothing for this book answers 404, or - Open
+            // Library's way - with a one-pixel image the placeholder check
+            // refuses. Neither is a fault worth a line of its own.
             $none++;
             continue;
         }
@@ -295,10 +326,10 @@ function alternates(PDO $pdo, string $directory, int $ownerId, int $minimum, int
 
         $covers->save(
             (int) $row['id'],
-            CoverRepository::SOURCE_OPENLIBRARY,
+            $source,
             $stored['path'],
-            OpenLibraryLookup::coverUrl($isbn),
-            'Cover: Open Library',
+            $urlFor($isbn),
+            $attribution,
             $stored['width'],
             $stored['height']
         );

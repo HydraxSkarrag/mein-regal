@@ -83,6 +83,7 @@ $pct = static fn (int $n): float => $books > 0 ? round($n / $books * 100, 1) : 0
         'label'     => static fn (string $k): string => match ($k) {
             'own'         => t('cover.own'),
             'vlbtix'      => 'VLB-TIX',
+            'mvb'         => 'MVB',
             'google'      => 'Google Books',
             'openlibrary' => 'Open Library',
             default       => $k,

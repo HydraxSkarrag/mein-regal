@@ -10,8 +10,8 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
+use App\Lookup\CoverFinder;
 use App\Lookup\LookupChain;
-use App\Lookup\OpenLibraryLookup;
 use App\Repository\CoverRepository;
 use Throwable;
 
@@ -102,16 +102,22 @@ final class ScanController
 
         $data = $found->toArray();
 
-        // The best source for a German book is the DNB, and it has no covers
-        // at all. Ask Open Library's cover service directly rather than
-        // showing a bare placeholder - the same step took the nightly job's
-        // cover rate from 8% to 40%.
+        /* The best source for a German book is the DNB, and it has no covers
+         * at all. So the cover services are asked directly rather than a bare
+         * placeholder being shown - the same step took the nightly job's cover
+         * rate from 8% to 40%, and adding MVB to it took the shelf from half
+         * covered to nearly whole.
+         *
+         * The order is CoverFinder's, not a second opinion: what the scanner
+         * shows now has to be what the book ends up with. */
         if ($data['cover_url'] === null) {
-            $probe = $this->openLibraryCover($isbn);
-            if ($probe !== null) {
-                $data['cover_url'] = $probe;
-                $data['cover_source'] = CoverRepository::SOURCE_OPENLIBRARY;
-                $data['attribution'] = 'Cover: Open Library';
+            foreach (CoverFinder::coverServices($isbn) as [$url, $source, $attribution]) {
+                if ($this->hasCover($url)) {
+                    $data['cover_url'] = $url;
+                    $data['cover_source'] = $source;
+                    $data['attribution'] = $attribution;
+                    break;
+                }
             }
         }
 
@@ -186,7 +192,11 @@ final class ScanController
         // Outside the transaction on purpose: the book is catalogued either
         // way, and a slow or missing cover must not undo that.
         $coverUrl = $request->post('cover_url');
-        $coverSource = Input::oneOf($request->post('cover_source'), ['google', 'openlibrary']);
+        $coverSource = Input::oneOf($request->post('cover_source'), [
+            CoverRepository::SOURCE_MVB,
+            CoverRepository::SOURCE_GOOGLE,
+            CoverRepository::SOURCE_OPENLIBRARY,
+        ]);
         if ($coverUrl !== '' && $coverSource !== null) {
             $this->fetchCover($bookId, $coverUrl, $coverSource, $isbn, $request->post('cover_attribution'));
         }
@@ -319,13 +329,11 @@ final class ScanController
      * would put a broken image where the cover belongs. "default=false" is
      * what makes the service say no instead of returning a blank placeholder.
      */
-    private function openLibraryCover(string $isbn13): ?string
+    private function hasCover(string $url): bool
     {
-        $url = OpenLibraryLookup::coverUrl($isbn13);
-
         $handle = curl_init($url);
         if ($handle === false) {
-            return null;
+            return false;
         }
         curl_setopt_array($handle, [
             CURLOPT_NOBODY         => true,
@@ -338,7 +346,7 @@ final class ScanController
         curl_exec($handle);
         $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 
-        return $status === 200 ? $url : null;
+        return $status === 200;
     }
 
     private function requireSignedInJson(): ?Response
