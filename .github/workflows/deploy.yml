@@ -26,6 +26,26 @@ on:
         # has to be clicked past: the right value depends on the account, and
         # deploying to a folder nobody meant scatters an application across
         # somebody's web space quietly and successfully.
+      app_ref:
+        description: "Commit, tag or branch to deploy - leave empty for the branch this was started from"
+        required: false
+        # This is the way back.
+        #
+        # The branch picker beside "Run workflow" offers branches and tags and
+        # no commits, so until now the answer to a deploy that broke the site
+        # was to revert on main and deploy again - two commits in the history
+        # of a shelf, describing a mistake rather than the books. Since main
+        # is protected against force pushes there is no quieter way either.
+        #
+        # Empty means exactly what happened before, so nothing changes for the
+        # ordinary deploy.
+        #
+        # Two things it does not do, and they matter when it is wanted at
+        # speed. The mirror has no --delete, so files added since the older
+        # commit stay on the server: this puts back what was there, it does
+        # not take away what came after. And nothing about the database moves
+        # with it - after a schema change, going back is a database question
+        # before it is a deploy question.
 
 jobs:
   deploy:
@@ -34,6 +54,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Empty falls back to the commit this run was started from, which is
+          # what actions/checkout would have used on its own.
+          ref: ${{ github.event.inputs.app_ref || github.sha }}
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
