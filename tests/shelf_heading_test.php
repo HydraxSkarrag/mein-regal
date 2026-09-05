@@ -31,7 +31,7 @@ function documentTitle(array $filters, string $heading): string
 
 Assert::group('Shelf heading: the selection, never the site');
 
-Assert::same('with nothing filtered it names the whole shelf', heading([]), t('shelf.all'));
+Assert::same('with nothing filtered it names the whole shelf', heading([]), t('shelf.all.books'));
 Assert::true('and that is not the site name', heading([]) !== 'Mein Regal');
 
 // The pile is called SuB in the navigation and by the person who owns it.
@@ -49,7 +49,7 @@ Assert::same(
 /* Sorting is not a selection. Clicking "Titel" narrows nothing, and a
  * heading that changed when you re-sorted would be saying the list had
  * become something else. */
-Assert::same('sorting leaves the heading alone', heading(['sort' => 'title', 'dir' => 'asc']), t('shelf.all'));
+Assert::same('sorting leaves the heading alone', heading(['sort' => 'title', 'dir' => 'asc']), t('shelf.all.books'));
 
 Assert::group('Shelf heading: the browser tab is a different question');
 
@@ -58,7 +58,7 @@ Assert::group('Shelf heading: the browser tab is a different question');
  * the unfiltered shelf is the name of the shelf - and the layout drops the
  * suffix when the two match, so this comes out as plain "Mein Regal" rather
  * than the site name written twice. */
-Assert::same('the front page is titled after the site', documentTitle([], t('shelf.all')), 'Mein Regal');
+Assert::same('the front page is titled after the site', documentTitle([], t('shelf.all.books')), 'Mein Regal');
 Assert::same(
     'a filtered one is titled after its selection',
     documentTitle(['status' => 'unread'], t('nav.unread')),
@@ -71,4 +71,4 @@ Assert::same(
 );
 
 // A sort is still the front page, so the tab keeps saying so.
-Assert::same('sorting does not retitle the tab', documentTitle(['sort' => 'title'], t('shelf.all')), 'Mein Regal');
+Assert::same('sorting does not retitle the tab', documentTitle(['sort' => 'title'], t('shelf.all.books')), 'Mein Regal');

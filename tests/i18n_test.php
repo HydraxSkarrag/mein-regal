@@ -148,3 +148,28 @@ Assert::same('and so does an unusual one', Formatter::language('gmh'), 'Mittelho
 // An unknown code is shown as itself. "XYZ" tells a reader something;
 // "lang.xyz" - the raw translation key - tells them nothing at all.
 Assert::same('an unknown code stays readable', Formatter::language('xyz'), 'XYZ');
+
+Assert::group('Language files: a key written twice loses one of them');
+
+/* PHP array literals take the last of a repeated key and say nothing. So a
+ * string can sit in the file, be read by nobody, and look perfectly correct
+ * to anyone reviewing the diff.
+ *
+ * That is not hypothetical. 'shelf.all' was added for the shelf heading
+ * without checking, twenty rows above an existing 'shelf.all' that labels the
+ * filter chip - the chip won, the heading came out reading "Alle", and it
+ * took a look at the deployed page to notice. Nothing failed; one of the two
+ * lines was simply never there.
+ *
+ * So the file is read as text rather than as an array, because as an array
+ * the evidence is already gone.
+ */
+foreach (['de', 'en'] as $locale) {
+    $source = file_get_contents(PROJECT_ROOT . '/app/lang/' . $locale . '.php');
+    preg_match_all("/^\s*'([^']+)'\s*=>/m", (string) $source, $matches);
+
+    $seen = array_count_values($matches[1]);
+    $twice = array_keys(array_filter($seen, static fn (int $n): bool => $n > 1));
+
+    Assert::same($locale . '.php defines every key exactly once', $twice, []);
+}

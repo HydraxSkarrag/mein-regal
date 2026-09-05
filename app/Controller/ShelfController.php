@@ -96,7 +96,11 @@ final class ShelfController
         }
         $status = (string) ($filters['status'] ?? '');
         if ($status === '') {
-            return t('shelf.all');
+            /* Not 'shelf.all' - that one is the "Alle" chip in the filter
+               row, and it has to stay a chip's length. Two keys because they
+               are two sentences in the same language: one labels a button,
+               the other names what you are looking at. */
+            return t('shelf.all.books');
         }
 
         // The pile has a name of its own in the navigation, and it is the
