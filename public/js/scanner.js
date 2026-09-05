@@ -69,7 +69,9 @@
   var lastCodeAt = 0;
   var savedCount = 0;
   var currentBook = null;
+  /* ISBN -> when it was saved. A moment, not a fact: see onCode. */
   var alreadySaved = {};
+  var JUST_SAVED_MS = 10000;
 
   /* Feedback on the picture, not under it.
    *
@@ -270,9 +272,18 @@
     if (code === lastCode && now - lastCodeAt < 4000) { return; }
     /* And a book just added stays in view too - in series mode the camera
        is still pointed at it. Without this it is read again immediately and
-       answered with "already on the shelf", which is both wrong-footed and
-       wipes the cover buttons off the screen. */
-    if (alreadySaved[code]) { return; }
+       answered with "already on the shelf", which is wrong-footed when you
+       have not moved yet.
+
+       For ten seconds, though, and not for the rest of the session as it
+       used to be. That silence was meant for the book still in your hand and
+       ended up covering every later pass: pick the same book up again to
+       check something, or find it a second time in the pile, and the scanner
+       said nothing at all - no buzz, no message, no card. Silence is the one
+       answer that cannot be told apart from a broken scanner. After the ten
+       seconds the lookup runs and says "already on the shelf", which is true
+       and is what you wanted to know. */
+    if (alreadySaved[code] && now - alreadySaved[code] < JUST_SAVED_MS) { return; }
     lastCode = code;
     lastCodeAt = now;
 
@@ -470,7 +481,7 @@
       return;
     }
 
-    if (currentBook && currentBook.isbn13) { alreadySaved[currentBook.isbn13] = true; }
+    if (currentBook && currentBook.isbn13) { alreadySaved[currentBook.isbn13] = Date.now(); }
     savedCount++;
     counter.hidden = false;
     counter.textContent = text.count.replace('{count}', String(savedCount));
