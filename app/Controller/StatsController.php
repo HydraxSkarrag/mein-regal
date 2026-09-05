@@ -104,7 +104,14 @@ final class StatsController
         ]))->noIndex();
     }
 
-    /** How many acquisition dates come from the Bookstats bulk entry. */
+    /**
+     * How many acquisition dates are a bulk cataloguing day.
+     *
+     * Not "how many came from Bookstats". The flag is set by a pattern - a
+     * date carried by more books than a day of buying could hold - so it says
+     * the same true thing about a shelf typed in over one evening as it does
+     * about an export from somewhere else.
+     */
     private function bulkDatedCount(int $owner): int
     {
         $statement = $this->app->pdo->prepare(

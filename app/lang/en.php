@@ -168,7 +168,7 @@ return [
     'stats.no.rating'    => 'Without a rating',
     'stats.no.genre'     => 'Without a genre',
     'stats.no.author'    => 'Without an author',
-    'stats.bulk.note'    => 'Some acquisition dates come from the bulk entry into Bookstats and are excluded here.',
+    'stats.bulk.note'    => 'Bulk cataloguing days are left out here: on those days books were catalogued, not bought.',
     'stats.covers'       => 'Cover sources',
 
     'common.yes'         => 'Yes',
@@ -205,7 +205,7 @@ return [
     'stats.enrich.note'    => 'The nightly job fills in missing covers and details on its own, a few hundred at a time.',
     'stats.covers.none'    => 'No covers on file yet.',
     'stats.recent'         => 'Recently added',
-    'stats.bulk.count'     => 'For {count} books the acquisition date comes from the bulk entry into Bookstats and is not a real purchase date.',
+    'stats.bulk.count'     => 'For {count} books the acquisition date is a bulk cataloguing day rather than a real purchase date.',
     'stats.coverage.note'  => 'How complete the records are - the low bars show where work would pay off.',
     'cover.own'            => 'Own photograph',
     'book.subtitle'        => 'Subtitle',
@@ -237,7 +237,7 @@ return [
     'edit.tags.hint'           => 'Pick from the ones already in use, so a typo does not quietly create a new entry. Anything new becomes a label unless you say otherwise.',
     'edit.cover.upload'        => 'Add a cover',
     'edit.cover.hint'          => 'On a phone this opens the camera; on a computer, a file dialog. Location data is stripped on save.',
-    'edit.bulk.hint'           => 'This date comes from the bulk entry into Bookstats and is probably not the real one.',
+    'edit.bulk.hint'           => 'A striking number of books share this date. It is probably the day they were catalogued rather than acquired.',
     'edit.saved'               => 'Saved.',
     'edit.cover.failed'        => 'The image could not be saved. Everything else was.',
 

@@ -168,7 +168,7 @@ return [
     'stats.no.rating'    => 'Ohne Bewertung',
     'stats.no.genre'     => 'Ohne Genre',
     'stats.no.author'    => 'Ohne Autor:in',
-    'stats.bulk.note'    => 'Ein Teil der Erwerbsdaten stammt aus der Sammelerfassung in Bookstats und ist hier ausgenommen.',
+    'stats.bulk.note'    => 'Sammel-Erfassungstage sind hier ausgenommen — an ihnen wurde katalogisiert, nicht gekauft.',
     'stats.covers'       => 'Cover-Quellen',
 
     'common.yes'         => 'Ja',
@@ -205,7 +205,7 @@ return [
     'stats.enrich.note'    => 'Der nächtliche Abgleich füllt fehlende Cover und Angaben nach und nach von selbst auf.',
     'stats.covers.none'    => 'Noch keine Cover hinterlegt.',
     'stats.recent'         => 'Zuletzt erfasst',
-    'stats.bulk.count'     => 'Bei {count} Büchern stammt das Erwerbsdatum aus der Sammelerfassung in Bookstats und ist kein echtes Kaufdatum.',
+    'stats.bulk.count'     => 'Bei {count} Büchern ist das Erwerbsdatum ein Sammel-Erfassungstag und kein echtes Kaufdatum.',
     'stats.coverage.note'  => 'Wie vollständig die Datensätze sind – die niedrigen Werte zeigen, wo sich Nacharbeit lohnt.',
     'cover.own'            => 'Eigenes Foto',
     'book.subtitle'        => 'Untertitel',
@@ -237,7 +237,7 @@ return [
     'edit.tags.hint'           => 'Aus dem Bestand wählen, damit nicht durch Vertipper neue Einträge entstehen. Neues wird zum Schlagwort, wenn nichts anderes gewählt wird.',
     'edit.cover.upload'        => 'Cover hinzufügen',
     'edit.cover.hint'          => 'Am Handy öffnet sich die Kamera, am Rechner die Dateiauswahl. Standortdaten werden beim Speichern entfernt.',
-    'edit.bulk.hint'           => 'Dieses Datum stammt aus der Sammelerfassung in Bookstats und ist vermutlich nicht das echte Erwerbsdatum.',
+    'edit.bulk.hint'           => 'Dieses Datum teilen sich auffällig viele Bücher. Es ist vermutlich der Tag, an dem sie erfasst wurden, und nicht der Erwerb.',
     'edit.saved'               => 'Gespeichert.',
     'edit.cover.failed'        => 'Das Bild konnte nicht gespeichert werden. Die übrigen Änderungen sind gesichert.',
 

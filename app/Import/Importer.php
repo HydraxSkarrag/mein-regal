@@ -167,9 +167,17 @@ final class Importer
     /**
      * Dates carrying so many books that they cannot be acquisition dates.
      *
-     * In the real export 431 books share 23.02.2022 and several hundred more
-     * share a handful of days in early 2022 - the sessions in which the
-     * existing shelf was entered into Bookstats.
+     * A threshold and nothing else: no date is named in the code, and neither
+     * is any product. Twenty-five books bought on one day is a bookshop
+     * spree; twenty-five books recorded on one day is an afternoon spent
+     * cataloguing a shelf that was already there. The second is common and
+     * the first is not, which is the whole of the rule.
+     *
+     * In the export this was written for, 431 books share 23.02.2022 and
+     * several hundred more a handful of days around it - but a shelf typed in
+     * by hand over one evening produces exactly the same shape, and the
+     * wording the flag carries says so rather than naming where the file came
+     * from.
      *
      * @return array<string,int> date => count, highest first
      */
