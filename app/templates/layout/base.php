@@ -38,8 +38,11 @@ $current = $current ?? '';
   <meta name="theme-color" content="<?= e($metaColours['light']) ?>">
 <?php endif; ?>
 
-  <link rel="stylesheet" href="/css/style.css?v=<?= e($assetVersion) ?>">
+  <link rel="stylesheet" href="<?= e($asset('/css/style.css')) ?>">
 <?php foreach ($themeUrls as $themeUrl): ?>
+  <?php /* Already versioned, by Theme::urls() - a theme knows its own file
+           and stamps it there. Not $asset() a second time, which would hang
+           one ?v= on the end of another. */ ?>
   <link rel="stylesheet" href="<?= e($themeUrl) ?>">
 <?php endforeach; ?>
 <?php if (!$styles->isEmpty()): ?>
@@ -202,7 +205,7 @@ $current = $current ?? '';
     <?php endforeach; ?>
   </nav>
 <?php foreach ($scripts ?? [] as $script): ?>
-  <script src="<?= e($script) ?>?v=<?= e($assetVersion) ?>" defer></script>
+  <script src="<?= e($asset($script)) ?>" defer></script>
 <?php endforeach; ?>
 </body>
 </html>

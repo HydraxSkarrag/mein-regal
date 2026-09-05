@@ -178,7 +178,7 @@ final class Application
         $this->view->share('csrfField', $this->csrf->field());
         $this->view->share('styles', $this->styles);
         $this->view->share('cspNonce', $this->csp->nonce());
-        $this->view->share('assetVersion', $this->assetVersion());
+        $this->view->share('asset', self::assetVersion());
         $this->view->share('flashes', $this->session->takeFlashes());
         $this->view->share('scripts', []);
         $this->view->share('current', '');
@@ -214,12 +214,33 @@ final class Application
         return $this->config->bool('language_switcher', true);
     }
 
-    /** Cache-busting for CSS and JS; the file's own timestamp is enough. */
-    private function assetVersion(): string
+    /**
+     * Cache-busting: every file answers for itself.
+     *
+     * This used to hand out one number for all of them, and that number was
+     * style.css's timestamp. Deploy a change to scanner.js without touching
+     * the stylesheet and the address stayed identical - .htaccess serves
+     * scripts with a seven day cache, so the fix reached nobody who had been
+     * to the site that week. It looked exactly like a bug that would not die:
+     * scanning was broken on the desktop, was fixed, was deployed, and went
+     * on being broken until the browser was cleared by hand.
+     *
+     * The path is a public one ("/js/scanner.js"), and a file that is not
+     * there gets no parameter rather than a guess.
+     */
+    private static function assetVersion(): callable
     {
-        $css = PROJECT_ROOT . '/public/css/style.css';
+        $seen = [];
 
-        return (string) (is_file($css) ? filemtime($css) : 1);
+        return static function (string $path) use (&$seen): string {
+            if (!array_key_exists($path, $seen)) {
+                $file = PROJECT_ROOT . '/public/' . ltrim(parse_url($path, PHP_URL_PATH) ?: '', '/');
+                $time = is_file($file) ? filemtime($file) : false;
+                $seen[$path] = $time === false ? '' : '?v=' . $time;
+            }
+
+            return $path . $seen[$path];
+        };
     }
 
     public function url(string $path = '/'): string
