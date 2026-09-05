@@ -147,7 +147,12 @@ final class BookController
                 $this->app->ownerId,
                 $bookId,
                 $this->parseTags($request->post('tags')),
-                $this->app->tags
+                $this->app->tags,
+                /* Which of the new ones the user asked to be genres. Empty
+                   without JavaScript, and that is the right fallback: a tag
+                   nobody classified is a label, which is what the whole shelf
+                   defaults to. */
+                $this->parseTags($request->post('new_genres'))
             );
 
             $this->app->pdo->commit();

@@ -101,15 +101,25 @@ $value = static fn (?string $v): string => $v ?? '';
       </div>
 
       <div class="field" id="tag-field">
-        <label for="tags"><?= e(t('filter.genre')) ?></label>
+        <?php /* Not "Genre". The field said so in three places - label,
+                 placeholder and hint - and created labels, which is how a
+                 shelf ends up with three genres its owner never made. */ ?>
+        <label for="tags"><?= e(t('edit.tags.field')) ?></label>
         <input id="tags" type="text" name="tags" value="<?= e($tagList) ?>" autocomplete="off">
+        <?php /* Filled by tags.js with the new names that were picked as
+                 genres. Empty without JavaScript, and then everything new is
+                 a label - the default the whole shelf runs on. */ ?>
+        <input type="hidden" name="new_genres" id="new-genres" value="">
         <p class="note"><?= e(t('edit.tags.hint')) ?></p>
       </div>
 
       <script type="application/json" id="known-tags"><?= json_for_script($knownTags) ?></script>
       <script type="application/json" id="tag-i18n"><?= json_for_script([
           'placeholder' => t('edit.tags.placeholder'),
-          'newTag'      => t('edit.tags.new'),
+          'newLabel'    => t('edit.tags.new.label'),
+          'newGenre'    => t('edit.tags.new.genre'),
+          'kindLabel'   => t('edit.tags.kind.label'),
+          'kindGenre'   => t('edit.tags.kind.genre'),
           'similar'     => t('edit.tags.similar'),
           'remove'      => t('edit.tags.remove'),
           'books'       => t('edit.tags.books'),

@@ -33,8 +33,21 @@ final class TagRepository
     }
 
     /** @param bool|null $created set to true when the tag was newly inserted */
-    public function findOrCreate(int $ownerId, string $name, ?bool &$created = null): int
-    {
+    /**
+     * @param string $kindIfNew what to create it as, if it does not exist yet.
+     *                          Only ever applies to a tag being created: one
+     *                          that is already on the shelf keeps the kind it
+     *                          was given, whatever a form says today. That is
+     *                          the whole rule - the question only exists at
+     *                          the moment something new is made, which is why
+     *                          the edit page only asks then.
+     */
+    public function findOrCreate(
+        int $ownerId,
+        string $name,
+        ?bool &$created = null,
+        string $kindIfNew = self::KIND_LABEL
+    ): int {
         $created = false;
         $name = trim($name);
         $slug = Text::slug($name, 190);
@@ -47,8 +60,13 @@ final class TagRepository
         }
         $created = true;
 
-        $insert = $this->pdo->prepare('INSERT INTO tags (owner_id, name, slug) VALUES (?, ?, ?)');
-        $insert->execute([$ownerId, $name, $slug]);
+        $insert = $this->pdo->prepare('INSERT INTO tags (owner_id, name, slug, kind) VALUES (?, ?, ?, ?)');
+        $insert->execute([
+            $ownerId,
+            $name,
+            $slug,
+            $kindIfNew === self::KIND_GENRE ? self::KIND_GENRE : self::KIND_LABEL,
+        ]);
 
         return (int) $this->pdo->lastInsertId();
     }
@@ -114,15 +132,18 @@ final class TagRepository
      * count is what tells "Fantasy, 173 books" apart from a near-miss that
      * someone created by accident last Tuesday.
      *
-     * @return list<array{name: string, slug: string, n: int}>
+     * @return list<array{name: string, slug: string, kind: string, n: int}>
      */
     public function allForOwner(int $ownerId): array
     {
+        // kind travels with the name: the suggestion list used to show both
+        // sorts side by side without saying which was which, so picking one
+        // told you nothing about what you were picking.
         $statement = $this->pdo->prepare(
-            'SELECT t.name, t.slug, COUNT(bt.book_id) AS n
+            'SELECT t.name, t.slug, t.kind, COUNT(bt.book_id) AS n
                FROM tags t LEFT JOIN book_tags bt ON bt.tag_id = t.id
               WHERE t.owner_id = ? AND t.dropped_at IS NULL
-              GROUP BY t.id, t.name, t.slug
+              GROUP BY t.id, t.name, t.slug, t.kind
               ORDER BY n DESC, t.name ASC'
         );
         $statement->execute([$ownerId]);
@@ -131,6 +152,7 @@ final class TagRepository
             static fn (array $row): array => [
                 'name' => (string) $row['name'],
                 'slug' => (string) $row['slug'],
+                'kind' => (string) $row['kind'],
                 'n'    => (int) $row['n'],
             ],
             $statement->fetchAll()

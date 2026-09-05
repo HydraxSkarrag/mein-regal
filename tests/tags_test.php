@@ -301,3 +301,67 @@ Assert::same(
 // mentioning it makes a new tag. Right for something that was never meant to
 // exist, wrong for anything that was - which is why the screen says so.
 Assert::true('the name can be created again', $tags2->findOrCreate(1, 'TestX') !== $junk);
+
+Assert::group('A new tag can be made a genre where it is made');
+
+/* Reported from a second installation: three names typed into a field
+ * labelled "Genre", all three created as labels, and one of them then
+ * promoted in the admin page. The field had said "Genre" in its label, its
+ * placeholder and its hint, and made labels.
+ *
+ * The label was the bug. This is the other half: the question is asked at the
+ * one moment it exists - something being created - and asked per name, not
+ * once for the whole field. Three names in one line are not always the same
+ * sort.
+ */
+$pdoC = new PDO('sqlite::memory:');
+$pdoC->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdoC->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+SqliteSchema::apply($pdoC, dirname(__DIR__) . '/schema.sql');
+(new UserRepository($pdoC))->create('m@example.org', 'ein-langes-passwort', 'M');
+
+$booksC = new BookRepository($pdoC);
+$tagsC = new TagRepository($pdoC);
+$erdsee = $booksC->insert(1, ['title' => 'Erdsee', 'isbn13' => '9783596704057']);
+
+$kindOf = static function (string $name) use ($pdoC): ?string {
+    $row = $pdoC->prepare('SELECT kind FROM tags WHERE slug = ?');
+    $row->execute([App\Core\Text::slug($name, 190)]);
+    $kind = $row->fetchColumn();
+
+    return $kind === false ? null : (string) $kind;
+};
+
+// Exactly the reported case: three at once, one of them meant as a genre.
+$booksC->replaceTags(1, $erdsee, ['Coming of Age', 'High Fantasy', 'Klassiker'], $tagsC, ['High Fantasy']);
+
+Assert::same('the one that was chosen is a genre', $kindOf('High Fantasy'), 'genre');
+Assert::same('the others are labels, as they always were', $kindOf('Coming of Age'), 'label');
+Assert::same('all three of them', $kindOf('Klassiker'), 'label');
+Assert::same(
+    'and the book carries all three',
+    (int) $pdoC->query('SELECT COUNT(*) FROM book_tags WHERE book_id = ' . $erdsee)->fetchColumn(),
+    3
+);
+
+/* The rule that keeps this from being a way to reclassify the shelf by
+ * accident: a tag that exists already keeps the kind it has. Promoting one is
+ * a decision about every book carrying it and belongs in the admin page,
+ * where it can be seen. */
+$booksC->replaceTags(1, $erdsee, ['Coming of Age'], $tagsC, ['Coming of Age']);
+Assert::same('an existing label is not promoted from a book form', $kindOf('Coming of Age'), 'label');
+
+// And the other direction: a genre is not demoted either.
+$booksC->replaceTags(1, $erdsee, ['High Fantasy'], $tagsC, []);
+Assert::same('nor is an existing genre demoted by saying nothing', $kindOf('High Fantasy'), 'genre');
+
+/* Without JavaScript the second field is never filled, and then every new
+ * name is a label - which is the default the whole shelf runs on, so the form
+ * degrades to exactly what it did before. */
+$booksC->replaceTags(1, $erdsee, ['Ganz neu'], $tagsC);
+Assert::same('no JavaScript, no genres, no surprise', $kindOf('Ganz neu'), 'label');
+
+// The suggestion list needs the kind, or picking one tells you nothing about
+// what you picked.
+$known = $tagsC->allForOwner(1);
+Assert::true('every suggestion says which sort it is', $known !== [] && array_key_exists('kind', $known[0]));

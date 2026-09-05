@@ -82,13 +82,29 @@
 
   var chosen = parse(input.value);
 
+  /* Which of the chosen names were created here as genres.
+   *
+   * Only ever names that did not exist when they were picked. A tag already
+   * on the shelf keeps the kind it has, whatever is clicked today - promoting
+   * one is a decision about the whole shelf and belongs in the admin page,
+   * not in a book form where it would happen to somebody by accident. */
+  var newGenres = [];
+
   function sync() {
     input.value = chosen.join(', ');
+    // Kept in step with the chips: a name taken off again must not go on
+    // being reported as a genre to create.
+    var still = newGenres.filter(function (name) {
+      return chosen.some(function (c) { return fold(c) === fold(name); });
+    });
+    newGenres = still;
+    if (genreInput) { genreInput.value = still.join(', '); }
   }
 
   // ------------------------------------------------------------- view
 
   input.type = 'hidden';
+  var genreInput = document.getElementById('new-genres');
 
   var box = document.createElement('div');
   box.className = 'tagbox';
@@ -167,8 +183,13 @@
     list.innerHTML = '';
     matches.forEach(function (tag, index) {
       var li = document.createElement('li');
-      li.innerHTML = '<span>' + esc(tag.name) + '</span><span class="n">' +
-        tag.n + ' ' + esc(text.books) + '</span>';
+      /* Which sort it is, beside the name. The list mixes genres and labels,
+         and without this you pick one without knowing which you are picking -
+         the same blindness at the other end of the same field. */
+      var kind = tag.kind === 'genre' ? text.kindGenre : text.kindLabel;
+      li.innerHTML = '<span>' + esc(tag.name) + '</span>' +
+        '<span class="tagbox-kind">' + esc(kind) + '</span>' +
+        '<span class="n">' + tag.n + ' ' + esc(text.books) + '</span>';
       li.addEventListener('mousedown', function (event) {
         event.preventDefault();
         add(tag.name);
@@ -177,16 +198,29 @@
       list.appendChild(li);
     });
 
-    // Offer the typed value as a new tag when it matches nothing exactly.
+    /* Offer the typed value as a new tag when it matches nothing exactly -
+       twice, because that is the one moment the question exists.
+       
+       Not a checkbox beside the field: that would ask about every tag at
+       once, and three names in one field are not always the same sort. Not
+       two fields either, which would ask the question for every tag whether
+       or not there is one to answer. Here it is asked only about something
+       being made, and per name. */
     if (query !== '' && !byFold[fold(query)]) {
-      var li = document.createElement('li');
-      li.className = 'tagbox-new';
-      li.innerHTML = '<span>' + esc(query) + '</span><span class="n">' + esc(text.newTag) + '</span>';
-      li.addEventListener('mousedown', function (event) {
-        event.preventDefault();
-        add(query);
+      [
+        { kind: 'label', text: text.newLabel },
+        { kind: 'genre', text: text.newGenre }
+      ].forEach(function (option) {
+        var li = document.createElement('li');
+        li.className = 'tagbox-new';
+        li.innerHTML = '<span>' + esc(query) + '</span>' +
+          '<span class="n">' + esc(option.text) + '</span>';
+        li.addEventListener('mousedown', function (event) {
+          event.preventDefault();
+          add(query, option.kind);
+        });
+        list.appendChild(li);
       });
-      list.appendChild(li);
     }
 
     list.hidden = list.children.length === 0;
@@ -200,11 +234,14 @@
     warning.hidden = false;
   }
 
-  function add(name) {
+  function add(name, kind) {
     name = name.trim();
     if (name === '') { return; }
     var f = fold(name);
     if (chosen.some(function (c) { return fold(c) === f; })) { entry.value = ''; renderList(); return; }
+    // Only for a name that is not on the shelf yet. Typing the name of an
+    // existing label and choosing "new genre" must not quietly reclassify it.
+    if (kind === 'genre' && !byFold[f]) { newGenres.push(name); }
     // Prefer the spelling already in use over whatever was typed.
     chosen.push(byFold[f] ? byFold[f].name : name);
     entry.value = '';

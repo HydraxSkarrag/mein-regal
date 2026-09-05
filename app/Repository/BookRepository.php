@@ -157,11 +157,36 @@ final class BookRepository
     }
 
     /** Replace the whole tag list for a book. */
-    public function replaceTags(int $ownerId, int $bookId, array $names, TagRepository $tags): void
-    {
+    /**
+     * @param list<string> $names      every tag the book should carry
+     * @param list<string> $asGenre    of those, the ones to create as genres
+     *                                 rather than labels - ignored for any
+     *                                 that already exist, which keep the kind
+     *                                 they have
+     */
+    public function replaceTags(
+        int $ownerId,
+        int $bookId,
+        array $names,
+        TagRepository $tags,
+        array $asGenre = []
+    ): void {
+        // Compared folded, because the list of genres comes back from a form
+        // and "High Fantasy" there has to match "high fantasy" here.
+        $genres = [];
+        foreach ($asGenre as $name) {
+            $genres[Text::slug($name, 190)] = true;
+        }
+
         $this->pdo->prepare('DELETE FROM book_tags WHERE book_id = ?')->execute([$bookId]);
         foreach ($names as $name) {
-            $tagId = $tags->findOrCreate($ownerId, $name);
+            $created = null;
+            $tagId = $tags->findOrCreate(
+                $ownerId,
+                $name,
+                $created,
+                isset($genres[Text::slug($name, 190)]) ? TagRepository::KIND_GENRE : TagRepository::KIND_LABEL
+            );
             $tags->link($bookId, $tagId);
         }
     }
