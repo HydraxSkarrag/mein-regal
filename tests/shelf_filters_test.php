@@ -20,7 +20,12 @@ use App\Core\View;
 
 Assert::group('Shelf filters: a facet that cannot divide the shelf');
 
-$render = static function (array $coverCounts, array $isbnCounts, array $filters = []): string {
+$render = static function (
+    array $coverCounts,
+    array $isbnCounts,
+    array $filters = [],
+    array $reviewCounts = ['with' => 5, 'without' => 5]
+): string {
     $view = new View(PROJECT_ROOT . '/app/templates');
 
     return $view->render('partials.shelf_filters', [
@@ -38,7 +43,7 @@ $render = static function (array $coverCounts, array $isbnCounts, array $filters
         'languages'  => [],
         'coverCounts' => $coverCounts,
         'isbnCounts'  => $isbnCounts,
-        'reviewCounts' => ['with' => 5, 'without' => 5],
+        'reviewCounts' => $reviewCounts,
     ]);
 };
 
@@ -63,11 +68,41 @@ $standing = $render(['with' => 3042, 'without' => 0], ['with' => 3042, 'without'
 Assert::true('a filter in use stays on screen', str_contains($standing, t('filter.cover')));
 Assert::true('but only that one', !str_contains($standing, t('filter.isbn')));
 
+Assert::group('Shelf filters: reviews are the same question');
+
+/* Reported from a second installation - one book, no review link, and a
+ * "Rezension" heading over "Mit 0 / Ohne 1". The rule existed; it had been
+ * applied to two of the three yes/no facets and not to this one.
+ *
+ * It is deliberately the counts that decide and not the configuration.
+ * review_url is an ordinary field on the edit page, so a link can be pasted
+ * by hand whether or not a blog is set up - keying this on review_blog_url
+ * would take a working filter away from somebody who keeps their reviews
+ * somewhere other than a WordPress. */
+$noReviews = $render(
+    ['with' => 1, 'without' => 0],
+    ['with' => 1, 'without' => 0],
+    [],
+    ['with' => 0, 'without' => 1]
+);
+Assert::true('a shelf with no review links does not offer the facet', !str_contains($noReviews, t('filter.review')));
+
+$oneReview = $render(
+    ['with' => 1, 'without' => 0],
+    ['with' => 1, 'without' => 0],
+    [],
+    ['with' => 1, 'without' => 1]
+);
+Assert::true('one pasted link brings it back', str_contains($oneReview, t('filter.review')));
+
 Assert::group('Shelf filters: binding is no longer a way in');
 
 /* Whether a book arrived as a hardback, a paperback or a file is a fact about
  * the object rather than about the reading, and nobody browsing a shelf goes
  * looking for the paperbacks. It is still on the book and still in the
  * statistics - it is just not a facet. */
-Assert::true('the binding facet is gone', !str_contains($mixed, t('filter.binding')));
+/* Checked against the markup and not against t('filter.binding'): that key was
+ * removed with the facet, so the translator now hands its own name back and
+ * the assertion would hold whatever the sidebar did. A link is evidence. */
+Assert::true('no link filters by binding any more', !str_contains($mixed, 'binding='));
 Assert::true('and sorting is still the first thing offered', str_contains($mixed, t('filter.sort')));

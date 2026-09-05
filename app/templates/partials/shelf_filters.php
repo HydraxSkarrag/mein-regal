@@ -16,10 +16,17 @@ declare(strict_types=1);
 /* A facet that cannot divide the shelf is not a filter, it is a fact.
  *
  * "With cover 3.042 / without 0" is a heading, two rows and a click that
- * changes nothing - and the two yes/no facets get there on their own as the
- * shelf fills up: the covers arrive over a few nights, the last ISBN gets
- * typed in one afternoon. So they show themselves only while both halves
- * exist, and quietly stop taking up room once they do not.
+ * changes nothing - and all three yes/no facets get there on their own: the
+ * covers arrive over a few nights, the last ISBN gets typed in one afternoon,
+ * and a shelf whose owner keeps no review links never had that one to begin
+ * with. So they show themselves only while both halves exist, and quietly
+ * stop taking up room once they do not.
+ *
+ * Reviews are the case that shows why this is the right rule rather than a
+ * setting. review_url is an ordinary field on the edit page, so anyone can
+ * paste a link by hand whether or not a blog is configured - keying the facet
+ * on that configuration would hide a working filter from somebody who links
+ * their reviews somewhere else. The counts already know.
  *
  * The exception is a filter somebody is standing in. Hiding the control that
  * is currently narrowing the shelf would leave them looking at a short list
@@ -94,6 +101,7 @@ $splits = static function (array $counts, string $active): bool {
     <?php endforeach; ?>
   </ul>
 
+  <?php if ($splits($reviewCounts, (string) ($filters['review'] ?? ''))): ?>
   <h2><?= e(t('filter.review')) ?></h2>
   <ul>
     <li><a href="<?= e($urlFor(['review' => ($filters['review'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
@@ -103,6 +111,7 @@ $splits = static function (array $counts, string $active): bool {
            aria-current="<?= ($filters['review'] ?? '') === 'no' ? 'true' : 'false' ?>">
       <span><?= e(t('filter.review.no')) ?></span><span class="n"><?= e($formatter->number($reviewCounts['without'])) ?></span></a></li>
   </ul>
+  <?php endif; ?>
 
   <?php if ($splits($coverCounts, (string) ($filters['cover'] ?? ''))): ?>
   <h2><?= e(t('filter.cover')) ?></h2>
