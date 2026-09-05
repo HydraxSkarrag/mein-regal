@@ -326,6 +326,21 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   flex-wrap: wrap;
   margin: 12px 0 4px;
 }
+
+/* Genres and labels under their own names, on a book that carries both.
+   The names are quiet on purpose: the chips are what is being read, and
+   these only say which of two kinds of link each row is. */
+.tag-groups { margin: 12px 0 4px; }
+.tag-groups dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 10px;
+}
+.tag-groups dd { margin: 0; }
+.tag-groups dd .chips { margin: 4px 0 0; }
+.tag-groups dt:first-child { margin-top: 0; }
 .chip {
   display: inline-block;
   padding: 5px 12px;

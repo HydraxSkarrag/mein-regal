@@ -131,12 +131,45 @@ declare(strict_types=1);
       </tbody>
     </table>
 
+    <?php
+      /* Genres and labels, told apart only when there is something to tell
+         apart.
+         
+         Naming both groups on every book would put two headings over two
+         words, and on the 43% of this shelf that carry labels alone it would
+         introduce a distinction the page cannot demonstrate - the operator's
+         vocabulary, spent on a visitor who came to find another book. Where
+         a book has both, the headings earn themselves: one link leads to a
+         wide shelf and the other to a narrow list, and that is worth knowing
+         before clicking.
+         
+         A description list rather than headings, because that is what this
+         is - a name and the things under it - and because the page has one
+         heading, an h1, which these are not. */
+      $grouped = App\Controller\ShelfController::tagGroups($tags);
+      $bothKinds = $grouped['genre'] !== [] && $grouped['label'] !== [];
+    ?>
     <?php if ($tags !== []): ?>
-    <div class="chips mt-s">
-      <?php foreach ($tags as $tag): ?>
-      <a class="chip" href="/?tag=<?= e(rawurlencode($tag['slug'])) ?>"><?= e($tag['name']) ?></a>
-      <?php endforeach; ?>
-    </div>
+      <?php if ($bothKinds): ?>
+      <dl class="tag-groups mt-s">
+        <?php foreach (['genre' => 'filter.genre', 'label' => 'filter.label'] as $kind => $key): ?>
+        <dt><?= e(t($key)) ?></dt>
+        <dd>
+          <div class="chips">
+            <?php foreach ($grouped[$kind] as $tag): ?>
+            <a class="chip" href="/?tag=<?= e(rawurlencode($tag['slug'])) ?>"><?= e($tag['name']) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </dd>
+        <?php endforeach; ?>
+      </dl>
+      <?php else: ?>
+      <div class="chips mt-s">
+        <?php foreach ($tags as $tag): ?>
+        <a class="chip" href="/?tag=<?= e(rawurlencode($tag['slug'])) ?>"><?= e($tag['name']) ?></a>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
 </div>

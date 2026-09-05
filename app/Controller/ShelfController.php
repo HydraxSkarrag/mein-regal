@@ -536,11 +536,35 @@ final class ShelfController
     }
 
     /** @return list<array{name: string, slug: string}> */
+    /**
+     * A book's tags split into the two kinds, genres first.
+     *
+     * Static and separate for the same reason headingFor() is: it is a
+     * decision about what the page says, and it can be checked without a
+     * database standing behind it.
+     *
+     * @param  list<array{name: string, slug: string, kind?: string}> $tags
+     * @return array{genre: list<array<string,mixed>>, label: list<array<string,mixed>>}
+     */
+    public static function tagGroups(array $tags): array
+    {
+        $groups = ['genre' => [], 'label' => []];
+        foreach ($tags as $tag) {
+            $groups[($tag['kind'] ?? '') === 'genre' ? 'genre' : 'label'][] = $tag;
+        }
+
+        return $groups;
+    }
+
     private function tagsFor(int $bookId): array
     {
+        // Genres before labels, and each group alphabetical inside itself:
+        // the page shows them under their own headings when a book carries
+        // both, so the order has to arrive already grouped.
         $statement = $this->app->pdo->prepare(
-            'SELECT t.name, t.slug FROM tags t JOIN book_tags bt ON bt.tag_id = t.id
-              WHERE bt.book_id = ? ORDER BY t.name'
+            "SELECT t.name, t.slug, t.kind FROM tags t JOIN book_tags bt ON bt.tag_id = t.id
+              WHERE bt.book_id = ?
+              ORDER BY CASE WHEN t.kind = 'genre' THEN 0 ELSE 1 END, t.name"
         );
         $statement->execute([$bookId]);
 
