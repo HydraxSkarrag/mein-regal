@@ -603,6 +603,15 @@
     review.appendChild(actions);
     afterSaveBox.appendChild(review);
 
+    /* And then scroll to it. The frozen picture goes in below the live
+       viewfinder, which on a phone puts it off the bottom of the screen - a
+       few pixels of it showing under the fold, with the two buttons that
+       decide its fate further down still. You have just taken a photograph
+       and cannot see it. */
+    if (review.scrollIntoView) {
+      review.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     actions.querySelector('[data-retake]').addEventListener('click', function () {
       beginCoverShot(bookId, slug);
     });

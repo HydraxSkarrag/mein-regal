@@ -69,7 +69,14 @@ final class CoverImage
      * Pass $small for the shelf grid: a full-size cover per tile would be a
      * lot of mobile data for something rendered at 128 pixels wide.
      *
-     * @param array{source: string, path: ?string, external_url: ?string}|null $cover
+     * The address ends in ?v= and the time the picture was stored, because a
+     * cover file is named after its book and its source and keeps that name
+     * when the picture behind it is replaced. Covers are served with a thirty
+     * day cache, so without this a photograph thrown out and a better one put
+     * in its place left the browser showing the discarded one - the file on
+     * disk was new, the address was not, and nothing asked for it again.
+     *
+     * @param array{source: string, path: ?string, external_url: ?string, created_at?: ?string}|null $cover
      */
     public static function url(?array $cover, bool $small = false, string $basePath = '/covers/'): ?string
     {
@@ -82,10 +89,31 @@ final class CoverImage
                 $path = preg_replace('/\.webp$/', '-klein.webp', $path) ?? $path;
             }
 
-            return $basePath . $path;
+            return $basePath . $path . self::version($cover);
         }
 
         // Only ever an image the signed-in owner sees; see CoverRepository.
         return $cover['external_url'] ?? null;
+    }
+
+    /**
+     * The "?v=" that changes when the picture does, and not otherwise.
+     *
+     * Short and derived rather than random: the same picture has to keep the
+     * same address across page loads and across visitors, or the cache is not
+     * a cache. A row from before this existed carries no time and gets no
+     * parameter - the address it had is the address it keeps.
+     *
+     * @param array{created_at?: ?string} $cover
+     */
+    private static function version(array $cover): string
+    {
+        $stored = $cover['created_at'] ?? null;
+        if (!is_string($stored) || $stored === '') {
+            return '';
+        }
+        $time = strtotime($stored);
+
+        return $time === false ? '' : '?v=' . $time;
     }
 }

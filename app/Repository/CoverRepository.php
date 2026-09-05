@@ -93,12 +93,23 @@ final class CoverRepository
         /* rejected_at is written as NULL and listed among the updated
          * columns on purpose: saving a cover is a deliberate act, and it
          * lifts an earlier rejection of the same source. Only the automatic
-         * path consults the rejection before it gets this far. */
+         * path consults the rejection before it gets this far.
+         *
+         * created_at is written every time as well, update included.
+         *
+         * A cover file is named after the book and its source, so replacing
+         * the picture leaves the address unchanged - and covers are served
+         * with a thirty day cache. Delete an own photograph, upload a better
+         * one, and the browser goes on showing the deleted one: the file on
+         * disk is new, the URL is not. The stored time is what CoverImage
+         * hangs on the end of the address to say the picture changed, so it
+         * has to mean "when this row's picture was stored" rather than "when
+         * this book first got any cover at all". */
         $sql = $this->dialect->upsert(
             'covers',
-            ['book_id', 'source', 'path', 'external_url', 'attribution', 'width', 'height', 'is_public', 'rejected_at'],
+            ['book_id', 'source', 'path', 'external_url', 'attribution', 'width', 'height', 'is_public', 'rejected_at', 'created_at'],
             ['book_id', 'source'],
-            ['path', 'external_url', 'attribution', 'width', 'height', 'is_public', 'rejected_at']
+            ['path', 'external_url', 'attribution', 'width', 'height', 'is_public', 'rejected_at', 'created_at']
         );
 
         $this->pdo->prepare($sql)->execute([
@@ -111,6 +122,7 @@ final class CoverRepository
             $height,
             self::isPublic($path) ? 1 : 0,
             null,
+            date('Y-m-d H:i:s'),
         ]);
     }
 
@@ -121,7 +133,7 @@ final class CoverRepository
      */
     public function bestFor(int $bookId, bool $viewerIsSignedIn): ?array
     {
-        $sql = 'SELECT source, path, external_url, attribution, width FROM covers'
+        $sql = 'SELECT source, path, external_url, attribution, width, created_at FROM covers'
             . ' WHERE book_id = ? AND rejected_at IS NULL';
         $parameters = [$bookId];
         if (!$viewerIsSignedIn) {
@@ -148,7 +160,7 @@ final class CoverRepository
             return [];
         }
         $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
-        $sql = 'SELECT book_id, source, path, external_url, attribution, width FROM covers'
+        $sql = 'SELECT book_id, source, path, external_url, attribution, width, created_at FROM covers'
             . " WHERE book_id IN ($placeholders) AND rejected_at IS NULL";
         if (!$viewerIsSignedIn) {
             $sql .= ' AND is_public = 1';

@@ -1088,7 +1088,18 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     justify-content: space-around;
     background: var(--surface);
     border-top: 1px solid var(--border);
-    z-index: 20;
+    /* Above the sticky save bar on the edit page, which is 21.
+     *
+     * The bar sits at bottom: nav-height, so the two rectangles do not
+     * overlap and nothing steals a tap from Save - that was the old bug and
+     * it stays fixed. What does cross the line is the scan button, raised 22
+     * pixels out of the bar below, and at 20 it was being sliced off flat by
+     * the save bar's background. It is the one control that has to be whole:
+     * a circle with its top cut square does not read as a button at all.
+     *
+     * The z-index has to be here rather than on .nav-scan - this element
+     * makes a stacking context, so nothing inside it can climb out. */
+    z-index: 22;
   }
   .bottom-nav a {
     display: flex;
