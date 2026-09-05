@@ -534,6 +534,27 @@
       afterSaveBox.appendChild(note);
     }
 
+    /* Two ways to a cover, and they are not the same way twice.
+     *
+     * The question was asked and settled with numbers: the shutter here uses
+     * the stream that is already running, 1920x1080 requested, cropped to the
+     * viewfinder, which on a phone leaves about 1080x1620 - and CoverStorage
+     * caps what it keeps at 900 wide. So the phone's 12 megapixel still
+     * camera would end up at exactly the same stored size. There is no
+     * quality to win by sending people out to the camera app.
+     *
+     * What that route costs is an app switch per book, twenty of them in a
+     * series scan, and on iOS it means opening the camera app while a
+     * getUserMedia stream is live, which is its own risk. What it is good for
+     * is a picture that already exists on the device.
+     *
+     * The file input carries capture="environment" on purpose: straight to
+     * the camera, no gallery. It also means no crop step - the camera app
+     * hands the photograph back as taken. Cropping would need either the
+     * gallery (drop the attribute) or a drag frame in the review step here.
+     *
+     * Neither button is redundant. Delete one and you lose either the speed
+     * or the photograph already in the camera roll. */
     var wrapper = document.createElement('div');
     wrapper.className = 'scanner-actions';
 
