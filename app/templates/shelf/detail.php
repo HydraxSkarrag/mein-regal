@@ -69,8 +69,8 @@ declare(strict_types=1);
 
     <?php $stars = App\Core\Formatter::stars($book['rating']); ?>
     <?php if ($stars !== null): ?>
-    <p class="stars" aria-label="<?= e(t('book.rating')) ?>: <?= e($stars['text']) ?> / 5">
-      <?= str_repeat('★', $stars['full']) ?><?php if ($stars['half']): ?><span class="half">★</span><?php endif; ?><span class="off"><?= str_repeat('★', $stars['empty']) ?></span>
+    <p aria-label="<?= e(t('book.rating')) ?>: <?= e($stars['text']) ?> / 5">
+      <?= $view->render('partials.stars', ['rating' => $book['rating'], 'withEmpty' => true]) ?>
       <span class="stars-text"><?= e($stars['text']) ?></span>
     </p>
     <?php endif; ?>

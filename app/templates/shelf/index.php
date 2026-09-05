@@ -106,10 +106,11 @@ declare(strict_types=1);
                     $sortValue = $book['published_year'] !== null ? (string) $book['published_year'] : null;
                     break;
                 case 'rating':
+                    /* Drawn rather than written: see partials/stars.php. The
+                       number stays beside it, because at grid size four stars
+                       and four-and-a-half are one pixel apart. */
                     $parts = App\Core\Formatter::stars($book['rating']);
-                    $sortValue = $parts === null
-                        ? null
-                        : App\Core\Formatter::starsText($book['rating']) . ' ' . $parts['text'];
+                    $sortValue = $parts === null ? null : $parts['text'];
                     break;
                 case 'read':
                     $sortValue = $book['finished_at'] !== null ? $formatter->date($book['finished_at']) : null;
@@ -123,7 +124,10 @@ declare(strict_types=1);
             }
           ?>
           <?php if ($sortValue !== null && $sortValue !== ''): ?>
-          <p class="book-sortvalue<?= ($filters['sort'] ?? '') === 'rating' ? ' book-sortvalue--stars' : '' ?>"><?= e($sortValue) ?></p>
+          <p class="book-sortvalue<?= ($filters['sort'] ?? '') === 'rating' ? ' book-sortvalue--stars' : '' ?>">
+            <?php if (($filters['sort'] ?? '') === 'rating'): ?>
+              <?= $view->render('partials.stars', ['rating' => $book['rating'], 'withEmpty' => false]) ?>
+            <?php endif; ?><?= e($sortValue) ?></p>
           <?php endif; ?>
         </a>
       </li>

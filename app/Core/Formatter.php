@@ -152,6 +152,15 @@ final class Formatter
      * missing from most system fonts, so it arrived as a question mark. The
      * vulgar fraction has been in every font since Latin-1.
      */
+    /**
+     * Stars as plain text, for the places that cannot take markup.
+     *
+     * The "½" is a poor half star - another typeface, another weight, another
+     * colour - so anything that can hold a span should draw one instead; see
+     * partials/stars.php. What is left for this is the rating dropdown on the
+     * edit page, where the labels are <option> text and nothing else is
+     * possible.
+     */
     public static function starsText(int|float|string|null $rating): ?string
     {
         $parts = self::stars($rating);
