@@ -23,7 +23,7 @@ return [
     'nav.skip'           => 'Zum Inhalt springen',
     'nav.menu'           => 'Menü',
 
-    'shelf.title'        => 'Mein Regal',
+    'shelf.all'          => 'Alle Bücher',
     'shelf.count'        => '{count} Bücher',
     'shelf.count.one'    => 'Ein Buch',
     'shelf.search'       => 'Titel, Autor, ISBN',

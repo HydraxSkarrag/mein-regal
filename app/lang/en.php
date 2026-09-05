@@ -23,7 +23,7 @@ return [
     'nav.skip'           => 'Skip to content',
     'nav.menu'           => 'Menu',
 
-    'shelf.title'        => 'My Shelf',
+    'shelf.all'          => 'All books',
     'shelf.count'        => '{count} books',
     'shelf.count.one'    => 'One book',
     'shelf.search'       => 'Title, author, ISBN',

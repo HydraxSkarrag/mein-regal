@@ -65,21 +65,61 @@ final class ShelfController
      * Regal" when the reader had clicked the chip instead - the same list,
      * with two names, depending on which of two doors was used.
      *
+     * With no filter at all it used to say "Mein Regal", which is the name of
+     * the site and not of a selection - and the site already says that in the
+     * header three centimetres above, and in the browser tab. Three times on
+     * one screen. A heading here answers "which books are these", and when
+     * they are all of them, the answer is "all of them".
+     *
      * @param array<string,mixed> $filters
      */
     private function heading(array $filters): string
     {
-        if (($filters['author'] ?? '') !== '') {
-            return $this->authorName((string) $filters['author']);
+        return self::headingFor(
+            $filters,
+            ($filters['author'] ?? '') !== '' ? $this->authorName((string) $filters['author']) : null
+        );
+    }
+
+    /**
+     * The decision itself, with the author already looked up.
+     *
+     * Static and separate so it can be checked without a database behind it -
+     * the same arrangement pageNumbers() is in, and for the same reason.
+     *
+     * @param array<string,mixed> $filters
+     */
+    private static function headingFor(array $filters, ?string $authorName): string
+    {
+        if ($authorName !== null) {
+            return $authorName;
         }
         $status = (string) ($filters['status'] ?? '');
         if ($status === '') {
-            return t('shelf.title');
+            return t('shelf.all');
         }
 
         // The pile has a name of its own in the navigation, and it is the
         // name its readers use. The other three are just their status.
         return $status === 'unread' ? t('nav.unread') : t('status.' . $status);
+    }
+
+    /**
+     * What the browser tab calls it, which is not always the same thing.
+     *
+     * "Alle Bücher – Mein Regal" is a fine title for a selection and a poor
+     * one for a front page: what belongs in a tab, a bookmark and a search
+     * result for the unfiltered shelf is the name of the shelf. The layout
+     * drops the suffix when the two match, so this comes out as plain "Mein
+     * Regal" rather than the site name twice over.
+     *
+     * @param array<string,mixed> $filters
+     */
+    private static function documentTitle(array $filters, string $heading, string $siteName): string
+    {
+        $unfiltered = ($filters['author'] ?? '') === '' && ($filters['status'] ?? '') === '';
+
+        return $unfiltered ? $siteName : $heading;
     }
 
     /** Which navigation entry is the one you are on. */
@@ -184,7 +224,7 @@ final class ShelfController
 
         return Response::html($this->app->view->render('layout.base', [
             'content'   => $body,
-            'title'     => $heading,
+            'title'     => self::documentTitle($filters, $heading, $this->app->siteName()),
             'current'   => $current,
             'canonical' => $this->app->url('/'),
             'jsonLd'    => $this->collectionJsonLd($result['total']),

@@ -165,7 +165,7 @@ final class Application
         $this->view->share('formatter', $this->formatter);
         $this->view->share('signedIn', $this->auth->isSignedIn());
         $this->view->share('user', $this->auth->user());
-        $this->view->share('siteName', $this->config->str('site_name', 'Mein Regal'));
+        $this->view->share('siteName', $this->siteName());
         $this->view->share('siteUrl', rtrim($this->config->str('site_url'), '/'));
         $this->view->share('blogUrl', $this->config->str('blog_url'));
         $this->view->share('blogName', $this->config->str('blog_name'));
@@ -212,6 +212,12 @@ final class Application
     public function multilingual(): bool
     {
         return $this->config->bool('language_switcher', true);
+    }
+
+    /** What this installation calls itself. One default, in one place. */
+    public function siteName(): string
+    {
+        return $this->config->str('site_name', 'Mein Regal');
     }
 
     /**
