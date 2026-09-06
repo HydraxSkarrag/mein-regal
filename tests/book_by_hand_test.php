@@ -69,3 +69,26 @@ Assert::same('both are outside the lookup queue, having nothing to look up with'
 // It filters as "without ISBN", which is how they are found again to be
 // photographed or completed by hand.
 Assert::same('and the ISBN facet can find them', $books->countByIsbn(1), ['with' => 0, 'without' => 2]);
+
+Assert::group('A book by hand: the author typed alongside the title is kept');
+
+/* The form asks for a title and an author, because both narrow a catalogue
+ * search. Choosing "create without searching" used to keep only the title -
+ * the author field was read from the pipe-separated list a picked record
+ * fills in, and an empty one meant nobody had named anybody.
+ *
+ * Somebody who has just typed a name and is then asked for it again on the
+ * next screen is being told the form was not listening.
+ */
+$hand = $books->insert(1, ['title' => 'Der kleine Häwelmann', 'reading_status' => 'unread']);
+$books->replaceAuthors(1, $hand, [['name' => 'Theodor Storm', 'role' => 'author']], new App\Repository\AuthorRepository($pdo));
+
+$rows = $pdo->prepare(
+    'SELECT a.name, ba.role FROM authors a JOIN book_authors ba ON ba.author_id = a.id WHERE ba.book_id = ?'
+);
+$rows->execute([$hand]);
+$people = $rows->fetchAll();
+
+Assert::same('the name is on the book', count($people), 1);
+Assert::same('spelled as it was typed', $people[0]['name'], 'Theodor Storm');
+Assert::same('as an author, which is the only role a single field can mean', $people[0]['role'], 'author');

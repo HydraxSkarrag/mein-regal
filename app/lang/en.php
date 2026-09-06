@@ -108,7 +108,7 @@ return [
     'new.title'          => 'Add a book by hand',
     'new.hint'           => 'For books no database has - too old, too small a printing, or with no ISBN at all. The title is enough to start with; everything else is on the next page.',
     'new.author'         => 'Author',
-    'new.author.hint'    => 'Optional, but it narrows the search considerably.',
+    'new.author.hint'    => 'Optional. It narrows the search considerably - and is kept even if you skip the search.',
     'new.search'         => 'Search the catalogue',
     'new.create'         => 'Create without searching',
     'new.found'          => '{count} records at the German National Library',

@@ -108,7 +108,7 @@ return [
     'new.title'          => 'Buch von Hand erfassen',
     'new.hint'           => 'Für Bücher, die keine Datenbank kennt – zu alt, zu klein aufgelegt, oder ganz ohne ISBN. Der Titel genügt fürs Erste; alles Weitere steht auf der nächsten Seite.',
     'new.author'         => 'Autor oder Autorin',
-    'new.author.hint'    => 'Optional, grenzt die Suche aber deutlich ein.',
+    'new.author.hint'    => 'Optional. Grenzt die Suche deutlich ein – und wird auch ohne Suche mit übernommen.',
     'new.search'         => 'Im Katalog suchen',
     'new.create'         => 'Ohne Suche anlegen',
     'new.found'          => '{count} Treffer bei der Deutschen Nationalbibliothek',

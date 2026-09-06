@@ -138,10 +138,20 @@ final class BookController
             'reading_status' => 'unread',
         ]);
 
-        // Names arrive pipe-separated because they came from a list this page
-        // rendered, not from a form somebody filled in row by row.
+        /* Names arrive pipe-separated because they came from a list this page
+           rendered, not from a form somebody filled in row by row.
+           
+           Falling back to the search field is the point: somebody who typed a
+           title and an author and then chose "create without searching" has
+           already named the author, and asking again on the next page for
+           something they just typed is the sort of thing that makes a form
+           feel like it was not listening. */
+        $names = trim($request->post('authors')) !== ''
+            ? $request->post('authors')
+            : $request->post('author');
+
         $people = [];
-        foreach (array_slice(explode('|', $request->post('authors')), 0, 20) as $raw) {
+        foreach (array_slice(explode('|', $names), 0, 20) as $raw) {
             $name = Text::tidyName($raw);
             if ($name !== '' && !Text::isPlaceholderName($name)) {
                 $people[] = ['name' => $name, 'role' => 'author'];
