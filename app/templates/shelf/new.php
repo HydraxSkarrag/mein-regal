@@ -58,7 +58,11 @@ declare(strict_types=1);
       <button class="btn" type="submit" name="action" value="create">
         <?= e(t('new.create')) ?>
       </button>
-      <a class="btn" href="/scan"><?= e(t('common.cancel')) ?></a>
+      <?php /* "Zurück", like the other two doors out of the scan screen, and
+               not "Abbrechen": nothing has been started here that could be
+               cancelled, and the three ways in should not be worded as
+               though one of them were riskier than the others. */ ?>
+      <a class="btn" href="/scan"><?= e(t('scan.back')) ?></a>
     </div>
   </form>
 </div>
