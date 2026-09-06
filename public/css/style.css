@@ -531,9 +531,20 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 .stars { color: var(--accent); letter-spacing: 2px; }
 .stars .off { color: var(--border); }
-/* Half a star: the same glyph, half of it in the accent colour. */
+/* Half a star: the same glyph, with the left of it in the accent colour.
+ *
+ * The stop is 44% and not 50%, which is not a rounding error. The gradient is
+ * laid across the element's box - the glyph's advance width, side bearings
+ * and all - while the star's own axis sits left of that box's middle. Cut at
+ * 50% the colour runs visibly past the point of the star and the thing reads
+ * as a full star drawn slightly wrong, which is exactly how it was reported.
+ *
+ * Found by rendering 38 to 50 in steps of two beside three and four whole
+ * stars and looking at them; 44 is where the edge lands on the axis. It is a
+ * property of this typeface, so a theme that changes the font should look at
+ * this line. */
 .stars .half {
-  background: linear-gradient(90deg, var(--accent) 50%, var(--border) 50%);
+  background: linear-gradient(90deg, var(--accent) 44%, var(--border) 44%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
