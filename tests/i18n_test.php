@@ -173,3 +173,38 @@ foreach (['de', 'en'] as $locale) {
 
     Assert::same($locale . '.php defines every key exactly once', $twice, []);
 }
+
+Assert::group('Language files: every key a template asks for exists');
+
+/* A missing key shows as its own name - "book.title" printed where "Titel"
+ * belongs. Nothing fails, nothing is logged, and the page renders; it is
+ * simply wrong in one spot, which makes it the sort of thing found by whoever
+ * happens to look at that spot. This one was found by the person using it.
+ *
+ * Only literal keys are checked. Plenty are built from a value - t('binding.'
+ * . $book['binding']) - and those cannot be known from the source alone; they
+ * are the reason the translator returns the key rather than an empty string
+ * in the first place.
+ */
+$german = require PROJECT_ROOT . '/app/lang/de.php';
+$missing = [];
+
+$files = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator(PROJECT_ROOT . '/app/templates')
+);
+foreach ($files as $file) {
+    if ($file->getExtension() !== 'php') {
+        continue;
+    }
+    $source = (string) file_get_contents($file->getPathname());
+    // t('key') and nothing else: a quote followed by anything but a closing
+    // one rules out concatenation.
+    preg_match_all("/\bt\('([a-z0-9._]+)'\s*[,)]/i", $source, $found);
+    foreach ($found[1] as $key) {
+        if (!array_key_exists($key, $german)) {
+            $missing[$key] = basename($file->getPathname());
+        }
+    }
+}
+
+Assert::same('no template asks for a key that is not there', $missing, []);

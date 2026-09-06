@@ -1102,6 +1102,29 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .result-meta { color: var(--muted); font-size: 0.82rem; margin: 8px 0 0; line-height: 1.5; }
 .result-source { color: var(--muted); font-size: 0.75rem; margin: 0 0 10px; }
 
+/* ---- Catalogue candidates ------------------------------------------- */
+
+/* One row per edition, and the row is the form: the whole record travels in
+   hidden fields, so what is picked is what was shown. */
+.candidates { list-style: none; margin: 12px 0 0; padding: 0; }
+.candidates li + li { border-top: 1px solid var(--border); }
+.candidates form {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+}
+.candidate-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.candidate-people { font-size: 0.85rem; }
+.candidates .note { margin: 0; }
+.candidates .btn { flex: none; }
+
+/* On a phone the button goes under the record rather than beside it: three
+   facts and a title in one column leave no width for anything else. */
+@media (max-width: 560px) {
+  .candidates form { flex-direction: column; align-items: stretch; }
+}
+
 /* ---- Bottom bar (phones) -------------------------------------------- */
 
 .bottom-nav { display: none; }

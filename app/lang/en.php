@@ -83,6 +83,7 @@ return [
     'role.editor'        => 'Editor',
     'role.narrator'      => 'Read by',
 
+    'book.title'         => 'Title',
     'book.publisher'     => 'Publisher',
     'book.year'          => 'Edition published',
     'book.pages'         => 'Pages',
@@ -106,7 +107,16 @@ return [
 
     'new.title'          => 'Add a book by hand',
     'new.hint'           => 'For books no database has - too old, too small a printing, or with no ISBN at all. The title is enough to start with; everything else is on the next page.',
-    'new.create'         => 'Create and continue',
+    'new.author'         => 'Author',
+    'new.author.hint'    => 'Optional, but it narrows the search considerably.',
+    'new.search'         => 'Search the catalogue',
+    'new.create'         => 'Create without searching',
+    'new.found'          => '{count} records at the German National Library',
+    'new.found.hint'     => 'Pick the edition that is on the shelf - publisher, year and page count tell them apart.',
+    'new.take'           => 'Use this one',
+    'new.no.isbn'        => 'no ISBN',
+    'new.search.nothing' => 'Nothing found. Try fewer words - or add the book without searching.',
+    'new.search.failed'  => 'The catalogue could not be reached. Try again - or add the book without searching.',
     'new.title.required' => 'A title is the one thing needed - the rest can wait.',
 
     'scan.title'         => 'Add a book',

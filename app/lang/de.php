@@ -83,6 +83,7 @@ return [
     'role.editor'        => 'Herausgabe',
     'role.narrator'      => 'Gelesen von',
 
+    'book.title'         => 'Titel',
     'book.publisher'     => 'Verlag',
     'book.year'          => 'Ausgabe erschienen',
     'book.pages'         => 'Seiten',
@@ -106,7 +107,16 @@ return [
 
     'new.title'          => 'Buch von Hand erfassen',
     'new.hint'           => 'Für Bücher, die keine Datenbank kennt – zu alt, zu klein aufgelegt, oder ganz ohne ISBN. Der Titel genügt fürs Erste; alles Weitere steht auf der nächsten Seite.',
-    'new.create'         => 'Anlegen und weiter',
+    'new.author'         => 'Autor oder Autorin',
+    'new.author.hint'    => 'Optional, grenzt die Suche aber deutlich ein.',
+    'new.search'         => 'Im Katalog suchen',
+    'new.create'         => 'Ohne Suche anlegen',
+    'new.found'          => '{count} Treffer bei der Deutschen Nationalbibliothek',
+    'new.found.hint'     => 'Die Ausgabe wählen, die im Regal steht – Verlag, Jahr und Seitenzahl unterscheiden sie.',
+    'new.take'           => 'Übernehmen',
+    'new.no.isbn'        => 'ohne ISBN',
+    'new.search.nothing' => 'Nichts gefunden. Mit weniger Wörtern suchen – oder das Buch ohne Suche anlegen.',
+    'new.search.failed'  => 'Der Katalog war nicht erreichbar. Noch einmal versuchen – oder das Buch ohne Suche anlegen.',
     'new.title.required' => 'Ohne Titel geht es nicht – alles andere kann warten.',
 
     'scan.title'         => 'Buch erfassen',

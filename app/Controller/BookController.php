@@ -11,7 +11,9 @@ use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
 use App\Lookup\CoverFinder;
+use App\Lookup\HttpClient;
 use App\Lookup\LookupChain;
+use App\Lookup\TitleSearch;
 use App\Repository\CoverRepository;
 use Throwable;
 
@@ -63,34 +65,111 @@ final class BookController
         }
 
         $error = null;
-        if ($request->isPost()) {
-            $title = trim($request->post('title'));
+        $found = null;
+        $title = $request->isPost() ? trim($request->post('title')) : '';
+        $author = $request->isPost() ? trim($request->post('author')) : '';
+
+        if ($request->isPost() && $request->post('action') === 'search') {
+            /* Ask the catalogue; create nothing. What comes back is a
+               shortlist to choose from - see App\Lookup\TitleSearch for why
+               the German National Library and nobody else. */
+            try {
+                $found = (new TitleSearch(new HttpClient($this->app->config->str('api_contact'))))
+                    ->find($title, $author);
+                if ($found === []) {
+                    $error = t('new.search.nothing');
+                }
+            } catch (Throwable $e) {
+                error_log('[regal] title search failed: ' . $e->getMessage());
+                $error = t('new.search.failed');
+            }
+        } elseif ($request->isPost()) {
             if ($title === '') {
                 $error = t('new.title.required');
             } else {
-                $bookId = $this->app->books->insert($this->app->ownerId, [
-                    'title'          => mb_substr($title, 0, 500),
-                    'reading_status' => 'unread',
-                ]);
-                $book = $this->app->books->findById($this->app->ownerId, $bookId);
-
-                /* Straight into the full form rather than a "saved" message.
-                   The book exists now but is a title and nothing more, and
-                   the next thing anybody wants is the page that fixes that. */
-                return Response::redirect('/book/' . ($book['slug'] ?? '') . '/edit');
+                return $this->createByHand($request, $title);
             }
         }
 
         return Response::html($this->app->view->render('layout.base', [
             'content'   => $this->app->view->render('shelf.new', [
                 'error'     => $error,
-                'title'     => $request->isPost() ? $request->post('title') : '',
+                'title'     => $title,
+                'author'    => $author,
+                'found'     => $found,
                 'csrfField' => $this->app->csrf->field(),
             ]),
             'title'     => t('new.title'),
             'current'   => 'scan',
             'noIndex'   => true,
         ]));
+    }
+
+    /**
+     * Make the book, then go to the page that finishes it.
+     *
+     * Everything a picked record gave is carried over in hidden fields, so a
+     * chosen catalogue entry arrives complete and a bare title arrives as a
+     * title. Either way the next screen is the ordinary edit page, which is
+     * the one place that knows how to fill a book in.
+     */
+    private function createByHand(Request $request, string $title): Response
+    {
+        $isbn13 = Isbn::normalize($request->post('isbn13'));
+
+        /* An ISBN already on the shelf means the book is too, and the
+           catalogue has just handed back its record. Saying so beats making a
+           second copy that the scanner would then find first. */
+        if ($isbn13 !== null) {
+            $existing = $this->app->books->findByIsbn($this->app->ownerId, $isbn13);
+            if ($existing !== null) {
+                return Response::redirect('/book/' . $existing['slug'] . '/edit');
+            }
+        }
+
+        $bookId = $this->app->books->insert($this->app->ownerId, [
+            'isbn13'         => $isbn13,
+            'isbn10'         => $isbn13 !== null ? Isbn::to10($isbn13) : null,
+            'title'          => mb_substr($title, 0, 500),
+            'publisher'      => Input::text($request->post('publisher'), 255),
+            'published_year' => Input::int($request->post('published_year'), 1400, 2100),
+            'page_count'     => Input::int($request->post('page_count'), 1, 30000),
+            'language'       => Input::oneOf($request->post('language'), self::LANGUAGES),
+            'reading_status' => 'unread',
+        ]);
+
+        // Names arrive pipe-separated because they came from a list this page
+        // rendered, not from a form somebody filled in row by row.
+        $people = [];
+        foreach (array_slice(explode('|', $request->post('authors')), 0, 20) as $raw) {
+            $name = Text::tidyName($raw);
+            if ($name !== '' && !Text::isPlaceholderName($name)) {
+                $people[] = ['name' => $name, 'role' => 'author'];
+            }
+        }
+        if ($people !== []) {
+            $this->app->books->replaceAuthors($this->app->ownerId, $bookId, $people, $this->app->authors);
+        }
+
+        /* One try at a cover while an ISBN is in hand, through the services
+           that answer by ISBN alone - no quota, one request. It saves the
+           trip to the edit page's own button, which is the next thing anybody
+           would press. */
+        if ($isbn13 !== null) {
+            try {
+                (new CoverFinder(
+                    $this->app->lookup,
+                    $this->app->covers,
+                    new CoverStorage(PROJECT_ROOT . '/public/covers')
+                ))->fromServices($bookId, $isbn13);
+            } catch (Throwable $e) {
+                error_log('[regal] cover after adding by hand failed: ' . $e->getMessage());
+            }
+        }
+
+        $book = $this->app->books->findById($this->app->ownerId, $bookId);
+
+        return Response::redirect('/book/' . ($book['slug'] ?? '') . '/edit');
     }
 
     public function form(Request $request, array $params): Response
