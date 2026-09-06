@@ -91,17 +91,30 @@ final class AuthorRepository
         return $statement->fetchAll();
     }
 
-    /** @return list<array{id: int, name: string, sort_name: string, book_count: int}> */
+    /**
+     * The biggest authors, for the sidebar facet that is headed with that word.
+     *
+     * Same rule as count(), and the count beside each name is books they
+     * wrote - a translator with forty translations does not belong at the top
+     * of a list called authors, and the number next to somebody who both
+     * wrote and translated has to mean one thing or the other.
+     *
+     * Reaching a translator's books stays possible: the filter behind these
+     * links matches a person whatever they did on the book, so the link on a
+     * book page still works. It is the list that is about authors.
+     *
+     * @return list<array{id: int, name: string, sort_name: string, book_count: int}>
+     */
     public function listWithCounts(int $ownerId, int $limit = 50): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT a.id, a.name, a.sort_name, COUNT(ba.book_id) AS book_count
+            "SELECT a.id, a.name, a.sort_name, COUNT(ba.book_id) AS book_count
                FROM authors a
-               JOIN book_authors ba ON ba.author_id = a.id
+               JOIN book_authors ba ON ba.author_id = a.id AND ba.role = 'author'
               WHERE a.owner_id = ?
               GROUP BY a.id, a.name, a.sort_name
               ORDER BY book_count DESC, a.sort_name ASC
-              LIMIT ' . (int) $limit
+              LIMIT " . (int) $limit
         );
         $statement->execute([$ownerId]);
 
@@ -109,9 +122,29 @@ final class AuthorRepository
         return $statement->fetchAll();
     }
 
+    /**
+     * How many people wrote something on this shelf.
+     *
+     * Authors, and only authors. The table holds everyone who worked on a
+     * book - translators, illustrators, editors - and counting the lot under
+     * a heading that says "Autor:innen" is simply a wrong number. On a large
+     * shelf it hides: 1,777 people, 1,769 of them authors, and nobody was
+     * ever going to notice the eight. On a new one it is the whole number -
+     * one book with an author and a translator reported two authors.
+     *
+     * Somebody who translated one book and wrote another counts once, as an
+     * author, which is what the EXISTS is for.
+     */
     public function count(int $ownerId): int
     {
-        $statement = $this->pdo->prepare('SELECT COUNT(*) FROM authors WHERE owner_id = ?');
+        $statement = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM authors a
+              WHERE a.owner_id = ?
+                AND EXISTS (
+                      SELECT 1 FROM book_authors ba
+                       WHERE ba.author_id = a.id AND ba.role = 'author'
+                    )"
+        );
         $statement->execute([$ownerId]);
 
         return (int) $statement->fetchColumn();
