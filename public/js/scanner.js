@@ -367,7 +367,9 @@
         afterSaveBox.innerHTML = '';
         var row = document.createElement('div');
         row.className = 'scanner-actions';
-        row.innerHTML = '<a class="btn btn--grow" href="/book/' + esc(known.slug) + '">' +
+        /* On its own, so no btn--grow: a single way onward is the width of
+           its label, like every other lone button here. */
+        row.innerHTML = '<a class="btn" href="/book/' + esc(known.slug) + '">' +
           esc(known.title || text.openBook) + '</a>';
         afterSaveBox.appendChild(row);
       }

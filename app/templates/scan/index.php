@@ -82,8 +82,11 @@ declare(strict_types=1);
       <p class="scanner-overlay" id="overlay" hidden></p>
     </div>
     <p class="scanner-hint" id="hint"><?= e(t('scan.aim')) ?></p>
+    <?php /* One button, so it is the width of its word - the row stretches
+             what it holds, which is right for the two or three parallel
+             choices under a result and wrong for a single way back. */ ?>
     <div class="scanner-actions">
-      <button class="btn btn--block" type="button" id="stop"><?= e(t('scan.back')) ?></button>
+      <button class="btn" type="button" id="stop"><?= e(t('scan.back')) ?></button>
     </div>
   </section>
 

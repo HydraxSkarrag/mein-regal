@@ -1136,8 +1136,18 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .scanner-overlay--bad  { background: var(--overlay-bad); }
 .scanner-overlay--busy { background: var(--overlay-busy); }
 .scanner-hint { color: var(--muted); font-size: 0.85rem; text-align: center; margin: 10px 0 0; }
+/* Two or three parallel choices under a result - keep to the shelf, take a
+   photograph, skip - and equal widths say they are equal. */
 .scanner-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .scanner-actions .btn { flex: 1; }
+
+/* A row holding one button is not a set of choices, and stretching it made
+   the way back out of the camera wider than any button anywhere else. Left,
+   and the width of its word - except on a phone, where every button is a
+   thumb target. */
+@media (min-width: 560px) {
+  .scanner-actions .btn:only-child { flex: 0 1 auto; }
+}
 
 .result { display: flex; gap: 14px; margin-top: 6px; }
 .result .cover { width: 84px; flex: 0 0 84px; }
