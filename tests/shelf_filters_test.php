@@ -106,3 +106,27 @@ Assert::group('Shelf filters: binding is no longer a way in');
  * the assertion would hold whatever the sidebar did. A link is evidence. */
 Assert::true('no link filters by binding any more', !str_contains($mixed, 'binding='));
 Assert::true('and sorting is still the first thing offered', str_contains($mixed, t('filter.sort')));
+
+Assert::group('A card is not the edit page: its buttons stay their own size');
+
+/* .edit-actions is the long edit form's sticky bar - it follows the page
+ * down, paints a gradient over what is behind it, and stretches its first
+ * button so Save dominates the row. All three are right there.
+ *
+ * Two short cards borrowed it because it was "a row of buttons", and the
+ * stretch then made the accent button a different width on each: one row
+ * holds three buttons and the other two, so the one that grows grows
+ * differently. Same label, same act, two widths.
+ */
+foreach (['shelf/new.php', 'scan/index.php'] as $file) {
+    $source = (string) file_get_contents(PROJECT_ROOT . '/app/templates/' . $file);
+    Assert::true($file . ' uses the plain row', str_contains($source, 'class="form-actions"'));
+    Assert::true('and not the sticky bar', !str_contains($source, 'class="edit-actions"'));
+}
+
+$style = (string) file_get_contents(PROJECT_ROOT . '/public/css/style.css');
+Assert::true('the sticky bar still exists for the page it was written for', str_contains($style, '.edit-actions {'));
+Assert::true(
+    'and only it stretches its first button',
+    str_contains($style, '.edit-actions > :first-child') && !str_contains($style, '.form-actions > :first-child')
+);

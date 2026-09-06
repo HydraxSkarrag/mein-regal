@@ -954,6 +954,24 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .edit-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 }
 .edit-form .panel h2 { margin: 0 0 14px; }
+/* A plain row of buttons under a form in a card.
+ *
+ * Not .edit-actions, which is the long edit form's sticky bar: it follows the
+ * page down, paints a gradient over whatever is behind it and stretches its
+ * first button to dominate the row. All three are right there and wrong in a
+ * card that is six lines tall - and the stretch is what made the accent
+ * button a different width on two cards that are otherwise identical, because
+ * one row holds three buttons and the other two.
+ *
+ * Content-sized here, so the same label is the same width wherever it is. */
+.form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+/* Full width on a phone, where a button is a thumb target rather than a
+   word. */
+@media (max-width: 560px) {
+  .form-actions > * { flex: 1 1 100%; text-align: center; }
+}
+
 /* The sticky action bar has to clear the fixed bar at the bottom of a
    phone. Without the offset the navigation sits on top of Save and every
    tap lands on the nav instead - the form simply appears not to submit. */
@@ -1664,12 +1682,6 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .scanner { max-width: 880px; }
   .scan-modes { grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .scan-mode { min-height: 100%; }
-
-  /* A field the width of a card invites a sentence, and this one wants
-     thirteen digits. The card itself stays full width - it is the same shape
-     as the by-hand page, and two different card widths for the same act would
-     be the jump all over again. */
-  .scanner [data-when="manual"] .field input { max-width: 320px; }
 }
 
 /* A barcode is wider than it is tall and a book is not.

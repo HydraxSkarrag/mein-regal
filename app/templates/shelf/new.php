@@ -48,7 +48,7 @@ declare(strict_types=1);
       <p class="note"><?= e(t('new.author.hint')) ?></p>
     </div>
 
-    <div class="edit-actions">
+    <div class="form-actions">
       <button class="btn btn--primary" type="submit" name="action" value="search">
         <?= e(t('new.search')) ?>
       </button>

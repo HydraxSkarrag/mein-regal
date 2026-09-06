@@ -105,7 +105,7 @@ declare(strict_types=1);
                  placeholder="<?= e(t('scan.manual.hint')) ?>">
         </div>
 
-        <div class="edit-actions">
+        <div class="form-actions">
           <button class="btn btn--primary" type="submit"><?= e(t('scan.lookup')) ?></button>
           <button class="btn" type="button" id="manual-back"><?= e(t('scan.back')) ?></button>
         </div>
