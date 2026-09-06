@@ -1,9 +1,34 @@
 <?php
 /**
- * German interface strings.
+ * German interface strings - and the original, not a translation.
  *
  * Only the interface belongs here. Book titles, author names and publishers
  * are content and stay in the language they were entered.
+ *
+ * This file is the source and en.php follows it, because everybody who
+ * actually uses these two shelves reads German. It was the other way round
+ * for a while and it showed: strings came out as the English sentence with
+ * German words in it - "Umdrehen: aufsteigend" for a sort toggle, "im Fuß"
+ * for a footer, "Befüllungsgrad der Felder" for how complete the records
+ * are. Each of those parses; none of them is what a German speaker would
+ * have written first.
+ *
+ * So write the German sentence, then say the same thing in English. Never
+ * the reverse, and never word by word.
+ *
+ * One word per thing, throughout:
+ *
+ *   Autor:in       never "Autor oder Autorin", never bare "Autor"
+ *   Schlagwort     the free-text tag           (English: label)
+ *   Genre          the ticked kind of tag      (English: genre)
+ *   Format         the binding - Taschenbuch, Hardcover, Hörbuch
+ *   Ausgabe        the printing, as in "Jahr der Ausgabe" - never the format
+ *   Cover          the picture; "Titelbild" nowhere
+ *   Regal          the shelf; books are "im Regal", not "in der Sammlung"
+ *
+ * German typography, enforced by i18n_test.php: an aside is set off with a
+ * spaced en dash – like this – never with a hyphen and never with an em
+ * dash; three dots are the single character …; quotation marks are „“.
  */
 declare(strict_types=1);
 
@@ -26,12 +51,12 @@ return [
     'shelf.all.books'    => 'Alle Bücher',
     'shelf.count'        => '{count} Bücher',
     'shelf.count.one'    => 'Ein Buch',
-    'shelf.search'       => 'Titel, Autor, ISBN',
+    'shelf.search'       => 'Titel, Autor:in, ISBN',
     'shelf.nothing.yet'    => 'Noch kein Buch im Regal.',
     'shelf.nothing.yet.hint' => 'Das erste kommt über {scan} herein – Barcode vor die Kamera, fertig. Oder unter Verwaltung → Daten eine vorhandene Sammlung einlesen.',
     'shelf.nothing.yet.visitor' => 'Hier ist noch nichts eingeräumt.',
     'shelf.empty'        => 'Kein Buch gefunden.',
-    'shelf.empty.hint'   => 'Andere Suche oder Filter versuchen.',
+    'shelf.empty.hint'   => 'Es hilft, anders zu suchen oder Filter wegzunehmen.',
     'shelf.all'          => 'Alle',
     'shelf.range'        => '{from}–{to} von {total}',
     'page.nav'           => 'Seiten',
@@ -51,8 +76,8 @@ return [
     'filter.reset'       => 'Filter zurücksetzen',
 
     'sort.by'            => 'Danach sortieren',
-    'sort.turn.asc'      => 'Umdrehen: aufsteigend',
-    'sort.turn.desc'     => 'Umdrehen: absteigend',
+    'sort.turn.asc'      => 'Aufsteigend sortieren',
+    'sort.turn.desc'     => 'Absteigend sortieren',
     'sort.recent'        => 'Zuletzt erfasst',
     'sort.acquired'      => 'Erhalten am',
     'sort.title'         => 'Titel',
@@ -100,14 +125,14 @@ return [
     'book.notes'         => 'Notizen',
     'book.duration'      => 'Dauer',
     'book.unrated'       => 'Nicht bewertet',
-    'book.no.cover'      => 'Kein Cover hinterlegt',
+    'book.no.cover'      => 'Kein Cover',
     'book.cover.of'      => 'Cover von {title}',
     'book.back'          => 'Zurück zum Regal',
     'book.edit'          => 'Bearbeiten',
 
     'new.title'          => 'Buch von Hand erfassen',
-    'new.hint'           => 'Für Bücher, die keine Datenbank kennt – zu alt, zu klein aufgelegt, oder ganz ohne ISBN. Der Titel genügt fürs Erste; alles Weitere steht auf der nächsten Seite.',
-    'new.author'         => 'Autor oder Autorin',
+    'new.hint'           => 'Für Bücher, die keine Datenbank kennt – zu alt, zu klein aufgelegt, oder ganz ohne ISBN. Zum Anlegen reicht der Titel; Verlag, Jahr und alles Übrige lassen sich danach beim Bearbeiten nachtragen.',
+    'new.author'         => 'Autor:in',
     'new.author.hint'    => 'Optional. Grenzt die Suche deutlich ein – und wird auch ohne Suche mit übernommen.',
     'new.search'         => 'Im Katalog suchen',
     'new.create'         => 'Ohne Suche anlegen',
@@ -153,7 +178,7 @@ return [
     'scan.saved'         => '„{title}“ steht jetzt im Regal.',
     'scan.duplicate'     => 'Dieses Buch ist bereits erfasst.',
     'scan.no.decoder'    => 'Dieser Browser kann keine Barcodes lesen. Die ISBN lässt sich von Hand eingeben.',
-    'scan.no.camera'     => 'Dieses Gerät gibt keine Kamera frei. Die ISBN lässt sich von Hand eingeben.',
+    'scan.no.camera'     => 'Dieses Gerät hat keine Kamera oder gibt sie nicht frei. Die ISBN lässt sich von Hand eingeben.',
     'scan.no.https'      => 'Die Kamera funktioniert nur über eine verschlüsselte Verbindung.',
     'scan.denied'        => 'Der Zugriff auf die Kamera wurde abgelehnt.',
     'scan.invalid.isbn'  => 'Das ist keine gültige ISBN.',
@@ -166,7 +191,7 @@ return [
     'auth.password'      => 'Passwort',
     'auth.remember'      => 'Angemeldet bleiben',
     'auth.failed'        => 'E-Mail oder Passwort stimmt nicht.',
-    'auth.locked'        => 'Zu viele Versuche. Bitte in {minutes} Minuten erneut versuchen.',
+    'auth.locked'        => 'Zu viele Fehlversuche. Bitte in {minutes} Minuten noch einmal.',
     'auth.required'      => 'Dafür musst du angemeldet sein.',
     'auth.hello'         => 'Angemeldet als {name}',
 
@@ -183,14 +208,14 @@ return [
     'stats.per.year'     => 'Gelesene Bücher pro Jahr',
     'stats.published'    => 'Bücher nach Jahr der Ausgabe',
     'stats.published.note' => 'Gezählt wird das Jahr dieser Ausgabe, nicht das der Erstveröffentlichung: Eine ISBN bezeichnet ein Buch, kein Werk.',
-    'stats.coverage'     => 'Befüllungsgrad der Felder',
-    'stats.todo'         => 'Zu tun',
+    'stats.coverage'     => 'Vollständigkeit der Angaben',
+    'stats.todo'         => 'Was noch fehlt',
     'stats.no.cover'     => 'Ohne Cover',
     'stats.no.isbn'      => 'Ohne ISBN',
     'stats.no.rating'    => 'Ohne Bewertung',
     'stats.no.genre'     => 'Ohne Genre',
     'stats.no.author'    => 'Ohne Autor:in',
-    'stats.bulk.note'    => 'Sammel-Erfassungstage sind hier ausgenommen — an ihnen wurde katalogisiert, nicht gekauft.',
+    'stats.bulk.note'    => 'Sammel-Erfassungstage sind hier ausgenommen – an ihnen wurde katalogisiert, nicht gekauft.',
     'stats.covers'       => 'Cover-Quellen',
 
     'common.yes'         => 'Ja',
@@ -225,7 +250,7 @@ return [
     'stats.year.running'   => 'Das laufende Jahr ist noch nicht vorbei.',
     'stats.rated.note'     => '{rated} von {total} Büchern sind bewertet.',
     'stats.enrich.note'    => 'Der nächtliche Abgleich füllt fehlende Cover und Angaben nach und nach von selbst auf.',
-    'stats.covers.none'    => 'Noch keine Cover hinterlegt.',
+    'stats.covers.none'    => 'Noch keine Cover gespeichert.',
     'stats.recent'         => 'Zuletzt erfasst',
     'stats.bulk.count'     => 'Bei {count} Büchern ist das Erwerbsdatum ein Sammel-Erfassungstag und kein echtes Kaufdatum.',
     'stats.coverage.note'  => 'Wie vollständig die Datensätze sind – die niedrigen Werte zeigen, wo sich Nacharbeit lohnt.',
@@ -246,7 +271,7 @@ return [
     'book.review.url'      => 'Falls es dazu eine Besprechung auf dem Blog gibt – wird auf der Buchseite verlinkt.',
 
     'edit.group.book'          => 'Das Buch',
-    'edit.group.reading'       => 'Gelesen',
+    'edit.group.reading'       => 'Das Lesen',
     'edit.group.private'       => 'Nur für dich',
     'edit.group.private.hint'  => 'Diese Angaben sind öffentlich nicht sichtbar.',
     'edit.group.cover'         => 'Cover',
@@ -261,7 +286,7 @@ return [
     'edit.cover.hint'          => 'Am Handy öffnet sich die Kamera, am Rechner die Dateiauswahl. Standortdaten werden beim Speichern entfernt.',
     'edit.bulk.hint'           => 'Dieses Datum teilen sich auffällig viele Bücher. Es ist vermutlich der Tag, an dem sie erfasst wurden, und nicht der Erwerb.',
     'edit.saved'               => 'Gespeichert.',
-    'edit.cover.failed'        => 'Das Bild konnte nicht gespeichert werden. Die übrigen Änderungen sind gesichert.',
+    'edit.cover.failed'        => 'Das Bild konnte nicht gespeichert werden. Alles andere wurde gespeichert.',
 
     'stats.public'         => 'Öffentliche Statistik ansehen',
 
@@ -270,7 +295,7 @@ return [
     'about.write'        => 'Jetzt schreiben',
     'about.edit'         => 'Über-Seite bearbeiten',
     'about.body'         => 'Text',
-    'about.body.hint'    => 'Leerzeile trennt Absätze. Adressen werden automatisch verlinkt. HTML wird nicht ausgeführt.',
+    'about.body.hint'    => 'Eine Leerzeile trennt Absätze. Adressen werden automatisch verlinkt. HTML wird nicht ausgeführt.',
     'about.suggested'    => 'Mein Bücherregal – {owner} von {blog}. Hier steht, was ich lese, gelesen habe und noch lesen will.',
     'nav.about'          => 'Über',
 
@@ -285,7 +310,7 @@ return [
 
     'delete.title'             => 'Buch entfernen',
     'delete.explain'           => 'Entfernt das Buch samt Cover, Bewertung und Notizen. Das lässt sich nicht rückgängig machen.',
-    'import.dryrun'      => 'TROCKENLAUF - es wurde nichts geschrieben.',
+    'import.dryrun'      => 'TROCKENLAUF – es wurde nichts geschrieben.',
     'import.done'        => 'Import abgeschlossen.',
     'import.rows'        => 'Zeilen gelesen',
     'import.imported'    => 'Bücher importiert',
@@ -300,7 +325,7 @@ return [
     'import.bulk'        => 'Sammel-Erfassungstage ({count} Bücher markiert, damit keine '
                             . 'Statistik sie als echte Zugänge liest):',
     'import.review'      => 'Zur Nachkontrolle ({count}), Zeile und Titel:',
-    'import.more'        => '... und {count} weitere',
+    'import.more'        => '… und {count} weitere',
     'import.errors'      => 'FEHLER ({count}):',
 
     'delete.word'              => 'LÖSCHEN',
@@ -352,7 +377,7 @@ return [
     'setup.password.repeat'      => 'Passwort wiederholen',
     'setup.password.mismatch'    => 'Die beiden Passwörter stimmen nicht überein.',
     'brand.defaults'             => 'Dieses Regal trägt noch das mitgelieferte Standard-Logo. Ein eigenes Logo und eigene Symbole gehören in den Ordner {folder} – dort ersetzen sie die Standarddateien und überstehen jede Aktualisierung.',
-    'brand.defaults.files'       => 'Erwartet werden {files}. Vorhanden ist, was da ist; der Rest bleibt beim Standard.',
+    'brand.defaults.files'       => 'Erwartet werden {files}. Verwendet wird, was davon da liegt; der Rest bleibt beim Standard.',
 
     'maintenance.title'                    => 'Daten',
     'maintenance.export'                   => 'Herunterladen',
@@ -431,7 +456,7 @@ return [
                             . 'Webspace liegt, kann so nicht verschwinden.',
     'project.origin.heading' => 'Herkunft',
     'project.origin'     => 'Geschrieben für das Bücherregal von {blog} und von dort weitergegeben. '
-                            . 'Jede Installation trägt diesen Hinweis im Fuß – nicht, weil die Lizenz es '
+                            . 'Jede Installation trägt diesen Hinweis in der Fußzeile – nicht, weil die Lizenz es '
                             . 'verlangt, sondern damit man von einem fremden Regal aus zum Quellcode '
                             . 'findet und sich selbst eines einrichten kann.',
     'project.how.heading' => 'Was sie kann',
@@ -450,14 +475,14 @@ return [
     'project.licence'    => 'Quellcode unter MIT-Lizenz. Logo, Cover und Buchdaten gehören nicht dazu.',
 
     'tags.title'         => 'Genres und Schlagwörter',
-    'tags.count'         => '{genres} von {total} als Genre',
+    'tags.count'         => '{genres} von {total} sind Genres',
     'tags.hint'          => 'Angekreuzt heißt Genre; alles andere zählt als Schlagwort und erscheint in der eigenen Liste. Die Zahl rechts sagt, an wie vielen Büchern der Eintrag hängt – viele hängen an einem einzigen. Das × entfernt einen Eintrag.',
     'tags.saved'         => 'Gespeichert. {count} Genres, alles andere zählt als Schlagwort.',
 
     'tags.remove'            => 'entfernen',
     'tags.remove.title'      => '„{name}“ entfernen?',
     'tags.remove.warning'    => 'Bücher, die dieses Schlagwort verlieren: {count}',
-    'tags.remove.reversible' => 'Rückgängig jederzeit: die Zuordnungen bleiben gespeichert, nur unsichtbar.',
+    'tags.remove.reversible' => 'Jederzeit rückgängig zu machen: die Zuordnungen bleiben gespeichert, nur unsichtbar.',
     'tags.remove.imports'    => 'Künftige Importe legen es nicht wieder an.',
     'tags.remove.do'         => 'Entfernen',
     'tags.show.books'        => 'Diese Bücher ansehen',
@@ -467,7 +492,7 @@ return [
     'tags.dropped.heading'   => 'Entfernt',
     'tags.dropped.hint'      => 'Nicht gelöscht, nur ausgeblendet – mit allen Zuordnungen.',
 
-    'tags.sort.heading'      => 'Einsortieren',
+    'tags.sort.heading'      => 'Genre oder Schlagwort',
     'tags.merge.heading'     => 'Zusammenführen',
     'tags.merge.hint'        => 'Zwei Schreibweisen desselben Genres. Das erste verschwindet, seine Bücher bekommen das zweite.',
     'tags.merge.from'        => 'Dieses verschwindet',
@@ -480,7 +505,7 @@ return [
     'tags.merged'            => 'Übernommen: {count} Bücher haben jetzt „{into}“, „{from}“ ist entfernt.',
 
     'tags.field.heading'     => 'Ins Feld übernehmen',
-    'tags.field.hint'        => 'Manche Schlagwörter wiederholen nur, was ein eigenes Feld des Buches schon festhält: „Taschenbücher“ ist die Ausgabe, „Englische Bücher“ die Sprache. Hier wird der Wert ins Feld geschrieben – nur dort, wo es leer ist – und das Schlagwort danach entfernt.',
+    'tags.field.hint'        => 'Manche Schlagwörter wiederholen nur, was ein eigenes Feld des Buches schon festhält: „Taschenbücher“ ist das Format, „Englische Bücher“ die Sprache. Hier wird der Wert ins Feld geschrieben – nur dort, wo es leer ist – und das Schlagwort danach entfernt.',
     'tags.field.tag'         => 'Schlagwort',
     'tags.field.value'       => 'Wert',
     'tags.field.title'       => '„{name}“ ins Feld übernehmen?',

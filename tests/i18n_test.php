@@ -224,3 +224,97 @@ foreach (['camera', 'manual', 'blank'] as $door) {
     Assert::true('and says what it is for', $hint !== 'scan.mode.' . $door . '.hint');
     Assert::true('in a sentence rather than a word', str_word_count($hint) > 4);
 }
+
+Assert::group('Deutsch liest sich wie Deutsch, nicht wie übersetztes Englisch');
+
+/* The complaint that started this group: the German read like the English
+ * sentence with German words dropped into it. "Umdrehen: aufsteigend" for a
+ * sort toggle, "im Fuß" where a German says "in der Fußzeile",
+ * "Befüllungsgrad der Felder" for how complete the records are. All three
+ * parse. None is what anybody would have written in German first.
+ *
+ * Nothing here can judge a sentence. What it can do is hold on to every
+ * wording that was already caught by a person, so the same one cannot come
+ * back through a later tidy-up - which is the only part of this that a test
+ * is actually good at. The list grows by one line each time somebody spots
+ * another; that is the point of it.
+ */
+$german = require PROJECT_ROOT . '/app/lang/de.php';
+
+$banned = [
+    'Befüllungsgrad'     => 'Amtsdeutsch for "how complete the records are"',
+    'im Fuß'             => 'a page has a Fußzeile, not a Fuß',
+    'Autor oder Autorin' => 'the shelf says Autor:in everywhere else',
+    'Umdrehen:'          => '"Turn round: ascending" is not a German tooltip',
+    'hinterlegt'         => 'a cover is gespeichert, not hinterlegt',
+    'Titelbild'          => 'the shelf calls it a Cover throughout',
+];
+
+foreach ($banned as $phrase => $why) {
+    $hits = array_keys(array_filter(
+        $german,
+        static fn ($text): bool => str_contains((string) $text, $phrase)
+    ));
+    Assert::same('no "' . $phrase . '" - ' . $why, $hits, []);
+}
+
+Assert::group('German typography');
+
+/* A dash in German is the en dash with spaces around it. The ASCII hyphen is
+ * the English habit and came in with the English drafts; the em dash is the
+ * American one and turned up once, in a single string, where every neighbour
+ * had the right character - which is exactly how nobody notices.
+ *
+ * editor.hint is exempt: it prints Markdown syntax, so its "- Aufzählung" is
+ * the character being demonstrated rather than a dash.
+ */
+$exempt = ['editor.hint'];
+
+$hyphenated = [];
+$emDashed   = [];
+$dotted     = [];
+$straight   = [];
+
+foreach ($german as $key => $text) {
+    $text = (string) $text;
+    if (in_array($key, $exempt, true)) {
+        continue;
+    }
+    if (str_contains($text, ' - ')) {
+        $hyphenated[] = $key;
+    }
+    if (str_contains($text, '—')) {
+        $emDashed[] = $key;
+    }
+    if (str_contains($text, '...')) {
+        $dotted[] = $key;
+    }
+    if (str_contains($text, '"')) {
+        $straight[] = $key;
+    }
+}
+
+Assert::same('an aside uses the en dash, not a hyphen', $hyphenated, []);
+Assert::same('and not the em dash either', $emDashed, []);
+Assert::same('three dots are the ellipsis character', $dotted, []);
+Assert::same('quotation marks are the German ones', $straight, []);
+
+Assert::group('One word per thing');
+
+/* "Ausgabe" means the printing - "Jahr der Ausgabe". It also used to mean the
+ * binding, until that field was relabelled "Format" and one hint was left
+ * behind explaining that "Taschenbücher" is "die Ausgabe". Two meanings for
+ * one word in one interface, and the older of them no longer on any label.
+ */
+Assert::true(
+    'the binding is called Format',
+    str_contains($german['tags.field.hint'], 'ist das Format')
+);
+Assert::same('and the field label agrees', $german['book.binding'], 'Format');
+
+// A heading that repeats one of the options underneath it labels nothing. The
+// edit page had "Gelesen" over a dropdown whose first entry was "Gelesen".
+Assert::true(
+    'no group heading repeats a status below it',
+    $german['edit.group.reading'] !== $german['status.read']
+);
