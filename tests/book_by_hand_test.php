@@ -92,3 +92,26 @@ $people = $rows->fetchAll();
 Assert::same('the name is on the book', count($people), 1);
 Assert::same('spelled as it was typed', $people[0]['name'], 'Theodor Storm');
 Assert::same('as an author, which is the only role a single field can mean', $people[0]['role'], 'author');
+
+Assert::group('A book by hand: the scan options are not its options');
+
+/* The two switches above the three doors read as though they governed all
+ * three. They do not, and making them - the setting was briefly carried to
+ * this page in the address - was solving the wrong half: series scanning
+ * needs a running camera to have anywhere to return to, and recording as read
+ * is a way of not touching the form at all, which is the point of scanning
+ * and beside the point here, where the form is what you came for and the
+ * status is a field on it.
+ *
+ * So they are headed as belonging to scanning, and this page stays plain.
+ */
+$template = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/new.php');
+Assert::true('nothing is smuggled in from the scan screen', !str_contains($template, 'name="read"'));
+
+$scan = (string) file_get_contents(PROJECT_ROOT . '/app/templates/scan/index.php');
+Assert::true('and the switches say what they are about', str_contains($scan, "t('scan.options')"));
+
+// A book made here is unread, like every other book nobody has said otherwise
+// about - the edit page it lands on is where that gets decided.
+$plain = $books->insert(1, ['title' => 'Frisch angelegt', 'reading_status' => 'unread']);
+Assert::same('created unread', $books->findById(1, $plain)['reading_status'], 'unread');

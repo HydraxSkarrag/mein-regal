@@ -60,6 +60,7 @@
   var isbnInput = document.getElementById('isbn');
   var seriesToggle = document.getElementById('series');
   var readToggle = document.getElementById('read');
+
   var counter = document.getElementById('counter');
 
   var stream = null;

@@ -53,9 +53,18 @@ declare(strict_types=1);
       </a>
     </div>
 
-    <?php /* The two settings belong here and not next to the viewfinder:
-             they are decided once for a session, not per book. */ ?>
-    <div class="field field--check mt-m">
+    <?php /* The two settings belong here and not next to the viewfinder: they
+             are decided once for a session, not per book.
+             
+             Under a heading that says which of the three doors they are
+             about, because they are not about all of them. Series scanning
+             needs a running camera to have anywhere to return to, and
+             recording as read is a way of not touching the form at all -
+             which is the point of scanning and beside the point of the third
+             door, where the form is what you came for and the status is a
+             field on it. */ ?>
+    <h2 class="scan-options-heading"><?= e(t('scan.options')) ?></h2>
+    <div class="field field--check">
       <input id="series" type="checkbox" checked>
       <label for="series"><?= e(t('scan.series')) ?> <span class="note">– <?= e(t('scan.series.hint')) ?></span></label>
     </div>

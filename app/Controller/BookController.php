@@ -68,6 +68,7 @@ final class BookController
         $error = null;
         $found = null;
         $previews = [];
+
         $title = $request->isPost() ? trim($request->post('title')) : '';
         $author = $request->isPost() ? trim($request->post('author')) : '';
 
