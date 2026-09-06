@@ -1114,6 +1114,17 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   gap: 14px;
   padding: 12px 0;
 }
+/* The ground shows through when the catalogue has no picture for a record,
+   which is about half of them - so this is a tile that sometimes carries a
+   cover, not an image that sometimes fails. */
+.candidate-cover {
+  flex: none;
+  width: 42px;
+  height: 63px;
+  border-radius: 3px;
+  background-size: cover;
+  background-position: center;
+}
 .candidate-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .candidate-people { font-size: 0.85rem; }
 .candidates .note { margin: 0; }
@@ -1122,7 +1133,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 /* On a phone the button goes under the record rather than beside it: three
    facts and a title in one column leave no width for anything else. */
 @media (max-width: 560px) {
-  .candidates form { flex-direction: column; align-items: stretch; }
+  /* The cover stays beside the text; only the button drops below, so a row
+     is still one glance rather than three stacked things. */
+  .candidates form { flex-wrap: wrap; }
+  .candidates .btn { width: 100%; }
 }
 
 /* ---- Bottom bar (phones) -------------------------------------------- */

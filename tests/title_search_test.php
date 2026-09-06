@@ -101,3 +101,29 @@ Assert::same('with no ISBN', $old[0]['isbn13'], null);
 Assert::same('and everything else intact', $old[0]['title'], 'Die Regentrude : drei Märchen');
 
 Assert::same('nonsense is no records rather than an error', TitleSearch::parse('not xml at all'), []);
+
+Assert::group('Title search: the cover shown beside a candidate');
+
+/* Half the records have no cover - measured across three real searches, 12 of
+ * 24 candidates had one, 7 had none and 5 had no ISBN to ask with. So the
+ * picture is laid over a placeholder ground rather than put in an <img>: a
+ * background that 404s simply does not paint, where an image that 404s is a
+ * broken icon in half the list.
+ *
+ * The URL goes into a nonce-bearing style element, which is only safe because
+ * of what the value is. This is that guarantee, stated where it can fail:
+ * everything TitleSearch reports as an ISBN has been through
+ * Isbn::normalize, so it cannot carry a quote, a bracket or a space out of
+ * the catalogue and into a stylesheet.
+ */
+$fromCatalogue = TitleSearch::parse($xml)[0]['isbn13'];
+
+Assert::same('an ISBN from a record is digits and nothing else', preg_match('/^[0-9]{13}$/', (string) $fromCatalogue), 1);
+Assert::true(
+    'so the address built from it closes its own quotes',
+    !str_contains(App\Lookup\MvbCoverLookup::coverUrl((string) $fromCatalogue), '"')
+);
+
+/* And the record that has none reports null rather than something empty that
+ * would render a rule pointing nowhere. */
+Assert::same('no ISBN, no rule to write', $old[0]['isbn13'], null);

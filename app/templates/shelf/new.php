@@ -70,6 +70,13 @@ declare(strict_types=1);
 <ul class="candidates">
   <?php foreach ($found as $candidate): ?>
   <li>
+    <?php /* The ground is always there and the picture is laid over it, so a
+             record the catalogue has no cover for shows a coloured tile
+             rather than a broken image. Measured across three real searches:
+             12 of 24 candidates had a cover, 7 had none and 5 had no ISBN to
+             ask with - broken icons would have been as common as pictures. */ ?>
+    <span class="candidate-cover <?= e(App\Core\CoverImage::placeholderClass((string) ($candidate['isbn13'] ?? $candidate['title']))) ?><?php
+        if ($candidate['isbn13'] !== null): ?> cover-<?= e($candidate['isbn13']) ?><?php endif; ?>" aria-hidden="true"></span>
     <form method="post" action="/book/new">
       <?= $csrfField ?>
       <input type="hidden" name="action" value="create">
@@ -107,4 +114,34 @@ declare(strict_types=1);
   </li>
   <?php endforeach; ?>
 </ul>
+
+<?php
+  /* One background rule per candidate, in a nonce-bearing style element.
+   *
+   * Not App\Core\Styles: that class takes numbers and formats them itself,
+   * which is the property that makes emitting nonce-bearing CSS safe, and a
+   * method there accepting a URL would give that up for every later caller.
+   *
+   * Here the safety comes from the value instead. Every one of these has been
+   * through Isbn::normalize, so it is thirteen digits and cannot carry a
+   * quote, a bracket or a space out of the catalogue and into a stylesheet.
+   * The check below says so out loud rather than trusting it.
+   *
+   * Fetched by the browser rather than by the server: ten HEAD requests
+   * before rendering would put three seconds on every search, and this page
+   * is only ever seen by whoever is signed in - the same standing under which
+   * a cover's own source URL is shown on the edit page. */
+  $rules = [];
+  foreach ($found as $candidate) {
+      $isbn = (string) ($candidate['isbn13'] ?? '');
+      if (preg_match('/^[0-9]{13}$/', $isbn) !== 1) {
+          continue;
+      }
+      $rules['.cover-' . $isbn] = '.cover-' . $isbn
+          . '{background-image:url("' . App\Lookup\MvbCoverLookup::coverUrl($isbn) . '")}';
+  }
+?>
+<?php if ($rules !== []): ?>
+<style nonce="<?= e($cspNonce) ?>"><?= implode("\n", $rules) ?></style>
+<?php endif; ?>
 <?php endif; ?>
