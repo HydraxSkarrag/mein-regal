@@ -340,6 +340,14 @@ Covers are **downloaded and served from your own server**, not embedded. Looking
 at the shelf therefore opens no connection to anyone else. Source and backlink are
 stored and shown per image.
 
+The one exception is behind the login and worth knowing before you install this:
+searching the catalogue by title shows a cover preview for each result, and those
+are loaded straight from `portal.dnb.de` by the browser of whoever is signed in.
+Half of any result list has no cover at all, so fetching them server-side first
+would put seconds on every search for pictures mostly nobody keeps. Nothing about
+it reaches a visitor - the shelf itself still serves every image from your own
+machine, which is what the shipped privacy text says, and it says this too.
+
 MVB is what makes a German shelf look finished. The DNB is complete for German
 titles but holds no pictures; Google has never scanned most German books and
 hands back a 300-pixel record thumbnail. Measured over 160 books that Google and

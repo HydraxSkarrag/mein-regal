@@ -340,6 +340,13 @@ final class DefaultPages
                 Letzteres, um wiederholte Fehlversuche zu bremsen. Daten von Besucherinnen
                 und Besuchern werden dabei nicht verarbeitet.
 
+                Beim Suchen nach einem Titel zeigt dieser Bereich Coverbilder als Vorschau
+                an, die dabei direkt vom Katalog der Deutschen Nationalbibliothek geladen
+                werden. Das geschieht ausschließlich im Browser der angemeldeten Person und
+                nur, solange sie dort sucht; Besucherinnen und Besucher sind davon nicht
+                berührt, und im Regal selbst wird weiterhin nichts von fremden Servern
+                nachgeladen.
+
                 ## Ihre Rechte
 
                 Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16),
