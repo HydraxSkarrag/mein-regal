@@ -1059,6 +1059,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 /* Left, like every other page. Centred, it was the one screen whose content
    moved when the window was resized. */
 .scanner { max-width: 520px; }
+/* The viewfinder does not grow with the page: a barcode held up to a webcam
+   is no easier to read at nine hundred pixels, and a video that size is the
+   loudest thing on a desktop screen. */
+@media (min-width: 760px) { .scanner-frame { max-width: 520px; } }
 .scanner-frame {
   position: relative;
   background: var(--scan-bg);
@@ -1615,7 +1619,51 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .scanner[data-step="photo"] [data-when="camera"] .scanner-actions { display: none; }
 
 .scan-modes { display: grid; gap: 10px; margin-top: 18px; }
-.scan-modes .btn { padding-block: 14px; font-size: 1rem; }
+
+/* A door, not a button: it carries what it is for underneath its name, which
+   is the difference between three labels and a choice. Built as one control
+   so the whole card is the target - on a phone that is a thumb, on a desktop
+   it is a card you can hit without aiming. */
+.scan-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.scan-mode:hover, .scan-mode:focus-visible { border-color: var(--accent); }
+.scan-mode-name { font-weight: 600; }
+.scan-mode-hint { color: var(--muted); font-size: 0.85rem; line-height: 1.45; }
+
+/* The first door is the one to take unless you know otherwise. */
+.scan-mode--first { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+
+/* Side by side once there is room, which is also where the camera stops being
+   the obvious choice - a webcam pointed at a barcode is a poor tool, and
+   somebody at a keyboard came to type. Equal columns rather than a stack, so
+   none of the three reads as an afterthought. */
+@media (min-width: 760px) {
+  .scanner { max-width: 880px; }
+  .scan-modes { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .scan-mode { min-height: 100%; }
+
+  /* The ISBN and the button on one line, and the field no wider than the
+     thirteen digits it holds - a text box the width of the window invites a
+     sentence, and this one wants a number. */
+  .isbn-form { display: flex; align-items: flex-end; gap: 12px; }
+  .isbn-form .field { flex: 0 1 320px; margin: 0; }
+  .isbn-form .btn { flex: none; }
+}
+.isbn-form .field { margin-bottom: 12px; }
+.isbn-form .btn { width: 100%; }
+@media (min-width: 760px) { .isbn-form .btn { width: auto; } }
 
 /* A barcode is wider than it is tall and a book is not.
  *

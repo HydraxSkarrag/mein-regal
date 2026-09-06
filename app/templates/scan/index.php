@@ -27,20 +27,29 @@ declare(strict_types=1);
   <div id="status" role="status" aria-live="polite"></div>
 
   <section data-when="choose">
+    <?php /* Three doors, each saying what it is for.
+             
+             Stacked on a phone, where they are thumb-sized targets and the
+             camera is the obvious first one. Side by side from 760px, where
+             the camera is the least likely of the three - a desktop webcam
+             pointed at a barcode is a poor tool, and somebody at a keyboard
+             is there to type. The order does not change, because the order is
+             about what is tried first and not about which screen it is on. */ ?>
     <div class="scan-modes">
-      <button class="btn btn--primary btn--block" type="button" id="pick-camera">
-        <?= e(t('scan.mode.camera')) ?>
+      <button class="scan-mode scan-mode--first" type="button" id="pick-camera">
+        <span class="scan-mode-name"><?= e(t('scan.mode.camera')) ?></span>
+        <span class="scan-mode-hint"><?= e(t('scan.mode.camera.hint')) ?></span>
       </button>
-      <button class="btn btn--block" type="button" id="pick-manual">
-        <?= e(t('scan.mode.manual')) ?>
+      <button class="scan-mode" type="button" id="pick-manual">
+        <span class="scan-mode-name"><?= e(t('scan.mode.manual')) ?></span>
+        <span class="scan-mode-hint"><?= e(t('scan.mode.manual.hint')) ?></span>
       </button>
-      <?php /* The third door, and a plain link rather than a step: it leaves
-               the scanner for the ordinary edit page, because a book no
-               catalogue has is not something a lookup can help with. Last,
-               because it is the rarest of the three and the only one that
-               ends with typing everything by hand. */ ?>
-      <a class="btn btn--block" href="/book/new">
-        <?= e(t('scan.mode.blank')) ?>
+      <?php /* The third is a link rather than a step: it leaves the scanner
+               for the ordinary edit page, because a book no catalogue has is
+               not something a lookup can help with. */ ?>
+      <a class="scan-mode" href="/book/new">
+        <span class="scan-mode-name"><?= e(t('scan.mode.blank')) ?></span>
+        <span class="scan-mode-hint"><?= e(t('scan.mode.blank.hint')) ?></span>
       </a>
     </div>
 
@@ -70,13 +79,16 @@ declare(strict_types=1);
   </section>
 
   <section data-when="manual">
-    <form id="manual">
-      <div class="field mb-s">
+    <?php /* Field and button on one line once there is room. Typing an ISBN
+             is the desktop way in, and a full-width button under a full-width
+             field is a phone answering a question nobody asked there. */ ?>
+    <form id="manual" class="isbn-form">
+      <div class="field">
         <label for="isbn"><?= e(t('scan.manual')) ?></label>
         <input id="isbn" type="text" inputmode="numeric" autocomplete="off"
                placeholder="<?= e(t('scan.manual.hint')) ?>">
       </div>
-      <button class="btn btn--primary btn--block" type="submit"><?= e(t('scan.lookup')) ?></button>
+      <button class="btn btn--primary" type="submit"><?= e(t('scan.lookup')) ?></button>
     </form>
     <div class="scanner-actions">
       <button class="btn btn--block" type="button" id="manual-back"><?= e(t('scan.back')) ?></button>

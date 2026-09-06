@@ -208,3 +208,19 @@ foreach ($files as $file) {
 }
 
 Assert::same('no template asks for a key that is not there', $missing, []);
+
+Assert::group('The three doors into adding a book each say what they are for');
+
+/* A name alone is three labels; a name and a line about when to use it is a
+ * choice. Worth an assertion because the descriptions are the whole point of
+ * the desktop layout and are easy to lose in a later tidy-up - and because a
+ * card rendering a bare key would be the loudest possible bug on that page.
+ */
+foreach (['camera', 'manual', 'blank'] as $door) {
+    $name = t('scan.mode.' . $door);
+    $hint = t('scan.mode.' . $door . '.hint');
+
+    Assert::true($door . ' has a name', $name !== 'scan.mode.' . $door);
+    Assert::true('and says what it is for', $hint !== 'scan.mode.' . $door . '.hint');
+    Assert::true('in a sentence rather than a word', str_word_count($hint) > 4);
+}
