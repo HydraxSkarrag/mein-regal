@@ -40,6 +40,59 @@ final class BookController
     {
     }
 
+    /**
+     * A book by hand, for the ones no catalogue has.
+     *
+     * Nothing in the application could make a book without an ISBN. The
+     * scanner needs one by definition and its save refuses anything else, so
+     * a shelf's Fontane in five volumes and its picture book from 1988 could
+     * only ever arrive through a CSV import - 82 of them did, and there was
+     * no way to add the 83rd.
+     *
+     * A title and nothing else. Everything a book can carry is already on the
+     * edit page, with its validation, its contributors and its tags, so this
+     * asks for the one field a book cannot do without and then hands over.
+     * Writing a second full form would be writing a second place for every
+     * later field to be forgotten.
+     */
+    public function blank(Request $request): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $error = null;
+        if ($request->isPost()) {
+            $title = trim($request->post('title'));
+            if ($title === '') {
+                $error = t('new.title.required');
+            } else {
+                $bookId = $this->app->books->insert($this->app->ownerId, [
+                    'title'          => mb_substr($title, 0, 500),
+                    'reading_status' => 'unread',
+                ]);
+                $book = $this->app->books->findById($this->app->ownerId, $bookId);
+
+                /* Straight into the full form rather than a "saved" message.
+                   The book exists now but is a title and nothing more, and
+                   the next thing anybody wants is the page that fixes that. */
+                return Response::redirect('/book/' . ($book['slug'] ?? '') . '/edit');
+            }
+        }
+
+        return Response::html($this->app->view->render('layout.base', [
+            'content'   => $this->app->view->render('shelf.new', [
+                'error'     => $error,
+                'title'     => $request->isPost() ? $request->post('title') : '',
+                'csrfField' => $this->app->csrf->field(),
+            ]),
+            'title'     => t('new.title'),
+            'current'   => 'scan',
+            'noIndex'   => true,
+        ]));
+    }
+
     public function form(Request $request, array $params): Response
     {
         $guard = $this->app->requireSignIn();

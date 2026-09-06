@@ -105,6 +105,16 @@ $app->router->get('/search', $shelf->index(...));
 $app->router->get('/genres', $shelf->genres(...));
 $app->router->get('/authors', $shelf->authors(...));
 $app->router->get('/labels', $shelf->labels(...));
+/* Before /book/{slug}, because the first matching route wins and {slug}
+   matches the word "new" perfectly well - registered after it, this address
+   would have looked up a book by that name and answered 404.
+   
+   It sits among the public routes for that reason alone. What keeps it
+   private is its own requireSignIn(), not where the line is; ordering here is
+   about matching and nothing else. */
+$app->router->get('/book/new', $books->blank(...));
+$app->router->post('/book/new', $books->blank(...));
+
 $app->router->get('/book/{slug}', $shelf->detail(...));
 $app->router->get('/stats', $stats->page(...));
 $app->router->get('/project', $pages->project(...));

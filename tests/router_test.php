@@ -140,3 +140,33 @@ require_once dirname(__DIR__) . '/bin/backup.php';
 Assert::true('enrich() is available after including', function_exists('enrich'));
 Assert::true('backup() is available after including', function_exists('backup'));
 Assert::true('so is the statement splitter', function_exists('splitStatements'));
+
+Assert::group('Router: a literal path beats a placeholder that would swallow it');
+
+/* /book/new is a real address and "new" is a title somebody could give a
+ * book, so /book/{slug} matches it perfectly well. First match wins, so the
+ * order of registration is the whole of the rule - registered after {slug},
+ * the form for adding a book by hand would have looked itself up as a book
+ * and answered 404.
+ *
+ * Checked here rather than trusted, because both routes work in isolation and
+ * the failure only appears in the order they happen to be written in.
+ */
+$order = new App\Core\Router();
+$order->get('/book/new', static fn (): string => 'form');
+$order->get('/book/{slug}', static fn (): string => 'detail');
+
+Assert::same('the literal one answers', ($order->match('GET', '/book/new')['handler'])(), 'form');
+Assert::same('a real slug still reaches the book', ($order->match('GET', '/book/erdsee')['handler'])(), 'detail');
+Assert::same(
+    'and a book actually called "new" is still reachable by its full slug',
+    ($order->match('GET', '/book/new-9783596704057')['handler'])(),
+    'detail'
+);
+
+// The other way round is the bug, stated so nobody re-creates it by tidying.
+$wrong = new App\Core\Router();
+$wrong->get('/book/{slug}', static fn (): string => 'detail');
+$wrong->get('/book/new', static fn (): string => 'form');
+
+Assert::same('registered the other way round, the placeholder eats it', ($wrong->match('GET', '/book/new')['handler'])(), 'detail');

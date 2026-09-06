@@ -34,6 +34,14 @@ declare(strict_types=1);
       <button class="btn btn--block" type="button" id="pick-manual">
         <?= e(t('scan.mode.manual')) ?>
       </button>
+      <?php /* The third door, and a plain link rather than a step: it leaves
+               the scanner for the ordinary edit page, because a book no
+               catalogue has is not something a lookup can help with. Last,
+               because it is the rarest of the three and the only one that
+               ends with typing everything by hand. */ ?>
+      <a class="btn btn--block" href="/book/new">
+        <?= e(t('scan.mode.blank')) ?>
+      </a>
     </div>
 
     <?php /* The two settings belong here and not next to the viewfinder:

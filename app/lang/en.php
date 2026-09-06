@@ -104,9 +104,15 @@ return [
     'book.back'          => 'Back to the shelf',
     'book.edit'          => 'Edit',
 
+    'new.title'          => 'Add a book by hand',
+    'new.hint'           => 'For books no database has - too old, too small a printing, or with no ISBN at all. The title is enough to start with; everything else is on the next page.',
+    'new.create'         => 'Create and continue',
+    'new.title.required' => 'A title is the one thing needed - the rest can wait.',
+
     'scan.title'         => 'Add a book',
     'scan.mode.camera'     => 'Scan a barcode',
     'scan.mode.manual'     => 'Type an ISBN',
+    'scan.mode.blank'      => 'Add without an ISBN',
     'scan.back'            => 'Back',
     'scan.start'         => 'Start camera',
     'scan.stop'          => 'Stop camera',

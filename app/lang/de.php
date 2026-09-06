@@ -104,9 +104,15 @@ return [
     'book.back'          => 'Zurück zum Regal',
     'book.edit'          => 'Bearbeiten',
 
+    'new.title'          => 'Buch von Hand erfassen',
+    'new.hint'           => 'Für Bücher, die keine Datenbank kennt – zu alt, zu klein aufgelegt, oder ganz ohne ISBN. Der Titel genügt fürs Erste; alles Weitere steht auf der nächsten Seite.',
+    'new.create'         => 'Anlegen und weiter',
+    'new.title.required' => 'Ohne Titel geht es nicht – alles andere kann warten.',
+
     'scan.title'         => 'Buch erfassen',
     'scan.mode.camera'     => 'Barcode scannen',
     'scan.mode.manual'     => 'ISBN eingeben',
+    'scan.mode.blank'      => 'Ohne ISBN erfassen',
     'scan.back'            => 'Zurück',
     'scan.start'         => 'Kamera starten',
     'scan.stop'          => 'Kamera stoppen',
