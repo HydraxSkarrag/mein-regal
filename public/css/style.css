@@ -1116,8 +1116,16 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 /* The ground shows through when the catalogue has no picture for a record,
    which is about half of them - so this is a tile that sometimes carries a
-   cover, not an image that sometimes fails. */
-.candidate-cover {
+   cover, not an image that sometimes fails.
+   
+   Two classes deep on purpose. The ground comes from .ph-1 to .ph-16, which
+   are written with the `background` shorthand - and a shorthand resets every
+   longhand it covers, including background-size. Those rules sit four hundred
+   lines below this one, so at equal specificity they won: the cover loaded
+   and was then painted at its own size from the top left corner, which in a
+   42 by 63 box is a magnified crumb of the top of the jacket. It looked
+   exactly like no image at all. */
+.candidates .candidate-cover {
   flex: none;
   width: 42px;
   height: 63px;

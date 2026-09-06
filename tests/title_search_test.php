@@ -127,3 +127,28 @@ Assert::true(
 /* And the record that has none reports null rather than something empty that
  * would render a rule pointing nowhere. */
 Assert::same('no ISBN, no rule to write', $old[0]['isbn13'], null);
+
+/* The cascade, because getting this wrong looked exactly like the feature not
+ * working.
+ *
+ * The ground comes from .ph-1 to .ph-16, written with the `background`
+ * shorthand - and a shorthand resets every longhand it covers, background-size
+ * among them. Those rules sit hundreds of lines below the tile's own, so at
+ * equal specificity they won: the cover loaded and was then painted at its
+ * natural size from the top left, which inside a 42 by 63 box is a magnified
+ * crumb of the top of the jacket. Indistinguishable from no picture.
+ *
+ * Two classes deep settles it by specificity rather than by line order, which
+ * is the part that stays true when somebody sorts the stylesheet.
+ */
+$css = (string) file_get_contents(PROJECT_ROOT . '/public/css/style.css');
+
+Assert::true(
+    'the tile is selected with more than one class',
+    str_contains($css, '.candidates .candidate-cover {')
+);
+Assert::true('the placeholders still use the shorthand this is defending against', str_contains($css, '.ph-1 { background: var(--placeholder-1); }'));
+Assert::true(
+    'and they are still below it, which is why specificity and not order',
+    strpos($css, '.ph-1 { background:') > strpos($css, '.candidates .candidate-cover {')
+);
