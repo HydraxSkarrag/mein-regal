@@ -161,7 +161,15 @@
    hidden button stays on screen. This settles it once for the whole site. */
 [hidden] { display: none !important; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Keep the scrollbar's width reserved whether or not there is one.
+     Without it a centred page slides sideways by a scrollbar's width the
+     moment its content stops filling the window - which is what moved the
+     admin area a few pixels between the long dashboard and the short data
+     screen. Barely visible, and impossible to stop noticing. */
+  scrollbar-gutter: stable;
+}
 
 body {
   margin: 0;
@@ -271,7 +279,18 @@ img { max-width: 100%; height: auto; }
   margin: 0 auto;
   padding: 20px;
 }
-.container--prose { max-width: var(--maxw-prose); }
+/* A narrow page keeps the wide page's left edge.
+ *
+ * This used to narrow the container itself and leave it centred, so walking
+ * from the shelf to the imprint moved the first letter of the page inward by
+ * some three hundred pixels on a desktop and back again on the way out. The
+ * measure of a text column is worth having; the jump is not.
+ *
+ * So the container stays where it always is and the column is set on what is
+ * inside it, left aligned because nothing here has an auto margin to centre
+ * it with. */
+.container--prose { max-width: var(--maxw-wide); }
+.container--prose > * { max-width: var(--maxw-prose); }
 
 /* Room for the bottom bar so the last row is never hidden behind it. */
 @media (max-width: 720px) {
@@ -1003,7 +1022,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   height: auto;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  margin: 0 auto 12px;
+  margin: 0 0 12px;
 }
 .shot-thumb { width: 54px; border-radius: 3px; display: block; }
 
@@ -1037,7 +1056,9 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 /* ---- Scanner -------------------------------------------------------- */
 
-.scanner { max-width: 520px; margin: 0 auto; }
+/* Left, like every other page. Centred, it was the one screen whose content
+   moved when the window was resized. */
+.scanner { max-width: 520px; }
 .scanner-frame {
   position: relative;
   background: var(--scan-bg);
