@@ -1393,9 +1393,33 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .tag-remove:hover { color: var(--accent); }
 
+/* One column, unlike the list above it.
+ *
+ * .tag-sort lays out in two or three columns, which is right for its rows: a
+ * checkbox, a name and a number. These rows carry two more controls, and in a
+ * third of the width there was no room left for the name - "Englische
+ * Literatur Amerikas" broke across three lines beside two links that fitted
+ * on one.
+ *
+ * Icons instead of the words would have bought back about a hundred pixels of
+ * a row that is simply in the wrong layout, and bought them in the worst
+ * place: these two actions are "put it back" and "destroy it", one of them
+ * final, and a small picture is a guess. This list is short and rarely opened
+ * - somebody comes here having removed a tag by mistake - so nothing is won
+ * by making it terse. */
+.tag-sort--dropped { columns: 1; }
 .tag-sort--dropped li { color: var(--muted); }
-.tag-sort--dropped form { display: flex; gap: 8px; align-items: baseline; width: 100%; }
-.tag-sort--dropped .n { margin-left: auto; }
+.tag-sort--dropped form {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+}
+/* The name takes what is left, so it wraps only when it truly has to, and
+   the two controls stay together at the end where they read as a pair. */
+.tag-sort--dropped form > span:first-child { flex: 1; min-width: 0; }
+.tag-sort--dropped .n { margin-left: 0; }
 .link-button {
   border: 0;
   background: none;
