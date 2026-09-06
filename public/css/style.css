@@ -1656,10 +1656,6 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 /* The first door is the one to take unless you know otherwise. */
 .scan-mode--first { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
 
-/* Stacked and full width to begin with; the wide layout below undoes both. */
-.isbn-form .field { margin-bottom: 12px; }
-.isbn-form .btn { width: 100%; }
-
 /* Side by side once there is room, which is also where the camera stops being
    the obvious choice - a webcam pointed at a barcode is a poor tool, and
    somebody at a keyboard came to type. Equal columns rather than a stack, so
@@ -1669,17 +1665,11 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .scan-modes { grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .scan-mode { min-height: 100%; }
 
-  /* The ISBN and the button on one line, and the field no wider than the
-     thirteen digits it holds - a text box the width of the window invites a
-     sentence, and this one wants a number.
-     
-     Everything the narrow layout set has to be undone here, not the other way
-     round: written afterwards, the phone's full-width button and the field's
-     bottom margin came back on the desktop, and a flex item with width 100%
-     next to a field with a margin is what "zerrupft" looks like. */
-  .isbn-form { display: flex; align-items: flex-end; gap: 12px; }
-  .isbn-form .field { flex: 0 1 320px; margin-bottom: 0; }
-  .isbn-form .btn { flex: none; width: auto; }
+  /* A field the width of a card invites a sentence, and this one wants
+     thirteen digits. The card itself stays full width - it is the same shape
+     as the by-hand page, and two different card widths for the same act would
+     be the jump all over again. */
+  .scanner [data-when="manual"] .field input { max-width: 320px; }
 }
 
 /* A barcode is wider than it is tall and a book is not.

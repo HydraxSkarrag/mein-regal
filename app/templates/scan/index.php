@@ -88,19 +88,28 @@ declare(strict_types=1);
   </section>
 
   <section data-when="manual">
-    <?php /* Field and button on one line once there is room. Typing an ISBN
-             is the desktop way in, and a full-width button under a full-width
-             field is a phone answering a question nobody asked there. */ ?>
-    <form id="manual" class="isbn-form">
-      <div class="field">
-        <label for="isbn"><?= e(t('scan.manual')) ?></label>
-        <input id="isbn" type="text" inputmode="numeric" autocomplete="off"
-               placeholder="<?= e(t('scan.manual.hint')) ?>">
-      </div>
-      <button class="btn btn--primary" type="submit"><?= e(t('scan.lookup')) ?></button>
-    </form>
-    <div class="scanner-actions">
-      <button class="btn btn--block" type="button" id="manual-back"><?= e(t('scan.back')) ?></button>
+    <?php /* Built like the by-hand page, because it is the same act: a card,
+             a line saying what belongs in the field, the field, and the two
+             ways on underneath it. Loose on the page it read as three
+             elements that happened to land near each other.
+             
+             "Zurück" moves inside the form and keeps type="button" - a bare
+             button in a form submits it, and this one leads away. */ ?>
+    <div class="card">
+      <p class="note mt-0"><?= e(t('scan.manual.note')) ?></p>
+
+      <form id="manual">
+        <div class="field mb-s">
+          <label for="isbn"><?= e(t('scan.manual')) ?></label>
+          <input id="isbn" type="text" inputmode="numeric" autocomplete="off"
+                 placeholder="<?= e(t('scan.manual.hint')) ?>">
+        </div>
+
+        <div class="edit-actions">
+          <button class="btn btn--primary" type="submit"><?= e(t('scan.lookup')) ?></button>
+          <button class="btn" type="button" id="manual-back"><?= e(t('scan.back')) ?></button>
+        </div>
+      </form>
     </div>
   </section>
 

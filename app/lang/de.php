@@ -132,6 +132,7 @@ return [
     'scan.aim'           => 'Barcode auf der Rückseite anvisieren – am Rechner das Buch dicht vor die Kamera halten.',
     'scan.manual'        => 'ISBN von Hand eingeben',
     'scan.manual.hint'   => '10 oder 13 Ziffern',
+    'scan.manual.note'   => 'Die Nummer steht auf der Rückseite über dem Barcode, oft auch auf einer der ersten Seiten. Bindestriche sind egal.',
     'scan.lookup'        => 'Suchen',
     'scan.sources'      => 'Gefragt werden nacheinander die Deutsche Nationalbibliothek, das Verzeichnis Lieferbarer Bücher, Google Books und Open Library.',
     'scan.searching'     => 'Wird gesucht …',

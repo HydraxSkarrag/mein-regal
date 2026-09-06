@@ -132,6 +132,7 @@ return [
     'scan.aim'           => 'Point at the barcode on the back - on a computer, hold the book close to the camera.',
     'scan.manual'        => 'Enter an ISBN by hand',
     'scan.manual.hint'   => '10 or 13 digits',
+    'scan.manual.note'   => 'The number is on the back cover above the barcode, and often on one of the first pages. Hyphens do not matter.',
     'scan.lookup'        => 'Look up',
     'scan.sources'      => 'Asking the German National Library, the German books-in-print directory, Google Books and Open Library in turn.',
     'scan.searching'     => 'Looking it up …',
