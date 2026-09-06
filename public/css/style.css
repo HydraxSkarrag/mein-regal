@@ -1126,6 +1126,11 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
    42 by 63 box is a magnified crumb of the top of the jacket. It looked
    exactly like no image at all. */
 .candidates .candidate-cover {
+  /* A span is inline, and width and height do not apply to those. Inside the
+     flex row it is blockified anyway, but a rule that only works in one
+     particular parent is a trap for whoever moves the element next - which is
+     exactly how this went wrong the first time. */
+  display: block;
   flex: none;
   width: 42px;
   height: 63px;

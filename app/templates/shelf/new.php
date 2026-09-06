@@ -74,15 +74,21 @@ declare(strict_types=1);
 <ul class="candidates">
   <?php foreach ($found as $candidate): ?>
   <li>
-    <?php /* The ground is always there and the picture is laid over it, so a
-             record the catalogue has no cover for shows a coloured tile
-             rather than a broken image. Measured across three real searches:
-             12 of 24 candidates had a cover, 7 had none and 5 had no ISBN to
-             ask with - broken icons would have been as common as pictures. */ ?>
-    <span class="candidate-cover <?= e(App\Core\CoverImage::placeholderClass((string) ($candidate['isbn13'] ?? $candidate['title']))) ?><?php
-        if ($candidate['isbn13'] !== null): ?> cover-<?= e($candidate['isbn13']) ?><?php endif; ?>" aria-hidden="true"></span>
     <form method="post" action="/book/new">
       <?= $csrfField ?>
+      <?php /* Inside the form, which is the flex row: beside the text and the
+               button, not stacked above them. It was a sibling of the form to
+               begin with, and there it was an inline span in a list item -
+               width and height do not apply to those, so it had no size at
+               all and neither the tile nor the picture ever appeared.
+               
+               The ground is always there and the picture is laid over it, so a
+               record the catalogue has no cover for shows a coloured tile
+               rather than a broken image. Measured across three real searches:
+               12 of 24 candidates had a cover, 7 had none and 5 had no ISBN to
+               ask with - broken icons would have been as common as pictures. */ ?>
+      <span class="candidate-cover <?= e(App\Core\CoverImage::placeholderClass((string) ($candidate['isbn13'] ?? $candidate['title']))) ?><?php
+          if ($candidate['isbn13'] !== null): ?> cover-<?= e($candidate['isbn13']) ?><?php endif; ?>" aria-hidden="true"></span>
       <input type="hidden" name="action" value="create">
       <input type="hidden" name="title" value="<?= e($candidate['title']) ?>">
       <input type="hidden" name="authors" value="<?= e(implode('|', $candidate['authors'])) ?>">

@@ -152,3 +152,24 @@ Assert::true(
     'and they are still below it, which is why specificity and not order',
     strpos($css, '.ph-1 { background:') > strpos($css, '.candidates .candidate-cover {')
 );
+
+/* And the shape of the element itself, which is what actually failed.
+ *
+ * The tile is an empty span. Width and height do not apply to a non-replaced
+ * inline element, so as a sibling of the form - a plain inline span in a list
+ * item - it had no size at all: no coloured ground, no cover, nothing in the
+ * markup to see. It reads as the feature never having been built.
+ *
+ * Two things fix it and both are checked, because either one alone would have
+ * left the trap for whoever moves the element next: it sits inside the flex
+ * row now, and the rule gives it a box of its own regardless of where it sits.
+ */
+$template = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/new.php');
+$coverAt = strpos($template, 'class="candidate-cover');
+$formAt = strpos($template, "<form method=\"post\" action=\"/book/new\">", (int) strpos($template, '<ul class="candidates">'));
+
+Assert::true('the tile is inside the row, not stacked above it', $coverAt > $formAt);
+Assert::true(
+    'and the rule does not rely on that parent to give it a size',
+    (bool) preg_match('/\.candidates \.candidate-cover \{[^}]*display: block/s', $css)
+);
