@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
 use App\Lookup\CoverFinder;
+use App\Lookup\CoverPreviews;
 use App\Lookup\HttpClient;
 use App\Lookup\LookupChain;
 use App\Lookup\TitleSearch;
@@ -66,6 +67,7 @@ final class BookController
 
         $error = null;
         $found = null;
+        $previews = [];
         $title = $request->isPost() ? trim($request->post('title')) : '';
         $author = $request->isPost() ? trim($request->post('author')) : '';
 
@@ -78,6 +80,16 @@ final class BookController
                     ->find($title, $author);
                 if ($found === []) {
                     $error = t('new.search.nothing');
+                } else {
+                    /* The pictures, fetched here rather than by the browser.
+                       The catalogue puts a bot check in front of a browser's
+                       first request, so a page loading them itself gets HTML
+                       where it wanted a cover - and gets it or not depending
+                       on whether that browser has been to the DNB before.
+                       Ten at once, which measured at three tenths of a second
+                       and forty kilobytes for the lot. */
+                    $previews = (new CoverPreviews($this->app->config->str('api_contact')))
+                        ->forIsbns(array_filter(array_column($found, 'isbn13')));
                 }
             } catch (Throwable $e) {
                 error_log('[regal] title search failed: ' . $e->getMessage());
@@ -97,6 +109,7 @@ final class BookController
                 'title'     => $title,
                 'author'    => $author,
                 'found'     => $found,
+                'previews'  => $previews,
                 'csrfField' => $this->app->csrf->field(),
             ]),
             'title'     => t('new.title'),

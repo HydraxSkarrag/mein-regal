@@ -124,6 +124,25 @@ Assert::true(
     !str_contains(App\Lookup\MvbCoverLookup::coverUrl((string) $fromCatalogue), '"')
 );
 
+/* And the picture is in the page rather than linked from it. The catalogue
+ * puts a bot check in front of a browser's first request, so a page that
+ * loaded these itself got HTML where it wanted a cover - and got it correctly
+ * for anyone whose browser had been to the DNB before, which is a fault that
+ * depends on browsing history rather than on the code.
+ *
+ * The template only writes a rule for a candidate it actually has bytes for,
+ * so the failure mode is the coloured ground and never a rule pointing at
+ * something that is not there. */
+$templateSource = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/new.php');
+Assert::true(
+    'a rule is only written where a picture was fetched',
+    str_contains($templateSource, "!isset(\$previews[\$isbn])")
+);
+Assert::true(
+    'and it carries the picture, not an address at the catalogue',
+    str_contains($templateSource, '$previews[$isbn]') && !str_contains($templateSource, 'MvbCoverLookup::coverUrl($isbn)')
+);
+
 /* And the record that has none reports null rather than something empty that
  * would render a rule pointing nowhere. */
 Assert::same('no ISBN, no rule to write', $old[0]['isbn13'], null);
