@@ -171,9 +171,12 @@ $current = $current ?? '';
       'stats'  => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
       'admin'  => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
     ];
+    /* No "search" entry. It pointed at /search, which is the shelf under a
+       second name - the same handler, the same page, with the search field
+       already at the top of it. Two ways to the same screen in a bar of four,
+       and the one that looked like a different place was not one. */
     $navItems = [
       ['key' => 'shelf',  'href' => '/',           'label' => t('nav.shelf')],
-      ['key' => 'search', 'href' => '/search',      'label' => t('nav.search')],
       ['key' => 'unread', 'href' => '/?status=unread', 'label' => t('nav.unread')],
     ];
     if ($signedIn) {

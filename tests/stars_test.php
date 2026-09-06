@@ -62,3 +62,57 @@ Assert::same('and the formatter agrees there is nothing', Formatter::stars(null)
  * dropdown on the edit page is a list of <option> labels, and "★★★½" is
  * exactly right inside one. */
 Assert::same('the option label still uses the character', Formatter::starsText(3.5), '★★★½');
+
+Assert::group('Ratings chart: every step that occurs, and none invented');
+
+/* The chart looked up [5, 4, 3, 2, 1] by name, so a book rated three and a
+ * half was in no bucket and left the chart without a word. The bars stopped
+ * adding up to the number of rated books - on this shelf by exactly one,
+ * which is the sort of wrong number nobody catches by looking.
+ *
+ * The column has held halves since it was made and the edit page has offered
+ * them just as long; only the chart had opinions about which ratings exist.
+ */
+$counts = ['1' => 10, '2' => 16, '3' => 61, '3.5' => 1, '4' => 328, '5' => 551];
+
+$steps = array_keys($counts);
+usort($steps, static fn ($a, $b): int => (float) $b <=> (float) $a);
+
+/* Cast before comparing, because PHP turns an array key that looks like an
+ * integer into one: this list is 5, 4, "3.5", 3, 2, 1 - three of them ints
+ * and one a string, out of one query. The template casts for the same reason,
+ * and a comparison that did not would be asserting PHP's habits rather than
+ * the chart's order. */
+Assert::same(
+    'best first, halves in their place',
+    array_map('strval', $steps),
+    ['5', '4', '3.5', '3', '2', '1']
+);
+Assert::same('and nothing dropped on the way', array_sum($counts), 967);
+
+/* Keyed by the string the database gave. Casting to a float and back would
+ * turn "4.0" into "4" and lose the row it came from. */
+$roundTripped = array_map(static fn (string $k): string => (string) (float) $k, ['4.0', '3.5']);
+Assert::same('which is why the key is not rebuilt', $roundTripped, ['4', '3.5']);
+
+Assert::group('Bar labels are escaped unless a caller draws them');
+
+/* Most labels are names out of the shelf - a genre, an author - and are
+ * escaped. The ratings chart passes markup it built itself from numbers, and
+ * has to say so. A label that arrived from a form or a catalogue never may.
+ */
+$bars = static function (array $counts, bool $markup) {
+    $view = new View(PROJECT_ROOT . '/app/templates');
+    $view->share('styles', new App\Core\Styles());
+
+    return $view->render('partials.barlist', [
+        'counts'        => $counts,
+        'formatter'     => new App\Core\Formatter('de'),
+        'labelIsMarkup' => $markup,
+    ]);
+};
+
+$dangerous = ['<script>alert(1)</script>' => 3];
+Assert::true('a genre named like an attack is text', str_contains($bars($dangerous, false), '&lt;script&gt;'));
+Assert::true('and never a tag', !str_contains($bars($dangerous, false), '<script>'));
+Assert::true('the flag is off unless asked for', !str_contains($bars($dangerous, false), '<script>'));

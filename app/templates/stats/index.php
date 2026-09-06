@@ -85,14 +85,33 @@ $books = (int) ($totals['books'] ?? 0);
     <?php if ($ratings !== []): ?>
     <h2><?= e(t('stats.ratings')) ?></h2>
     <?php
+      /* Every rating that occurs, not the five whole ones.
+       *
+       * The list used to be [5, 4, 3, 2, 1] and looked up each as a string,
+       * so a book rated three and a half was in neither bucket and simply
+       * left the chart - the bars no longer added up to the number of rated
+       * books, and nothing said so. The column has held halves since it was
+       * made, and the edit page has offered them just as long.
+       *
+       * Sorted downwards, so the best is at the top where it was. */
       $byStars = [];
-      foreach ([5, 4, 3, 2, 1] as $stars) {
-          if (isset($ratings[(string) $stars])) {
-              $byStars[str_repeat('★', $stars)] = $ratings[(string) $stars];
-          }
+      $steps = array_keys($ratings);
+      // Sorted by value, keyed by the string the database gave: casting to a
+      // float and back would turn "4.0" into "4" and lose the row.
+      usort($steps, static fn ($a, $b): int => (float) $b <=> (float) $a);
+      foreach ($steps as $step) {
+          $byStars[(string) $step] = $ratings[$step];
       }
     ?>
-    <?= $view->render('partials.barlist', ['counts' => $byStars, 'formatter' => $formatter]) ?>
+    <?= $view->render('partials.barlist', [
+        'counts'    => $byStars,
+        'formatter' => $formatter,
+        /* Drawn, not written: half a star is a span, which is the same
+           partial the shelf and the book page use. */
+        'label'     => static fn (string $key): string =>
+            $view->render('partials.stars', ['rating' => (float) $key, 'withEmpty' => false]),
+        'labelIsMarkup' => true,
+    ]) ?>
     <p class="note"><?= e(t('stats.rated.note', [
         'rated' => $formatter->number(array_sum($ratings)),
         'total' => $formatter->number($books),

@@ -101,7 +101,9 @@ $tags  = new TagController($app);
 // Public
 $app->router->get('/', $shelf->index(...));
 $app->router->get('/unread', $shelf->unread(...));
-$app->router->get('/search', $shelf->index(...));
+/* Kept as a redirect rather than removed: it was in the bottom bar for
+   months, so it is in somebody's history and possibly in an index. */
+$app->router->get('/search', static fn (): Response => Response::redirect('/', 301));
 $app->router->get('/genres', $shelf->genres(...));
 $app->router->get('/authors', $shelf->authors(...));
 $app->router->get('/labels', $shelf->labels(...));
