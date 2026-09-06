@@ -43,6 +43,12 @@ $books = (int) ($totals['books'] ?? 0);
 
 <?php if ($publishedYears !== []): ?>
 <h2><?= e(t('stats.published')) ?></h2>
+<?php /* The one number on this page that is regularly misread. An ISBN names
+         an edition, so every source the shelf asks answers with the year that
+         edition was printed - Erdsee reads 2020 for a book written in 1968.
+         The chart is right and the reading is wrong, which is a caption's
+         job to fix. */ ?>
+<p class="note"><?= e(t('stats.published.note')) ?></p>
 <?= $view->render('partials.chart_columns', [
     'series'    => $publishedYears,
     'caption'   => t('stats.published'),
