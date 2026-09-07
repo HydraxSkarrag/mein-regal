@@ -376,7 +376,13 @@ final class BookController
 
         $this->app->session->flash(t('edit.saved'), 'ok');
 
-        return Response::redirect('/book/' . $book['slug']);
+        /* Read back rather than reused: $book is the row as it was before the
+           save, and correcting a title now moves the book to a new address.
+           Redirecting to the one we arrived on would land on a 404 - the last
+           thing anybody expects from a successful save. */
+        $saved = $this->app->books->findById($this->app->ownerId, $bookId);
+
+        return Response::redirect('/book/' . ($saved['slug'] ?? $book['slug']));
     }
 
     /**

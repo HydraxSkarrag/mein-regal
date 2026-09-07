@@ -148,6 +148,42 @@ Assert::true('and the numbered twin is gone from the list', !isset($after['59 Be
  * decided by hand. */
 Assert::true('the merged entry is still there to restore', $tags->find(1, $numbered) !== null);
 
+Assert::group('An entry no book carries any more is still an entry');
+
+/* Reported from the shelf: the tidy-up fixed seven of nine and left "14
+ * Soziologie, Gesellschaft" and "49 Theater, Tanz, Film" sitting in the list.
+ * They had lost their last book, and the listing the plan was reading joins
+ * book_tags - so an orphan was not in it at all.
+ *
+ * They are in the list a reader sees, numbers and all. A rule that cleans the
+ * ones with books and quietly skips the ones without is the worst kind: it
+ * looks like it worked. */
+$orphan = $tags->findOrCreate(1, '49 Theater, Tanz, Film');
+
+$plan = App\Content\TagNotation::plan($tags, 1);
+$named = array_map(
+    static fn (array $item): string => (string) $item['tag']['name'],
+    $plan['renames']
+);
+
+Assert::true('an orphan is in the plan', in_array('49 Theater, Tanz, Film', $named, true));
+
+App\Content\TagNotation::apply($tags, 1, $plan);
+Assert::same('and is renamed like any other', $tags->find(1, $orphan)['name'], 'Theater, Tanz, Film');
+
+/* A dropped entry is a different thing: a tombstone that keeps later imports
+ * pointing at the right tag, and in no list a reader sees. Renaming one
+ * achieves nothing; merging into one would send books somewhere invisible. */
+$tombstone = $tags->findOrCreate(1, '11 Psychologie');
+$tags->drop(1, $tombstone);
+
+$after = App\Content\TagNotation::plan($tags, 1);
+$names = array_merge(
+    array_map(static fn (array $i): string => (string) $i['tag']['name'], $after['renames']),
+    array_map(static fn (array $i): string => (string) $i['from']['name'], $after['merges'])
+);
+Assert::true('a dropped one is left alone', !in_array('11 Psychologie', $names, true));
+
 Assert::group('The tidy-up writes nothing until told to');
 
 $script = (string) file_get_contents(PROJECT_ROOT . '/bin/tags.php');

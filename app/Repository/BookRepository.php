@@ -70,6 +70,39 @@ final class BookRepository
             return false;
         }
 
+        /* The address follows the name.
+         *
+         * It used to be worked out once, when the book was inserted, and
+         * never again - so a book whose title was corrected kept the old one
+         * for good. Three books on one shelf were called Drachenzwielicht and
+         * still lived at /book/152-die-156-chronik-der-drachenlanze-…, which
+         * is the wrong title and a catalogue's sorting marks, in the address
+         * bar, permanently.
+         *
+         * The price is named rather than hidden: an address that changes is
+         * an address somebody may have written down. Links to a renamed book
+         * stop working, and this shelf has a blog next to it that links to
+         * book pages. That is a trade the owner made deliberately - the way
+         * to have both would be a table of former addresses to redirect
+         * from, which is a bigger thing than this.
+         *
+         * Both halves count: the slug is the title and the ISBN, so
+         * correcting a mistyped ISBN moves the book too.
+         */
+        if (array_key_exists('title', $data) || array_key_exists('isbn13', $data)) {
+            $current = $this->findById($ownerId, $bookId);
+            if ($current !== null) {
+                $slug = $this->uniqueSlug(
+                    (string) ($data['title'] ?? $current['title'] ?? ''),
+                    self::asIsbn($data['isbn13'] ?? $current['isbn13'] ?? null),
+                    $bookId
+                );
+                if ($slug !== ($current['slug'] ?? null)) {
+                    $data['slug'] = $slug;
+                }
+            }
+        }
+
         $assignments = [];
         foreach (array_keys($data) as $column) {
             $assignments[] = $column . ' = ?';
@@ -87,6 +120,14 @@ final class BookRepository
         $statement->execute($values);
 
         return $statement->rowCount() > 0;
+    }
+
+    /** An ISBN column holds a string or nothing; anything else is nothing. */
+    private static function asIsbn(mixed $value): ?string
+    {
+        $value = is_string($value) ? trim($value) : '';
+
+        return $value === '' ? null : $value;
     }
 
     /**
@@ -212,21 +253,28 @@ final class BookRepository
     /**
      * A title alone is not unique - six titles repeat in the collection - so
      * the ISBN is appended when one is available, and a counter otherwise.
+     *
+     * $exceptId is the book being renamed. Without it a book asking for the
+     * address it already has would be told the address is taken, and would
+     * get "-2" glued on - once per save, forever.
      */
-    public function uniqueSlug(string $title, ?string $isbn13): string
+    public function uniqueSlug(string $title, ?string $isbn13, ?int $exceptId = null): string
     {
         $base = Text::slug($title, 120);
         $candidate = $isbn13 !== null ? $base . '-' . $isbn13 : $base;
 
-        $statement = $this->pdo->prepare('SELECT 1 FROM books WHERE slug = ?');
-        $statement->execute([$candidate]);
+        $sql = 'SELECT 1 FROM books WHERE slug = ?' . ($exceptId === null ? '' : ' AND id <> ?');
+        $statement = $this->pdo->prepare($sql);
+        $parameters = $exceptId === null ? [] : [$exceptId];
+
+        $statement->execute([$candidate, ...$parameters]);
         if ($statement->fetchColumn() === false) {
             return $candidate;
         }
 
         for ($suffix = 2; $suffix < 500; $suffix++) {
             $next = $candidate . '-' . $suffix;
-            $statement->execute([$next]);
+            $statement->execute([$next, ...$parameters]);
             if ($statement->fetchColumn() === false) {
                 return $next;
             }

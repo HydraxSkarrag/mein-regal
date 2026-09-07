@@ -46,7 +46,24 @@ final class TagNotation
      */
     public static function plan(TagRepository $tags, int $ownerId): array
     {
-        $all = $tags->listAllByName($ownerId);
+        /* listForSorting rather than listAllByName, because that one joins
+         * book_tags and an entry no book carries any more is not in it.
+         *
+         * Two of the nine on the shelf this was reported on were exactly
+         * that - "14 Soziologie, Gesellschaft" and "49 Theater, Tanz, Film",
+         * still in the list, still numbered, with nothing hanging off them.
+         * The tidy-up reported seven and left those two sitting there, which
+         * from the outside looks like a rule that works most of the time and
+         * is the worst kind.
+         *
+         * A tag already dropped is skipped: it is a tombstone that keeps
+         * later imports pointing at the right entry, and it is not in any
+         * list a reader sees. Renaming one would achieve nothing, and
+         * merging into one would send books to an entry nobody can see. */
+        $all = array_values(array_filter(
+            $tags->listForSorting($ownerId),
+            static fn (array $tag): bool => ($tag['dropped_at'] ?? null) === null
+        ));
 
         /* Looked up by folded name, because a tag wanting to be called
          * "Belletristik" has to find one already called "belletristik": they
