@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Content\TagNotation;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
@@ -84,6 +85,11 @@ final class TagController
             'tags'        => $tags,
             'genreCount'  => $genres,
             'fieldValues' => $this->fieldValuePairs(),
+            /* Only counted here, and only shown when it is not zero: on a
+               tidy shelf this section should not exist. */
+            'notation'    => TagNotation::changes(
+                TagNotation::plan($this->app->tags, $this->app->ownerId)
+            ),
             'error'      => $error,
             'csrfField'  => $this->app->csrf->field(),
         ]);
@@ -94,6 +100,80 @@ final class TagController
             'current' => 'admin',
             'noIndex' => true,
         ]))->noIndex();
+    }
+
+    /**
+     * GET - every tag name a catalogue notation got into, before touching one.
+     *
+     * This exists as a button rather than only as bin/tags.php because the
+     * host has no shell. Four of the nine entries on the shelf this was
+     * reported on cannot be fixed by hand at all: merging needs a tag under
+     * the corrected name to merge into, and there was none - "46 Bildende
+     * Kunst" had no plain twin, and nothing here can rename.
+     */
+    public function confirmTidy(): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $plan = TagNotation::plan($this->app->tags, $this->app->ownerId);
+        if (TagNotation::changes($plan) === 0) {
+            $this->app->session->flash(t('tags.notation.none'), 'ok');
+
+            return Response::redirect('/admin/tags');
+        }
+
+        /* Each change on its own line. There is no summarising this into a
+           number: which name becomes which is the entire question, and a
+           count of seven would be asking for a yes to something unread. */
+        $lines = [];
+        foreach ($plan['renames'] as $item) {
+            $lines[] = t('tags.notation.rename', [
+                'from' => $item['tag']['name'],
+                'to'   => $item['clean'],
+            ]);
+        }
+        foreach ($plan['merges'] as $item) {
+            $lines[] = t('tags.notation.merge', [
+                'from'  => $item['from']['name'],
+                'into'  => $item['into']['name'],
+                'count' => $item['from']['book_count'],
+            ]);
+        }
+        $lines[] = t('tags.remove.reversible');
+
+        return $this->confirm(
+            t('tags.notation.title'),
+            t('tags.notation.warning', ['count' => TagNotation::changes($plan)]),
+            $lines,
+            '/admin/tags/tidy',
+            t('tags.notation.do')
+        );
+    }
+
+    /** POST - take the numbers out of the names. */
+    public function tidy(Request $request): Response
+    {
+        $guard = $this->guardWrite($request);
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        /* Planned again rather than carried through the form. The list on the
+           confirmation page is what the reader agreed to, but it is a report,
+           not an instruction: re-reading the shelf is both simpler and safer
+           than trusting a page that may have been open since yesterday. */
+        $plan = TagNotation::plan($this->app->tags, $this->app->ownerId);
+        $done = TagNotation::apply($this->app->tags, $this->app->ownerId, $plan);
+
+        $this->app->session->flash(t('tags.notation.done', [
+            'renamed' => $done['renamed'],
+            'merged'  => $done['merged'],
+        ]), 'ok');
+
+        return Response::redirect('/admin/tags');
     }
 
     /** GET - what removing this tag would do, before it does it. */

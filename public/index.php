@@ -156,6 +156,10 @@ $app->router->get('/admin', $stats->dashboard(...));
 $app->router->get('/admin/data', $data->page(...));
 $app->router->get('/admin/tags', $tags->page(...));
 $app->router->post('/admin/tags', $tags->save(...));
+/* Before the {id} routes: "tidy" is a word, not a number, and the router
+   takes the first match. */
+$app->router->get('/admin/tags/tidy', $tags->confirmTidy(...));
+$app->router->post('/admin/tags/tidy', $tags->tidy(...));
 $app->router->get('/admin/tags/merge', $tags->confirmMerge(...));
 $app->router->post('/admin/tags/merge', $tags->merge(...));
 $app->router->get('/admin/tags/{id}/remove', $tags->confirmRemove(...));

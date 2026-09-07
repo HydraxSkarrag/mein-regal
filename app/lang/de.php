@@ -490,6 +490,17 @@ return [
     'tags.dropped.heading'   => 'Entfernt',
     'tags.dropped.hint'      => 'Nicht gelöscht, nur ausgeblendet – mit allen Zuordnungen.',
 
+    'tags.notation.heading'  => 'Katalognummern',
+    'tags.notation.hint'     => 'Bibliotheken ordnen Bücher nach einem Schlüssel ein und geben dessen Nummer zusammen mit dem Namen heraus: „59 Belletristik“, „07 Kinder- und Jugendliteratur“. Die Nummer gehört nicht zum Namen – sie steht seither im Regal, oft neben demselben Eintrag ohne Nummer.',
+    'tags.notation.found'    => '{count} Einträge tragen eine Nummer im Namen.',
+    'tags.notation.title'    => 'Katalognummern aus den Namen nehmen?',
+    'tags.notation.warning'  => 'Betroffen sind {count} Einträge:',
+    'tags.notation.rename'   => 'Umbenennen: „{from}“ wird zu „{to}“',
+    'tags.notation.merge'    => 'Zusammenführen: „{from}“ geht in „{into}“ auf – {count} Bücher',
+    'tags.notation.do'       => 'Nummern entfernen',
+    'tags.notation.none'     => 'Kein Eintrag trägt eine Katalognummer.',
+    'tags.notation.done'     => 'Fertig: {renamed} umbenannt, {merged} zusammengeführt.',
+
     'tags.sort.heading'      => 'Genre oder Schlagwort',
     'tags.merge.heading'     => 'Zusammenführen',
     'tags.merge.hint'        => 'Zwei Schreibweisen desselben Genres. Das erste verschwindet, seine Bücher bekommen das zweite.',

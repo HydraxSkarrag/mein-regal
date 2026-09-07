@@ -227,12 +227,18 @@ php bin/covers.php                        # what the covers look like, and why s
 php bin/covers.php --refresh              # fetch the sources' larger renditions
 php bin/covers.php --prune                # cover files nothing points at any more
 php bin/reviews.php --fetch               # match the blog's posts against the shelf
+php bin/tags.php                          # take catalogue numbers out of tag names
 php bin/check.php                         # are the data sources reachable?
 php tests/run.php                         # the tests
 ```
 
-`bin/covers.php` and `bin/reviews.php` write nothing until `--commit`, and say
-first what they would do and to which book.
+`bin/covers.php`, `bin/reviews.php` and `bin/tags.php` write nothing until
+`--commit`, and say first what they would do and to which book.
+
+`bin/tags.php` has a twin under **Verwaltung → Genres und Schlagwörter**, which
+does the same work with a button - the way to run it on a host with no shell.
+Both read `App\Content\TagNotation`, so they cannot reach different
+conclusions, and the panel is only there while there is something to clean up.
 
 `bin/reviews.php` refuses to run without `review_blog_url` in `config.php`. It is
 the only thing in the project that talks to the blog: no page loads anything from

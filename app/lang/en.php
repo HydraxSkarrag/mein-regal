@@ -462,6 +462,17 @@ return [
     'tags.dropped.heading'   => 'Removed',
     'tags.dropped.hint'      => 'Not deleted, only hidden - with all their links.',
 
+    'tags.notation.heading'  => 'Catalogue numbers',
+    'tags.notation.hint'     => 'Libraries file books under a scheme and hand the notation over with the name attached: "59 Belletristik", "07 Kinder- und Jugendliteratur". The number is not part of the name - it has been sitting on the shelf ever since, often beside the same entry without one.',
+    'tags.notation.found'    => '{count} entries carry a number in their name.',
+    'tags.notation.title'    => 'Take the catalogue numbers out of the names?',
+    'tags.notation.warning'  => 'This affects {count} entries:',
+    'tags.notation.rename'   => 'Rename: "{from}" becomes "{to}"',
+    'tags.notation.merge'    => 'Merge: "{from}" goes into "{into}" - {count} books',
+    'tags.notation.do'       => 'Remove the numbers',
+    'tags.notation.none'     => 'No entry carries a catalogue number.',
+    'tags.notation.done'     => 'Done: {renamed} renamed, {merged} merged.',
+
     'tags.sort.heading'      => 'Genre or label',
     'tags.merge.heading'     => 'Merge',
     'tags.merge.hint'        => 'Two spellings of one genre. The first disappears and its books get the second.',

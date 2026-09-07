@@ -13,6 +13,7 @@
  *
  * @var list<array{id: int, name: string, kind: string, dropped_at: ?string, book_count: int}> $tags
  * @var int $genreCount
+ * @var int $notation how many names still carry a catalogue number
  */
 declare(strict_types=1);
 
@@ -44,6 +45,25 @@ usort(
 
 <?php if ($error !== ''): ?>
 <p class="flash flash--error"><?= e($error) ?></p>
+<?php endif; ?>
+
+<?php if ($notation > 0): ?>
+<?php /* Only while there is something to do. This is a repair, not a feature:
+         the lookups stopped letting notation through, so on a shelf tidied
+         once the section is simply not there.
+         
+         First of the tools, because it is the one that makes the others'
+         lists shorter - merging "59 Belletristik" by hand is work that this
+         does for nothing, and four of the nine entries it fixes cannot be
+         reached by hand at all. */ ?>
+<div class="tag-tools">
+  <form class="panel" method="get" action="/admin/tags/tidy">
+    <h2><?= e(t('tags.notation.heading')) ?></h2>
+    <p class="note mt-0"><?= e(t('tags.notation.hint')) ?></p>
+    <p><strong><?= e(t('tags.notation.found', ['count' => $formatter->number($notation)])) ?></strong></p>
+    <button class="btn" type="submit"><?= e(t('tags.notation.do')) ?> &hellip;</button>
+  </form>
+</div>
 <?php endif; ?>
 
 <div class="tag-tools">

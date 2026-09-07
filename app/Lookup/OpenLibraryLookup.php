@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Lookup;
 
 use App\Core\Isbn;
+use App\Core\Text;
 
 /**
  * Open Library (Internet Archive).
@@ -148,8 +149,9 @@ final class OpenLibraryLookup implements LookupSource
     {
         $tags = [];
         foreach ((array) $subjects as $subject) {
-            $name = trim((string) ($subject['name'] ?? (is_string($subject) ? $subject : '')));
-            if ($name !== '' && mb_strlen($name) <= 60) {
+            $raw = (string) ($subject['name'] ?? (is_string($subject) ? $subject : ''));
+            $name = Text::withoutClassification($raw);
+            if ($name !== null && mb_strlen($name) <= 60) {
                 $tags[] = $name;
             }
             if (count($tags) >= 8) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Lookup;
 
 use App\Core\Isbn;
+use App\Core\Text;
 
 /**
  * Google Books.
@@ -205,8 +206,11 @@ final class GoogleBooksLookup implements LookupSource
         foreach ((array) $categories as $category) {
             // "Juvenile Fiction / Fantasy & Magic" - each level is a tag.
             foreach (explode('/', (string) $category) as $part) {
-                $clean = trim($part);
-                if ($clean !== '') {
+                // Through the same sieve as the library catalogues: Google
+                // hands out shop categories rather than notation, but one
+                // rule for what becomes a tag beats three.
+                $clean = Text::withoutClassification($part);
+                if ($clean !== null) {
                     $tags[] = $clean;
                 }
             }

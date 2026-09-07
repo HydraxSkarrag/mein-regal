@@ -291,6 +291,63 @@ final class Text
     }
 
     /**
+     * A subject with its classification notation taken off the front.
+     *
+     * The catalogues file books under a scheme and hand the notation over
+     * with the name attached. Measured across seven years of DNB records,
+     * sixty-two of sixty-three subject values began with one - and in more
+     * shapes than anybody would guess from a handful of examples:
+     *
+     *     07 Kinder- und Jugendliteratur      two digits
+     *     830 Deutsche Literatur              three
+     *     0300 Mathematik, Physik, Astronomie four, zero-padded
+     *     621.3 Elektrotechnik, Elektronik    a decimal part
+     *     10a Erziehung, Unterricht           a letter suffix
+     *     301                                 no name at all
+     *
+     * The rule used to strip a single capital letter or exactly three digits,
+     * on the stated grounds that "three digits is what the groups are". Half
+     * of the shapes above went straight onto the shelf as tags: "59
+     * Belletristik" sat in the list beside "Belletristik", the same thing
+     * twice, one of them wearing a number.
+     *
+     * Two things keep this from eating real subjects.
+     *
+     * A notation has to be followed by whitespace, which is why the check is
+     * not simply "starts with a digit": "20. Jahrhundert" keeps its number.
+     * And it is at least two digits, because the schemes here have no
+     * one-digit groups while "3 Musketiere" is a perfectly good subject.
+     *
+     * What is left is a genuine gap: "50 Jahre Bundesrepublik" would come out
+     * as "Jahre Bundesrepublik". No shape in the string tells it apart from
+     * "59 Belletristik", and the only cure would be the published list of
+     * group numbers - a table to keep in step with two catalogues for a case
+     * that did not occur once in the measured sample.
+     *
+     * Null when nothing is left but a notation. A code alone is not a name
+     * for a shelf; it is the catalogue talking to itself. A bare four-digit
+     * number is spared, because that is a year and somebody may well have
+     * filed a book under one.
+     */
+    public static function withoutClassification(string $subject): ?string
+    {
+        // Digits, an optional decimal part, an optional single lowercase
+        // letter - "621.3", "10a", "0300".
+        $notation = '\d{2,4}(?:\.\d+)?[a-z]?';
+
+        $clean = trim($subject);
+        $clean = trim(preg_replace('/^(?:[A-Z]|' . $notation . ')\s+/u', '', $clean) ?? $clean);
+
+        // Nothing but a code: two or three digits, or any number carrying a
+        // decimal part or a letter. Four plain digits are left alone.
+        if ($clean === '' || preg_match('/^(?:[A-Z]|\d{2,3}|\d{2,4}(?:\.\d+|[a-z]))$/u', $clean) === 1) {
+            return null;
+        }
+
+        return $clean;
+    }
+
+    /**
      * Render owner-written prose as safe HTML.
      *
      * Kept as the one name the templates call; the rules live in Markup,

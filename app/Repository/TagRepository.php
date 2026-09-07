@@ -434,6 +434,37 @@ final class TagRepository
         return ['moved' => $moved, 'already' => $already];
     }
 
+    /**
+     * Give a tag a different name, keeping every book on it.
+     *
+     * Only for correcting the name itself - a catalogue notation that should
+     * never have been part of it. Where a tag under the corrected name
+     * already exists this refuses rather than guessing, because two tags
+     * cannot share a slug and merging is a different act with different
+     * consequences: the caller decides which of the two it is doing.
+     *
+     * @return bool false when the name is taken
+     */
+    public function rename(int $ownerId, int $tagId, string $name): bool
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return false;
+        }
+        $slug = Text::slug($name, 190);
+
+        $taken = $this->pdo->prepare('SELECT id FROM tags WHERE owner_id = ? AND slug = ? AND id <> ?');
+        $taken->execute([$ownerId, $slug, $tagId]);
+        if ($taken->fetchColumn() !== false) {
+            return false;
+        }
+
+        $this->pdo->prepare('UPDATE tags SET name = ?, slug = ? WHERE owner_id = ? AND id = ?')
+            ->execute([$name, $slug, $ownerId, $tagId]);
+
+        return true;
+    }
+
     /** The books carrying a tag, for a preview before anything is written. */
     public function bookIdsFor(int $ownerId, int $tagId): array
     {
