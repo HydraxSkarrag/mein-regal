@@ -58,8 +58,54 @@
   shell.appendChild(afterSaveBox);
   var manualForm = document.getElementById('manual');
   var isbnInput = document.getElementById('isbn');
-  var seriesToggle = document.getElementById('series');
   var readToggle = document.getElementById('read');
+
+  /* Which door this ISBN came through, so every ending knows where to put
+   * the user back.
+   *
+   * Every lookup used to end on the searching card - the one with the moving
+   * bar - and stay there. Saving a book was fine, because saving went on to
+   * the camera; but "already on the shelf", "nothing found" and a mistyped
+   * check digit all just stopped, on a screen that was still animating as if
+   * it were working. The only way on was the browser's back button.
+   *
+   * There is no series switch to consult any more either. Cataloguing is
+   * always a run of books - one is the short case of many, never the other
+   * way round - and the way out is the button to the book that was just put
+   * away, which is on screen the whole time. A checkbox to say "and again
+   * afterwards" was asking a question whose answer is always yes. */
+  var origin = 'camera';
+
+  /* Back to whichever door this came through, ready for the next book.
+   *
+   * lastCode is deliberately left alone. The camera is still pointed at the
+   * book it has just answered about, and clearing the debounce here would
+   * have it read the same barcode on the very next frame - a duplicate
+   * message, a lookup, a duplicate message, several times a second, at the
+   * catalogue's expense. The four-second repeat guard and the ten seconds
+   * after a save are what handle "still in view"; this only decides where
+   * the screen goes. */
+  function backToOrigin() {
+    currentBook = null;
+    resultBox.innerHTML = '';
+    resultBox.hidden = true;
+
+    if (origin === 'camera' && stream) {
+      step('camera');
+      afterSaveBox.classList.add('after-save--quiet');
+      if (scanning) { tick(); }
+      return;
+    }
+
+    afterSaveBox.classList.remove('after-save--quiet');
+    if (origin === 'manual') {
+      step('manual');
+      isbnInput.value = '';
+      isbnInput.focus();
+      return;
+    }
+    step('choose');
+  }
 
   var counter = document.getElementById('counter');
 
@@ -164,6 +210,8 @@
     }
     video.srcObject = null;
     frame.hidden = true;
+    origin = 'choose';
+    afterSaveBox.classList.remove('after-save--quiet');
     step('choose');
   }
 
@@ -343,12 +391,18 @@
       return;
     }
 
-    if (reply.status === 429) { say(text.error, 'error'); overlaySay(text.error, 'bad'); return; }
+    if (reply.status === 429) {
+      say(text.error, 'error');
+      overlaySay(text.error, 'bad');
+      backToOrigin();
+      return;
+    }
     if (reply.status === 422) {
       var message = reply.data.error || text.invalidIsbn;
       say(message, 'error');
       overlaySay(message, 'bad');
       flashReticle('miss');
+      backToOrigin();
       return;
     }
     if (reply.data.duplicate) {
@@ -363,6 +417,7 @@
          with the book in one hand the last thing you want is to go and
          search for it. */
       var known = reply.data.book;
+      backToOrigin();
       if (known && known.slug) {
         afterSaveBox.innerHTML = '';
         var row = document.createElement('div');
@@ -379,6 +434,7 @@
       say(reply.data.message || text.nothing, 'error');
       overlaySay(text.nothingShort, 'bad');
       flashReticle('miss');
+      backToOrigin();
       return;
     }
 
@@ -430,14 +486,10 @@
     document.getElementById('skip').addEventListener('click', dismiss);
   }
 
-  /* Put the card away and start reading again. */
+  /* Put the card away and start over, wherever we started. */
   function dismiss() {
-    currentBook = null;
-    lastCode = '';
-    resultBox.hidden = true;
     say('');
-    step(scanning ? 'camera' : 'choose');
-    if (scanning) { tick(); }
+    backToOrigin();
   }
 
   async function save() {
@@ -493,23 +545,17 @@
     offerCoverPhoto(reply.data.id, reply.data.slug, reply.data.message);
     currentBook = null;
 
-    /* Series mode: straight back to the camera. Cataloguing a shelf means
-       twenty books in a row, and returning to the list between each one is
-       the difference between an hour and an afternoon. */
-    if (seriesToggle.checked && stream) {
-      lastCode = '';
-      resultBox.hidden = true;
-      /* Back to the viewfinder, not just back to reading barcodes. Without
-         this the step stayed on the result, so the camera was hidden while
-         it scanned - which is every part of a series scan except the part
-         you can see. The cover buttons stay reachable underneath, quietly:
-         they are the way out, not the next thing to do. */
-      step('camera');
-      afterSaveBox.classList.add('after-save--quiet');
-      if (scanning) { tick(); }
-    } else {
-      afterSaveBox.classList.remove('after-save--quiet');
-    }
+    /* Straight back to the door this came through. Cataloguing a shelf means
+       twenty books in a row, and stopping between each one is the difference
+       between an hour and an afternoon - which is as true of typing numbers
+       as it is of the camera, so both get it.
+
+       Back to the viewfinder, not merely back to reading barcodes: leaving
+       the step on the result hid the camera while it scanned, which is every
+       part of a series scan except the part you can see. The cover buttons
+       stay reachable underneath, quietly - they are the way out, not the
+       next thing to do. */
+    backToOrigin();
   }
 
   /* Taking the cover photograph.
@@ -613,7 +659,7 @@
     actions.querySelector('[data-cancel]').addEventListener('click', function () {
       hint.textContent = text.aim;
       frame.classList.remove('scanner-frame--portrait');
-      step('result');
+      backToOrigin();
       offerCoverPhoto(bookId, slug);
     });
   }
@@ -676,6 +722,8 @@
     }
     if (!reply.data || !reply.data.saved) {
       say(text.error, 'error');
+      frame.classList.remove('scanner-frame--portrait');
+      backToOrigin();
       offerCoverPhoto(bookId, slug);
       return;
     }
@@ -684,19 +732,10 @@
     afterSaveBox.innerHTML = '';
     frame.classList.remove('scanner-frame--portrait');
 
-    /* And straight back to reading barcodes, if that is what we were doing.
-       A cover is part of putting one book away, not the end of the run - the
-       series used to stop here, on a portrait viewfinder that was no longer
-       looking for anything. */
-    if (seriesToggle.checked && stream) {
-      lastCode = '';
-      step('camera');
-      afterSaveBox.classList.add('after-save--quiet');
-      if (scanning) { tick(); }
-    } else {
-      afterSaveBox.classList.remove('after-save--quiet');
-      step('result');
-    }
+    /* And straight back to where the run started. A cover is part of putting
+       one book away, not the end of the run - it used to stop here, on a
+       portrait viewfinder that was no longer looking for anything. */
+    backToOrigin();
 
     var done = document.createElement('div');
     done.className = 'scanner-actions';
@@ -757,12 +796,20 @@
 
   // ----------------------------------------------------------------- wiring
 
-  pickCamera.addEventListener('click', startCamera);
-  pickManual.addEventListener('click', function () {
-    step('manual');
-    document.getElementById('isbn').focus();
+  pickCamera.addEventListener('click', function () {
+    origin = 'camera';
+    startCamera();
   });
-  backButton.addEventListener('click', function () { step('choose'); });
+  pickManual.addEventListener('click', function () {
+    origin = 'manual';
+    step('manual');
+    isbnInput.focus();
+  });
+  backButton.addEventListener('click', function () {
+    origin = 'choose';
+    afterSaveBox.innerHTML = '';
+    step('choose');
+  });
   stopButton.addEventListener('click', stopCamera);
 
   /* Whether new books count as read is remembered.

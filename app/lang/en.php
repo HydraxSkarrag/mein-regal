@@ -144,8 +144,6 @@ return [
     'scan.photo'         => 'Choose a file',
     'scan.again'         => 'Next book',
     'scan.options'       => 'While scanning',
-    'scan.series'        => 'Keep scanning',
-    'scan.series.hint'   => 'With the camera, go straight back to it after saving',
     'scan.read'          => 'Record as read',
     'scan.read.hint'     => 'applies to every book until you switch it off again',
     'scan.read.on'       => 'New books are recorded as read.',
@@ -333,7 +331,7 @@ return [
     'scan.nothing.short'       => 'Nothing found',
 
     'cover.search'             => 'Look for a cover online',
-    'cover.search.hint'        => 'Asks the German books-in-print directory, Open Library and Google Books for this ISBN. A cover that turns up is stored here, not embedded.',
+    'cover.search.hint'        => 'Asks the German books-in-print directory, Open Library and Google Books for this ISBN. A cover that turns up is stored here, not embedded - and replaces whichever cover is showing, your own photograph included.',
     'cover.search.found'       => 'Cover found and stored.',
     'cover.search.none'        => 'No cover was found for this ISBN.',
     'cover.search.quota'      => 'Google Books is used up for today. The other sources had no cover - worth trying again tomorrow.',

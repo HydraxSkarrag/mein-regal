@@ -20,6 +20,26 @@ use Throwable;
  */
 final class CoverFinder
 {
+    /**
+     * Wide enough to stop looking.
+     *
+     * The detail page draws a cover 220 CSS pixels wide, which is 440 real
+     * ones on the phone this is used from, and the storage keeps up to 900.
+     * So anything under about that is being stretched on the page it matters
+     * most on - which is what "total verpixelt" looks like from the sofa.
+     *
+     * Measured, not guessed: MVB answers a German ISBN at 599, Open Library
+     * at 316 to 333 for the English editions to hand, and Google hands back
+     * 900 where a full scan exists and 300 where it does not. So the first
+     * answer is sometimes fine and sometimes a third of what is wanted, and
+     * which of the two it is cannot be known before fetching it.
+     *
+     * Hence: below this, keep asking; above it, stop. It costs an extra
+     * request exactly when the picture in hand is not good enough, and none
+     * at all otherwise.
+     */
+    public const MIN_GOOD_WIDTH = 450;
+
     public function __construct(
         private readonly LookupChain $chain,
         private readonly CoverRepository $covers,
@@ -90,6 +110,8 @@ final class CoverFinder
         // so the book still gets a chance at a right image from another one.
         $rejected = $this->covers->rejectedSources($bookId);
 
+        $best = null;
+
         foreach ($candidates as [$url, $source, $attribution]) {
             if (in_array($source, $rejected, true)) {
                 continue;
@@ -112,7 +134,24 @@ final class CoverFinder
                 $stored['height']
             );
 
-            return ['stored' => true, 'source' => $source, 'path' => $stored['path'], 'failures' => $failures];
+            /* Every picture that arrives is kept - one row per source, which
+             * is what the table is shaped for, and CoverRepository decides
+             * between them by standing and then by size. So going on after a
+             * small one costs nothing that has to be undone: if the next
+             * source is worse, the first one still wins on the page.
+             *
+             * What stops here is only the asking. */
+            if ($best === null || (int) $stored['width'] > (int) $best['width']) {
+                $best = ['source' => $source, 'path' => $stored['path'], 'width' => $stored['width']];
+            }
+
+            if ((int) $stored['width'] >= self::MIN_GOOD_WIDTH) {
+                break;
+            }
+        }
+
+        if ($best !== null) {
+            return ['stored' => true, 'source' => $best['source'], 'path' => $best['path'], 'failures' => $failures];
         }
 
         /* Which sources could not be asked travels back with the empty

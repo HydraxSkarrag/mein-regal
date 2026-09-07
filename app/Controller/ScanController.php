@@ -198,7 +198,31 @@ final class ScanController
             CoverRepository::SOURCE_OPENLIBRARY,
         ]);
         if ($coverUrl !== '' && $coverSource !== null) {
-            $this->fetchCover($bookId, $coverUrl, $coverSource, $isbn, $request->post('cover_attribution'));
+            $width = $this->fetchCover($bookId, $coverUrl, $coverSource, $isbn, $request->post('cover_attribution'));
+
+            /* The picture the card showed is the one that gets saved - that
+             * much has to stay true, or the confirmation on screen is a
+             * different book's cover. What was missing is the step after:
+             * some sources answer with a third of the width the detail page
+             * draws, and there was no second look. A scanned book kept its
+             * thumbnail for good, while the same book added by hand went
+             * through the services and came out sharp.
+             *
+             * So when what arrived is too small, the services are asked as
+             * well and every answer is kept; the repository picks between
+             * them. When it is big enough - which is the German case, where
+             * MVB answers at 599 - nothing extra is fetched at all. */
+            if ($isbn !== null && $width !== null && $width < CoverFinder::MIN_GOOD_WIDTH) {
+                try {
+                    (new CoverFinder(
+                        $this->app->lookup,
+                        $this->app->covers,
+                        new CoverStorage(PROJECT_ROOT . '/public/covers')
+                    ))->fromServices($bookId, $isbn);
+                } catch (Throwable $e) {
+                    error_log('[regal] cover top-up failed for ' . $isbn . ': ' . $e->getMessage());
+                }
+            }
         }
 
         $book = $this->app->books->findByIsbn($this->app->ownerId, (string) $isbn);
@@ -274,7 +298,7 @@ final class ScanController
      * Internet Archive. Failure is logged and ignored: a book without a cover
      * is still a catalogued book.
      */
-    private function fetchCover(int $bookId, string $url, string $source, ?string $isbn, string $attribution): void
+    private function fetchCover(int $bookId, string $url, string $source, ?string $isbn, string $attribution): ?int
     {
         try {
             $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
@@ -288,9 +312,15 @@ final class ScanController
                 $stored['width'],
                 $stored['height']
             );
+
+            // How wide it turned out, so the caller can decide whether that
+            // is good enough to stop at.
+            return $stored['width'];
         } catch (Throwable $e) {
             error_log('[regal] cover fetch failed for ' . $url . ': ' . $e->getMessage());
         }
+
+        return null;
     }
 
     /** POST /api/cover/delete - discard a cover taken moments ago. */

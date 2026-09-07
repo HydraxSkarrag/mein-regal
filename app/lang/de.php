@@ -169,8 +169,6 @@ return [
     'scan.photo'         => 'Bild wählen',
     'scan.again'         => 'Nächstes Buch',
     'scan.options'       => 'Beim Scannen',
-    'scan.series'        => 'Serienscan',
-    'scan.series.hint'   => 'Mit der Kamera nach dem Speichern gleich weiterscannen',
     'scan.read'          => 'Als gelesen erfassen',
     'scan.read.hint'     => 'gilt für jedes Buch, bis du es wieder abwählst',
     'scan.read.on'       => 'Neue Bücher werden als gelesen erfasst.',
@@ -358,7 +356,7 @@ return [
     'scan.nothing.short'       => 'Nichts gefunden',
 
     'cover.search'             => 'Cover im Netz suchen',
-    'cover.search.hint'        => 'Fragt das Verzeichnis Lieferbarer Bücher, Open Library und Google Books nach dieser ISBN. Gefundene Bilder werden hier gespeichert, nicht eingebettet.',
+    'cover.search.hint'        => 'Fragt das Verzeichnis Lieferbarer Bücher, Open Library und Google Books nach dieser ISBN. Gefundene Bilder werden hier gespeichert, nicht eingebettet – und ersetzen das Cover, das gerade angezeigt wird, auch ein selbst hochgeladenes.',
     'cover.search.found'       => 'Cover gefunden und gespeichert.',
     'cover.search.none'        => 'Zu dieser ISBN wurde kein Cover gefunden.',
     'cover.search.quota'      => 'Google Books ist für heute ausgeschöpft. Die anderen Quellen hatten kein Cover – morgen noch einmal versuchen.',

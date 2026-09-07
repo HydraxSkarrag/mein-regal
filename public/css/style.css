@@ -1274,6 +1274,22 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   }
   .bottom-nav .nav-scan svg { width: 25px; height: 25px; }
   .bottom-nav .nav-scan span { display: none; }
+
+  /* On the scanning page itself, where being the current page is what every
+     other entry in the bar shows by turning accent-coloured.
+     
+     This one is already accent-coloured - it is a filled circle - so the
+     rule painted the icon in the colour of the disc behind it and the button
+     went blank. A round red blob in the middle of the bar, no symbol, on the
+     one screen where you most want to know what it is.
+     
+     So it says "you are here" the other way round: the disc darkens and
+     grows a ring, and the icon stays white. */
+  .bottom-nav .nav-scan[aria-current="page"] {
+    color: var(--on-accent);
+    background: var(--accent-dark);
+    box-shadow: 0 0 0 4px var(--accent-ring-strong), 0 3px 10px var(--accent-shadow);
+  }
 }
 
 /* ---- Footer --------------------------------------------------------- */
@@ -1660,8 +1676,8 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 .scan-modes { display: grid; gap: 10px; margin-top: 18px; }
 
-/* Quiet: it scopes the two checkboxes under it rather than announcing a
-   section, and the doors above are what the eye should land on. */
+/* Quiet: it scopes the checkbox under it rather than announcing a section,
+   and the doors above are what the eye should land on. */
 .scan-options-heading {
   font-size: 0.8rem;
   text-transform: uppercase;

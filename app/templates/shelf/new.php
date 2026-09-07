@@ -16,6 +16,7 @@
  * @var string  $author
  * @var ?list<array<string,mixed>> $found
  * @var array<string,string> $previews ISBN => data: URI
+ * @var ?array<string,mixed> $justAdded the book the last submission dealt with
  * @var string  $csrfField
  */
 declare(strict_types=1);
@@ -23,6 +24,24 @@ declare(strict_types=1);
 <div class="page-head">
   <h1><?= e(t('new.title')) ?></h1>
 </div>
+
+<?php if ($justAdded !== null): ?>
+<?php /* What the last submission did, and the way to it - the same block the
+         scanner shows after saving, for the same reason: the message alone
+         leaves you wondering which edition went in, and the book is not worth
+         going and searching for when it was in your hand a second ago.
+         
+         Above the form rather than below the results, because the form is
+         where the eyes are: the fields are empty again and the next title is
+         about to be typed. */ ?>
+<div class="card after-added">
+  <p class="mt-0"><strong><?= e($justAdded['title']) ?></strong></p>
+  <div class="form-actions">
+    <a class="btn" href="/book/<?= e($justAdded['slug']) ?>"><?= e(t('scan.open.book')) ?></a>
+    <a class="btn" href="/book/<?= e($justAdded['slug']) ?>/edit"><?= e(t('book.edit')) ?></a>
+  </div>
+</div>
+<?php endif; ?>
 
 <div class="card">
   <p class="note mt-0"><?= e(t('new.hint')) ?></p>
@@ -91,6 +110,12 @@ declare(strict_types=1);
       <span class="candidate-cover <?= e(App\Core\CoverImage::placeholderClass((string) ($candidate['isbn13'] ?? $candidate['title']))) ?><?php
           if ($candidate['isbn13'] !== null): ?> cover-<?= e($candidate['isbn13']) ?><?php endif; ?>" aria-hidden="true"></span>
       <input type="hidden" name="action" value="create">
+      <?php /* Which button this was, so the controller knows where to send
+               the reader afterwards: a picked record is complete and the run
+               carries on here, a bare title has to be finished on the edit
+               page. Not guessed from the fields - a catalogue record without
+               an ISBN or a publisher looks exactly like a typed one. */ ?>
+      <input type="hidden" name="from" value="search">
       <input type="hidden" name="title" value="<?= e($candidate['title']) ?>">
       <input type="hidden" name="authors" value="<?= e(implode('|', $candidate['authors'])) ?>">
       <input type="hidden" name="publisher" value="<?= e((string) ($candidate['publisher'] ?? '')) ?>">

@@ -69,6 +69,18 @@ final class BookController
         $found = null;
         $previews = [];
 
+        /* The book the last submission dealt with, named in the address so a
+           reload cannot make a second one. Searching, picking and searching
+           again is the whole point of this page - landing on the edit form
+           after every pick ended the run, the same dead end the scanner had
+           on its other two doors. What was just put away stays on screen as
+           a line and a link, and the fields are empty for the next title. */
+        $justAdded = null;
+        $slug = trim($request->query('book'));
+        if ($slug !== '') {
+            $justAdded = $this->app->books->findBySlug($this->app->ownerId, $slug);
+        }
+
         $title = $request->isPost() ? trim($request->post('title')) : '';
         $author = $request->isPost() ? trim($request->post('author')) : '';
 
@@ -111,6 +123,7 @@ final class BookController
                 'author'    => $author,
                 'found'     => $found,
                 'previews'  => $previews,
+                'justAdded' => $justAdded,
                 'csrfField' => $this->app->csrf->field(),
             ]),
             'title'     => t('new.title'),
@@ -131,12 +144,28 @@ final class BookController
     {
         $isbn13 = Isbn::normalize($request->post('isbn13'));
 
+        /* Which of the two buttons this was. A record picked out of the
+           catalogue arrives complete, so there is nothing to fill in and the
+           next thing wanted is the next book; a bare title arrives as a bare
+           title, and the edit page is the only place that can finish it.
+           
+           The form says which rather than this guessing from the fields:
+           a catalogue record with no ISBN and no publisher looks exactly like
+           a typed one, and there are plenty of those. */
+        $fromSearch = $request->post('from') === 'search';
+
         /* An ISBN already on the shelf means the book is too, and the
            catalogue has just handed back its record. Saying so beats making a
            second copy that the scanner would then find first. */
         if ($isbn13 !== null) {
             $existing = $this->app->books->findByIsbn($this->app->ownerId, $isbn13);
             if ($existing !== null) {
+                if ($fromSearch) {
+                    $this->app->session->flash(t('scan.duplicate'), 'error');
+
+                    return Response::redirect('/book/new?book=' . rawurlencode($existing['slug']));
+                }
+
                 return Response::redirect('/book/' . $existing['slug'] . '/edit');
             }
         }
@@ -192,6 +221,12 @@ final class BookController
         }
 
         $book = $this->app->books->findById($this->app->ownerId, $bookId);
+
+        if ($fromSearch) {
+            $this->app->session->flash(t('scan.saved', ['title' => $book['title'] ?? $title]), 'ok');
+
+            return Response::redirect('/book/new?book=' . rawurlencode((string) ($book['slug'] ?? '')));
+        }
 
         return Response::redirect('/book/' . ($book['slug'] ?? '') . '/edit');
     }
@@ -462,6 +497,20 @@ final class BookController
             return Response::redirect('/book/' . $book['slug'] . '/edit');
         }
 
+        /* What is on the page right now, so that pressing this button changes
+           it.
+           
+           Provenance decides which of several covers a book shows, and an own
+           photograph outranks everything - rightly, for the nightly job,
+           which must never quietly paint over a picture of the actual copy.
+           But it made this button do nothing visible: it said "Cover gefunden
+           und gespeichert" and the page came back showing the same photograph
+           as before, because the found one had been filed behind it.
+           
+           A button pressed by the owner, on this book, right now, is not the
+           nightly job. It replaces what is showing. */
+        $before = $this->app->covers->bestFor((int) $book['id'], true);
+
         $finder = new CoverFinder(
             $this->app->lookup,
             $this->app->covers,
@@ -470,7 +519,17 @@ final class BookController
         $result = $finder->findFor((int) $book['id'], (string) $isbn);
 
         if ($result['stored']) {
-            $this->app->session->flash(t('cover.search.found'), 'ok');
+            if ($before !== null && $before['source'] !== $result['source']) {
+                $storage = new CoverStorage(PROJECT_ROOT . '/public/covers');
+                foreach ($this->app->covers->remove((int) $book['id'], $before['source']) as $path) {
+                    $storage->delete($path);
+                }
+            }
+
+            $this->app->session->flash(
+                t('cover.search.found') . ' ' . t('cover.from.' . $result['source']),
+                'ok'
+            );
 
             return Response::redirect('/book/' . $book['slug'] . '/edit');
         }
