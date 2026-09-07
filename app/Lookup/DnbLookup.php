@@ -268,6 +268,12 @@ final class DnbLookup implements LookupSource
      */
     private static function normalise(string $value): string
     {
+        /* Every value from this catalogue passes here, which is the reason
+           the non-sorting marks are taken out at this point rather than in
+           each parser: they turn up in titles and in the names of series
+           alike, and one of the two would have been forgotten. */
+        $value = Text::withoutSortMarks($value);
+
         if (class_exists(\Normalizer::class)) {
             $composed = \Normalizer::normalize($value, \Normalizer::FORM_C);
             if (is_string($composed)) {
@@ -284,7 +290,32 @@ final class DnbLookup implements LookupSource
         ]);
     }
 
-    /** @return array{title: string, subtitle: ?string}|null */
+    /**
+     * Title from MARC 245, where a volume of a series keeps its own name.
+     *
+     *   $a  the title proper - for a series, the name of the series
+     *   $n  which part: "1.", "Teil 2.", "Bd. 1.", "1/2."
+     *   $p  the name of that part - which is what the book is called
+     *   $b  the rest of the title, what a cover prints under the name
+     *   $c  who wrote it, which comes from 100 and 700 instead
+     *
+     * $p used to be ignored, and that is how two volumes of one series
+     * arrived on the shelf as the same book: both called "Die Chronik der
+     * Drachenlanze", telling apart only by their ISBN in the address. The
+     * names were in the record all along - Drachenzwielicht and
+     * Drachenjäger, one subfield further along.
+     *
+     * So when there is a part name, it is the title, and the series and the
+     * number become the subtitle. Read off seventy-three records carrying a
+     * $p: it is the book's own name in nearly all of them. The exceptions
+     * are edition words - "Gesamtausgabe" - where this comes out as a title
+     * nobody would choose. Nothing in the field distinguishes those, they
+     * were three of the seventy-three, and the alternative is the bug: six
+     * volumes of a series filed under one name. Nothing is lost either way,
+     * the series moves to the subtitle.
+     *
+     * @return array{title: string, subtitle: ?string}|null
+     */
     public static function parseMarcTitle(string $xml): ?array
     {
         if (preg_match('~<(?:\w+:)?datafield[^>]*tag="245"[^>]*>(.*?)</(?:\w+:)?datafield>~s', $xml, $field) !== 1) {
@@ -302,30 +333,45 @@ final class DnbLookup implements LookupSource
             $parts[$subfield[1]] = self::normalise(html_entity_decode(trim($subfield[2]), ENT_QUOTES, 'UTF-8'));
         }
 
-        $title = trim((string) ($parts['a'] ?? ''), " \t\n\r\0\x0B.,:;/");
-        if ($title === '') {
-            return null;
-        }
-
-        // $n carries the volume, $b a subtitle; the statement of
-        // responsibility after " / " is not part of either.
-        $subtitle = null;
-        foreach (['n', 'b'] as $code) {
-            if (!isset($parts[$code]) || $parts[$code] === '') {
-                continue;
-            }
-            $value = $parts[$code];
+        /* The statement of responsibility can appear inside any of these,
+           after " / ", and "[u.a.]" marks a record that stands for several
+           volumes at once. Neither belongs in a title. */
+        $tidy = static function (?string $value): string {
+            $value = (string) $value;
             $slash = strpos($value, ' / ');
             if ($slash !== false) {
                 $value = substr($value, 0, $slash);
             }
-            $value = trim($value, " \t\n\r\0\x0B.,:;/");
-            if ($value !== '') {
-                $subtitle = $subtitle === null ? $value : $subtitle . '. ' . $value;
-            }
+            $value = str_replace('[u.a.]', '', $value);
+
+            return trim($value, " \t\n\r\0\x0B.,:;/");
+        };
+
+        $series = $tidy($parts['a'] ?? '');
+        $number = $tidy($parts['n'] ?? '');
+        $part   = $tidy($parts['p'] ?? '');
+        $rest   = $tidy($parts['b'] ?? '');
+
+        // A part name often carries its own subtitle: "Die Sucherin : Roman".
+        $partExtra = '';
+        if ($part !== '' && ($colon = strpos($part, ' : ')) !== false) {
+            $partExtra = trim(substr($part, $colon + 3), " \t\n\r\0\x0B.,:;/");
+            $part = trim(substr($part, 0, $colon), " \t\n\r\0\x0B.,:;/");
         }
 
-        return ['title' => $title, 'subtitle' => $subtitle];
+        if ($part !== '') {
+            $title = $part;
+            $pieces = [trim($series . ' ' . $number), $partExtra, $rest];
+        } elseif ($series !== '') {
+            $title = $series;
+            $pieces = [$number, $rest];
+        } else {
+            return null;
+        }
+
+        $subtitle = implode('. ', array_filter($pieces, static fn (string $v): bool => $v !== ''));
+
+        return ['title' => $title, 'subtitle' => $subtitle === '' ? null : $subtitle];
     }
 
     public function parse(string $xml, string $isbn13): ?BookData

@@ -291,6 +291,38 @@ final class Text
     }
 
     /**
+     * Text with a catalogue's non-sorting marks taken out.
+     *
+     * MARC brackets a leading article so that a sort can skip it: "Die" in
+     * "Die Chronik der Drachenlanze" is wrapped in U+0098 and U+009C, the
+     * control characters libraries use for exactly this. They mean "ignore
+     * what is between us when filing" - the words themselves are part of the
+     * title and stay.
+     *
+     * Those code points are illegal in XML 1.0, so the DNB writes them as
+     * escaped character references: what comes out of the parser is the
+     * literal text "&#152;Die&#156;". PHP will not decode those back either -
+     * html_entity_decode refuses a reference to a forbidden code point - so
+     * they travelled all the way onto the shelf as visible text, into the
+     * title, into the slug, and into the address bar.
+     *
+     * Measured on four hundred MARC records: sixty-one carried them. It is
+     * one in six German titles beginning with an article, not an oddity.
+     *
+     * Both spellings are taken out, the escaped one and the raw characters,
+     * because only the first has been seen and the second is the same thing
+     * one parser setting away.
+     */
+    public static function withoutSortMarks(string $value): string
+    {
+        return str_replace(
+            ['&#152;', '&#156;', '&#x98;', '&#x9c;', '&#x9C;', "\u{0098}", "\u{009C}"],
+            '',
+            $value
+        );
+    }
+
+    /**
      * A subject with its classification notation taken off the front.
      *
      * The catalogues file books under a scheme and hand the notation over
