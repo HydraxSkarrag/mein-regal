@@ -145,6 +145,39 @@ Assert::true(
     str_contains($controller, "\$request->query('book')") && str_contains($form, '$justAdded')
 );
 
+Assert::group('A search that answers below the fold answered nothing');
+
+/* The form posts, the browser draws the shortlist under a card that fills a
+ * phone screen, and what the reader sees is the form they just submitted.
+ *
+ * A POST carries the fragment of the address it was sent to, which scrolls
+ * the page with no JavaScript at all - measured in a browser: the heading
+ * came to rest exactly at its scroll-margin. Two things had to be true for
+ * it, and both are easy to undo by accident.
+ *
+ * One: the fragment belongs to the search button rather than the form, or
+ * "Ohne Suche anlegen" - which redirects away - drags a #results onto the
+ * address of the edit page. */
+Assert::true(
+    'only the search button carries the fragment',
+    str_contains($form, 'formaction="/book/new#results"')
+);
+Assert::same('and no other form does', substr_count($form, '/book/new#results'), 1);
+Assert::true('there is something for it to find', str_contains($form, 'id="results"'));
+
+/* Two: focus beats a fragment. With autofocus on the title field the browser
+ * put the cursor there and left the results eight hundred pixels down, which
+ * is the bug with an extra step in it. The field keeps its autofocus for the
+ * empty page, where typing is the only thing to do. */
+Assert::true(
+    'the field only grabs focus when there is nothing to read',
+    str_contains($form, "\$found === null ? ' autofocus' : ''")
+);
+Assert::same('and never unconditionally', substr_count($form, ' autofocus>'), 0);
+
+$css = (string) file_get_contents(PROJECT_ROOT . '/public/css/style.css');
+Assert::true('the heading is not flush to the edge', str_contains($css, '#results { scroll-margin-top'));
+
 Assert::group('The round scan button on the page it leads to');
 
 /* Every other entry in the bottom bar shows "you are here" by turning accent

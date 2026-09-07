@@ -54,10 +54,17 @@ declare(strict_types=1);
     <?= $csrfField ?>
     <div class="field mb-s">
       <label for="title"><?= e(t('book.title')) ?></label>
-      <?php /* autofocus: this page exists to be typed into, and whoever
-               reached it already knows what they are going to type. */ ?>
+      <?php /* autofocus until there is something to read.
+               
+               This page exists to be typed into, and whoever reached it
+               already knows what they are going to type - but once the
+               catalogue has answered, the answer is the point. Focus wins
+               over a fragment: measured, the browser put the cursor in this
+               field and left the results eight hundred pixels below the
+               fold, which on a phone is a search that appears to have done
+               nothing at all. */ ?>
       <input id="title" type="text" name="title" value="<?= e($title) ?>"
-             maxlength="500" autocomplete="off" required autofocus>
+             maxlength="500" autocomplete="off" required<?= $found === null ? ' autofocus' : '' ?>>
     </div>
 
     <div class="field mb-s">
@@ -68,7 +75,14 @@ declare(strict_types=1);
     </div>
 
     <div class="form-actions">
-      <button class="btn btn--primary" type="submit" name="action" value="search">
+      <?php /* formaction rather than the form's own action, so the fragment
+               belongs to this button alone. A POST carries the fragment of
+               the address it was sent to, which is what puts the results on
+               screen without a line of JavaScript - and "Ohne Suche anlegen"
+               redirects away, where a leftover #results would only make an
+               odd address. */ ?>
+      <button class="btn btn--primary" type="submit" name="action" value="search"
+              formaction="/book/new#results">
         <?= e(t('new.search')) ?>
       </button>
       <?php /* The way past the catalogue, for the books that are not in it.
@@ -88,7 +102,11 @@ declare(strict_types=1);
 </div>
 
 <?php if ($found !== null && $found !== []): ?>
-<h2 class="mt-m"><?= e(t('new.found', ['count' => count($found)])) ?></h2>
+<?php /* Where the search button sends the page. Nothing scrolls here without
+         it: the form posts, the browser draws the answer below a card that
+         fills a phone screen, and the reader sees the same form they just
+         submitted. */ ?>
+<h2 class="mt-m" id="results"><?= e(t('new.found', ['count' => count($found)])) ?></h2>
 <p class="note"><?= e(t('new.found.hint')) ?></p>
 
 <ul class="candidates">

@@ -1171,6 +1171,11 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 /* One row per edition, and the row is the form: the whole record travels in
    hidden fields, so what is picked is what was shown. */
+/* The heading the search button jumps to. A little air above it, or the
+   results begin flush against the top edge and read as a page that was
+   already scrolled rather than one that scrolled for you. */
+#results { scroll-margin-top: 14px; }
+
 .candidates { list-style: none; margin: 12px 0 0; padding: 0; }
 .candidates li + li { border-top: 1px solid var(--border); }
 .candidates form {
