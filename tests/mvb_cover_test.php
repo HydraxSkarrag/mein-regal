@@ -128,10 +128,17 @@ Assert::true('a lookalike is not', !$allowed('https://portal.dnb.de.example.com/
 Assert::true('nor the rest of the domain', !$allowed('https://dnb.de/cover'));
 Assert::true('nor the same host over http', !$allowed('http://portal.dnb.de/opac/mvb/cover'));
 
-Assert::true(
-    'and a visitor\'s browser may load it too, for the owner-only preview',
-    str_contains((new Csp())->header(), 'https://portal.dnb.de')
-);
+/* And no browser is allowed to fetch it, which is the other half of the same
+ * rule. It was, once, so the scanner could show a found cover before anybody
+ * had decided to keep it - and it never worked: the catalogue answers a
+ * browser with "Making sure you're not a bot!". The card gets a thumbnail
+ * this server fetched, as a data: URI, and the policy needs no hosts at all.
+ */
+$policy = (new Csp())->header();
+
+Assert::true('the picture policy names no host but this one', str_contains($policy, "img-src 'self' data:;"));
+Assert::true('the catalogue least of all', !str_contains($policy, 'https://portal.dnb.de'));
+Assert::true('and no cover service either', !str_contains($policy, 'covers.openlibrary.org'));
 
 Assert::group('MVB: a publisher\'s file beats a thumbnail');
 

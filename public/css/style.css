@@ -435,17 +435,18 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* A book wider than it is tall.
+/* A cover the tile cannot hold without cutting into it.
  *
- * Filling a 2:3 tile with a landscape picture shows a strip out of the middle
- * of it - on the four comics that prompted this, between a third and three
- * fifths of the cover was cut away, and Simons Katze was a slice of cat.
+ * Filling a 2:3 tile means scaling until the picture covers and losing what
+ * sticks out. For the thousands of covers built to roughly that shape, that
+ * is a margin. For a square audiobook cover it is a third of the width, sides
+ * first, which is where the title is; for a comic, up to three fifths.
  *
  * The tile keeps its shape, because a shelf of tiles that each did as they
  * pleased would not read as a shelf, and the picture sits inside it whole.
- * Only covers that are actually landscape get this: a portrait one an inch
- * off 2:3 still fills its tile, and there are three thousand of those. */
-.cover--wide img { object-fit: contain; }
+ * Which covers get this is decided in the markup, from the dimensions: see
+ * partials/cover.php. */
+.cover--contain img { object-fit: contain; }
 
 /* A generated stand-in, so a missing cover reads as a book spine rather
    than a broken image. The colour is derived from the ISBN, so the same

@@ -23,30 +23,24 @@ namespace App\Core;
 final class Csp
 {
     /**
-     * Hosts a cover may be shown from.
+     * No host but this one, for pictures either.
      *
-     * Covers are downloaded and served from this server, so a visitor needs
-     * none of these. The scanner does: it shows the candidate straight from
-     * the source before anybody has decided to keep it. Naming them closes
-     * the channel a policy like this otherwise leaves wide open - an image
-     * request carries data in its address, and "any https host" is somewhere
-     * to send it.
+     * There used to be a list here - Google, Open Library, the Internet
+     * Archive, portal.dnb.de - because the scanner showed a found cover
+     * straight from the source before anybody had decided to keep it. That is
+     * the only thing that ever needed them, and it does not any more: the
+     * server fetches the thumbnail and the card gets a data: URI.
      *
-     * The same list as CoverStorage's fetch allowlist, and for the same
-     * reason. Open Library redirects its covers onto the Internet Archive,
-     * and a browser follows that redirect too.
+     * Which is worth more than tidiness. An image request carries data in its
+     * address, so "any of these seven hosts" was somewhere to send it, and
+     * the list had to be kept in step with CoverStorage's fetch allowlist by
+     * hand. It was also not doing its job: portal.dnb.de was on it and its
+     * pictures never appeared in a browser anyway, because the catalogue
+     * answers browsers with a bot check.
      *
-     * @var list<string>
+     * data: stays. That is what the thumbnails and the generated stand-ins
+     * are, and it reaches nobody.
      */
-    private const IMAGE_HOSTS = [
-        'https://books.google.com',
-        'https://books.googleusercontent.com',
-        'https://lh3.googleusercontent.com',
-        'https://covers.openlibrary.org',
-        'https://archive.org',
-        'https://*.archive.org',
-        'https://portal.dnb.de',
-    ];
 
     private string $nonce;
 
@@ -64,7 +58,7 @@ final class Csp
     {
         return implode('; ', [
             "default-src 'self'",
-            "img-src 'self' data: " . implode(' ', self::IMAGE_HOSTS),
+            "img-src 'self' data:",
             "script-src 'self'",
             // 'self' for style.css and the themes; the nonce for the handful
             // of measurements only this request knows. See Core\Styles.

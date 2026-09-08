@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Text;
 use App\Http\Application;
 use App\Lookup\CoverFinder;
+use App\Lookup\CoverPreviews;
 use App\Lookup\LookupChain;
 use App\Repository\CoverRepository;
 use Throwable;
@@ -109,16 +110,36 @@ final class ScanController
          * covered to nearly whole.
          *
          * The order is CoverFinder's, not a second opinion: what the scanner
-         * shows now has to be what the book ends up with. */
+         * shows now has to be what the book ends up with.
+         *
+         * The picture travels to the card as a thumbnail rather than as an
+         * address. Handing the browser the catalogue's own URL looked like it
+         * worked and did not: portal.dnb.de answers a browser with "Making
+         * sure you're not a bot!", so the card showed an empty frame while
+         * the book, saved a second later, had its cover - the fault was
+         * invisible on the one screen where it happened.
+         *
+         * Fetching it here is also a stronger test than the HEAD request this
+         * replaces: bytes that decode as an image prove there is a cover,
+         * where a 200 only proved there was an answer. */
+        $previews = new CoverPreviews($this->app->config->str('api_contact'));
+
         if ($data['cover_url'] === null) {
             foreach (CoverFinder::coverServices($isbn) as [$url, $source, $attribution]) {
-                if ($this->hasCover($url)) {
+                $preview = $previews->forUrl($url);
+                if ($preview !== null) {
                     $data['cover_url'] = $url;
                     $data['cover_source'] = $source;
                     $data['attribution'] = $attribution;
+                    $data['cover_preview'] = $preview;
                     break;
                 }
             }
+        } else {
+            /* A cover the metadata source named. If the thumbnail does not
+               come back the address still travels on to be saved - it is the
+               display that is missing, not the cover. */
+            $data['cover_preview'] = $previews->forUrl($data['cover_url']);
         }
 
         $data['isbn_formatted'] = Isbn::format($isbn);
@@ -351,33 +372,6 @@ final class ScanController
     }
 
     // ------------------------------------------------------------ helpers
-
-    /**
-     * Is there a cover for this ISBN, and only then its address.
-     *
-     * Checked rather than assumed: handing the page a URL that answers 404
-     * would put a broken image where the cover belongs. "default=false" is
-     * what makes the service say no instead of returning a blank placeholder.
-     */
-    private function hasCover(string $url): bool
-    {
-        $handle = curl_init($url);
-        if ($handle === false) {
-            return false;
-        }
-        curl_setopt_array($handle, [
-            CURLOPT_NOBODY         => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS      => 3,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_TIMEOUT        => 8,
-            CURLOPT_USERAGENT      => 'Buecherregal/1.0 (private library catalogue)',
-        ]);
-        curl_exec($handle);
-        $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-
-        return $status === 200;
-    }
 
     private function requireSignedInJson(): ?Response
     {

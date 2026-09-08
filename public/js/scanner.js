@@ -450,8 +450,17 @@
     var meta = [book.publisher, book.published_year, book.page_count ? book.page_count + ' S.' : null]
       .filter(Boolean).join(' · ');
 
-    var cover = book.cover_url
-      ? '<div class="cover"><img src="' + esc(book.cover_url) + '" alt=""></div>'
+    /* The thumbnail the server fetched, not the catalogue's address.
+       
+       An <img> pointed straight at portal.dnb.de comes back as "Making sure
+       you're not a bot!" - a page of HTML where the picture should be - so
+       the card showed an empty frame for exactly the books whose covers work
+       best once saved. What arrives here is a data: URI of a few kilobytes.
+       
+       No preview means no picture to show, and the stand-in says which book
+       it is: the address still travels on to be saved either way. */
+    var cover = book.cover_preview
+      ? '<div class="cover"><img src="' + esc(book.cover_preview) + '" alt=""></div>'
       : '<div class="cover cover--placeholder ph-5"><span class="ph-title">'
         + esc(book.title) + '</span></div>';
 

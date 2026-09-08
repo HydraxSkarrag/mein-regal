@@ -57,8 +57,7 @@ final class CoverPreviews
             return [];
         }
 
-        $agent = 'Buecherregal/1.0 (private library catalogue'
-            . ($this->contact !== '' ? '; ' . $this->contact . ')' : ')');
+        $agent = $this->agent();
 
         $multi = curl_multi_init();
         $handles = [];
@@ -96,7 +95,7 @@ final class CoverPreviews
             if ($code !== 200 || $body === '' || strlen($body) > self::MAX_BYTES) {
                 continue;
             }
-            $uri = self::thumbnail($body);
+            $uri = self::thumbnail($body, self::WIDTH);
             if ($uri !== null) {
                 $previews[$isbn] = $uri;
             }
@@ -107,20 +106,68 @@ final class CoverPreviews
     }
 
     /**
+     * One cover, from wherever it is, for a page that may not fetch it itself.
+     *
+     * The scanner shows the found book before anything is saved, and the only
+     * address it has at that moment is the catalogue's own. Handing that to
+     * the browser looks like it works and does not: portal.dnb.de answers a
+     * browser with "Making sure you're not a bot!" - four kilobytes of HTML
+     * where the picture should be, so the card came up with an empty frame
+     * while the book, saved a second later, had its cover. Measured on one
+     * ISBN: the same URL is a 599x599 JPEG without a browser's user agent and
+     * a bot page with one.
+     *
+     * Fetching here also keeps the rule the rest of the application keeps -
+     * no page ever makes the reader's browser contact a third party.
+     *
+     * @param int $width twice the size it is drawn at, for a sharp screen
+     */
+    public function forUrl(string $url, int $width = 168): ?string
+    {
+        $handle = curl_init($url);
+        if ($handle === false) {
+            return null;
+        }
+        curl_setopt_array($handle, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 3,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_TIMEOUT        => self::TIMEOUT_SECONDS,
+            CURLOPT_USERAGENT      => $this->agent(),
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $body = (string) curl_exec($handle);
+        $code = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+
+        if ($code !== 200 || $body === '' || strlen($body) > self::MAX_BYTES) {
+            return null;
+        }
+
+        return self::thumbnail($body, $width);
+    }
+
+    private function agent(): string
+    {
+        return 'Buecherregal/1.0 (private library catalogue'
+            . ($this->contact !== '' ? '; ' . $this->contact . ')' : ')');
+    }
+
+    /**
      * One picture, shrunk and encoded, or null if it is not a picture at all.
      *
      * The type comes from the bytes rather than from what was claimed, which
      * is also what rejects the bot-check page: an HTML document is not an
      * image and getimagesizefromstring says so.
      */
-    private static function thumbnail(string $bytes): ?string
+    private static function thumbnail(string $bytes, int $width): ?string
     {
         $info = @getimagesizefromstring($bytes);
         if ($info === false) {
             return null;
         }
-        [$width, $height] = $info;
-        if ($width < 1 || $height < 1) {
+        [$sourceWidth, $sourceHeight] = $info;
+        if ($sourceWidth < 1 || $sourceHeight < 1) {
             return null;
         }
 
@@ -129,10 +176,10 @@ final class CoverPreviews
             return null;
         }
 
-        $targetWidth = min(self::WIDTH, $width);
-        $targetHeight = max(1, (int) round($height * ($targetWidth / $width)));
+        $targetWidth = min($width, $sourceWidth);
+        $targetHeight = max(1, (int) round($sourceHeight * ($targetWidth / $sourceWidth)));
         $canvas = imagecreatetruecolor($targetWidth, $targetHeight);
-        imagecopyresampled($canvas, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+        imagecopyresampled($canvas, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $sourceWidth, $sourceHeight);
 
         ob_start();
         imagejpeg($canvas, null, 72);
