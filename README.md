@@ -197,44 +197,65 @@ php bin/import.php --file=books.csv            # dry run, writes nothing
 php bin/import.php --file=books.csv --commit
 ```
 
-### 7. Set up the nightly cron job
+### 7. Set up the cron jobs
 
 all-inkl's scheduler calls a URL rather than running a script. Under
-*Tools → Cronjobs*:
+*Tools → Cronjobs*. There are two jobs, and they do not want the same rhythm:
+
+| | Address | How often |
+|---|---|---|
+| **Backup** | `https://regal.example.org/cron/backup?key=SECRET` | every night |
+| **Lookups** | `https://regal.example.org/cron/enrich?key=SECRET` | see below |
+
+Or, if you would rather have one entry than two:
 
 ```
-https://regal.example.org/cron?key=YOUR_CRON_SECRET
+https://regal.example.org/cron?key=SECRET
 ```
 
-The job backs up the database, catalogue and covers, then looks for missing
-covers and details, then clears out expired sign-in tokens.
+which does both, the copy first — so a night that runs out of time has at least
+left a backup. That guarantee is the one thing you give up by splitting them:
+with two entries the order is whatever you scheduled.
 
-The lookup runs against a **time budget** rather than a number of books: 120
-seconds by default, after which it stops and continues the next night. It waits
-between requests on purpose, so as not to lean on the free data sources — for
-three thousand books that would be hours, which no cron job survives. Adjust with
+Expired sign-in tokens are cleared out at the end of whichever job ran. It takes
+milliseconds and has no address of its own, because nobody would ever want it on
+a rhythm of its own.
+
+**How often to run the lookups.** It depends on how full the shelf is, and there
+are really two phases:
+
+- **While it is filling up** — after importing a collection, most books arrive
+  without covers and with holes in their details. Run it **nightly**. It works
+  through a few hundred a night; going from half-covered to nearly complete took
+  a few weeks on a shelf of three thousand.
+- **Once it is full** — new books get their data when they are scanned, so this
+  job only catches what the sources did not have at the time and may have since.
+  **Weekly is plenty**, and monthly is defensible.
+
+You can tell which phase you are in without guessing: **Statistik → Was noch
+fehlt** counts the books without a cover, an ISBN or a genre, and the run log
+says `looked up 0` on a night when there was nothing left to ask about.
+
+Times: the small hours, and the backup before the lookups if you run both — say
+03:00 and 04:00. Nothing here is urgent, and the data sources are somebody
+else's servers.
+
+**The lookups run against a time budget** rather than a number of books: 120
+seconds by default, after which they stop and continue next time. They wait
+between requests on purpose, so as not to lean on the free sources — for three
+thousand books that would be hours, which no cron job survives. Adjust with
 `&budget=180` (clamped to between 20 and 240 seconds).
 
-The three steps can be split with `&do=`, because they are not one kind of work.
-The copy takes seconds and should happen every night; the lookups are minutes of
-waiting on other people's servers, and once a shelf is full they have almost
-nothing left to find:
+**Every run is logged.** The lines are appended to `storage/cron.log` and shown
+under *Verwaltung → Daten*, newest first, with failed steps picked out; the file
+keeps the last forty runs. Without it a run existed only as the answer to the
+call: fine for "did it work last night", useless for "since when has it been
+finding nothing". If your control panel offers a notification address, put yours
+in as well — then you get the same lines by mail.
 
-```
-https://regal.example.org/cron?key=SECRET&do=backup,purge   nightly
-https://regal.example.org/cron?key=SECRET&do=enrich         weekly, say
-```
-
-Naming no step runs all three, which is the sensible default: one entry in the
-control panel is one thing to get right, and the copy is made first so a night
-that runs out of time has still left a backup. A name it does not know runs
-nothing and says so — a typo that quietly did the whole job would look like it
-had worked.
-
-Each run is appended to `storage/cron.log` and shown under **Verwaltung → Daten**,
-newest first, with failed steps picked out. The file keeps the last forty runs.
-Without it every run existed only as the answer to the cron call: fine for "did
-it work last night", useless for "since when has it been finding nothing".
+A mistyped address is a 404, which the cron service reports as a failure. That is
+deliberate: the alternative was naming the job in a parameter, where a typo would
+have left the endpoint guessing what was meant and answering 200 either way.
 
 ## Tools
 

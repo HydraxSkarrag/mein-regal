@@ -71,34 +71,47 @@ Assert::true('under storage', str_starts_with(RunLog::FILE, 'storage/'));
 $ignore = (string) file_get_contents(PROJECT_ROOT . '/.gitignore');
 Assert::true('and never committed', str_contains($ignore, 'storage/'));
 
-Assert::group('The three steps need not share a rhythm');
+Assert::group('One address per job');
 
-/* One call by default, because setting up a cron job on this host is a form
- * in a control panel and one entry is one thing to get right. But the copy
- * takes seconds and must happen nightly, while the lookups are minutes of
- * waiting on other people's servers - and once a shelf is full they have
- * almost nothing left to find. */
+/* The two jobs are not one kind of work and do not want one rhythm: the copy
+ * takes seconds and is worth making every night for ever, while the lookups
+ * are minutes of waiting on other people's servers and have almost nothing
+ * left to find once a shelf is full.
+ *
+ * The job is named in the path and not in a parameter. A mistyped path is a
+ * 404, which a cron service reports as a failure and somebody notices; a
+ * mistyped parameter would have left the endpoint deciding what was probably
+ * meant and answering 200 either way, which is the same as not noticing. */
 $cron = (string) file_get_contents(PROJECT_ROOT . '/app/Controller/CronController.php');
+$routes = (string) file_get_contents(PROJECT_ROOT . '/public/index.php');
 
-Assert::true('the steps can be named', str_contains($cron, "\$request->query('do')"));
-Assert::true(
-    'and naming none means all three',
-    str_contains($cron, "['backup', 'enrich', 'purge']")
-);
-foreach (['backup', 'enrich', 'purge'] as $step) {
-    Assert::true($step . ' is behind the switch', str_contains($cron, "\$doing('" . $step . "')"));
+foreach (['/cron', '/cron/backup', '/cron/enrich'] as $path) {
+    Assert::true($path . ' is a route', str_contains($routes, "get('" . $path . "'"));
 }
+Assert::true('nothing names a step in a parameter', !str_contains($cron, "query('do')"));
 
-/* A typo that quietly ran the whole job would look exactly like success, so
- * an unrecognised name runs nothing and says which words it knows. */
-Assert::true(
-    'an unknown step says so',
-    str_contains($cron, 'nothing to do: no known step')
-);
+/* /cron is the one that can still promise an order: the copy before the
+ * lookups, so a night that runs out of time has at least left a backup. Split
+ * into two entries that becomes a question of how they were scheduled. */
+Assert::true('the combined job runs both', str_contains($cron, "['backup', 'enrich']"));
+$combined = strpos($cron, "\$this->perform(\$request, ['backup', 'enrich'])");
+Assert::true('and it is the one behind /cron', $combined !== false);
 
-/* And every run is recorded, whichever steps it was. The last return is the
- * one that carries the report - the earlier ones are the refusals, for a
- * missing secret and a wrong key, and neither of those is a run. */
+$backupAt = strpos($cron, "in_array('backup', \$steps, true)");
+$enrichAt = strpos($cron, "in_array('enrich', \$steps, true)");
+Assert::true('the copy is made first', $backupAt !== false && $backupAt < (int) $enrichAt);
+
+/* Housekeeping has no address. It is milliseconds and always safe, nobody
+ * would schedule it on a rhythm of its own, and offering the choice would be
+ * one more thing to decide wrongly. */
+Assert::true('no route for the housekeeping', !str_contains($routes, '/cron/purge'));
+Assert::true('it runs whichever job it was', str_contains($cron, '$lines[] = $this->tidy();'));
+
+// Every address is behind the same secret, or one of them is a way in.
+Assert::same('the guard is written once', substr_count($cron, 'hash_equals'), 1);
+Assert::same('and every job goes through it', substr_count($cron, '$this->perform($request,'), 3);
+
+// And every run is recorded, whichever job it was.
 $recordAt = strpos($cron, 'RunLog::record(');
 $reportAt = strrpos($cron, 'return Response::text(implode(');
 Assert::true('the log is written before the answer', $recordAt !== false && $recordAt < (int) $reportAt);

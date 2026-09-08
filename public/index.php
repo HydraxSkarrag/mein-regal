@@ -181,6 +181,10 @@ $app->router->post('/book/{slug}/cover-find', $books->findCover(...));
 // Scheduled work. all-inkl's scheduler calls a URL, so the nightly job needs
 // an address; it is guarded by cron_secret from config.php.
 $app->router->get('/cron', $cron->run(...));
+/* One address per job, so a typo is a 404 the cron service reports rather
+   than a parameter the endpoint quietly interprets. */
+$app->router->get('/cron/backup', $cron->backup(...));
+$app->router->get('/cron/enrich', $cron->enrich(...));
 $app->router->post('/api/lookup', $scan->lookup(...));
 $app->router->post('/api/book', $scan->store(...));
 $app->router->post('/api/cover', $scan->uploadCover(...));
