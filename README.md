@@ -232,8 +232,8 @@ are really two phases:
   job only catches what the sources did not have at the time and may have since.
   **Weekly is plenty**, and monthly is defensible.
 
-You can tell which phase you are in without guessing: **Statistik → Was noch
-fehlt** counts the books without a cover, an ISBN or a genre, and the run log
+You can tell which phase you are in without guessing: **Statistics → Still
+missing** counts the books without a cover, an ISBN or a genre, and the run log
 says `looked up 0` on a night when there was nothing left to ask about.
 
 Times: the small hours, and the backup before the lookups if you run both — say
@@ -247,7 +247,7 @@ thousand books that would be hours, which no cron job survives. Adjust with
 `&budget=180` (clamped to between 20 and 240 seconds).
 
 **Every run is logged.** The lines are appended to `storage/cron.log` and shown
-under *Verwaltung → Daten*, newest first, with failed steps picked out; the file
+under *Admin → Data*, newest first, with failed steps picked out; the file
 keeps the last forty runs. Without it a run existed only as the answer to the
 call: fine for "did it work last night", useless for "since when has it been
 finding nothing". If your control panel offers a notification address, put yours
@@ -277,7 +277,7 @@ php tests/run.php                         # the tests
 `bin/covers.php`, `bin/reviews.php` and `bin/tags.php` write nothing until
 `--commit`, and say first what they would do and to which book.
 
-`bin/tags.php` has a twin under **Verwaltung → Genres und Schlagwörter**, which
+`bin/tags.php` has a twin under **Admin → Genres and labels**, which
 does the same work with a button - the way to run it on a host with no shell.
 Both read `App\Content\TagNotation`, so they cannot reach different
 conclusions, and the panel is only there while there is something to clean up.
