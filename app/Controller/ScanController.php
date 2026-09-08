@@ -142,6 +142,20 @@ final class ScanController
             $data['cover_preview'] = $previews->forUrl($data['cover_url']);
         }
 
+        /* The series, which the plain record does not carry - it exists only
+           in the MARC one, so this is a second request. Made here, where one
+           person is adding one book and wants it complete, and not in the
+           nightly job, which would double its load on the catalogue for a
+           field most books do not have. */
+        if ($found->source === 'dnb') {
+            $series = (new DnbLookup(new HttpClient($this->app->config->str('api_contact'))))
+                ->seriesFor($isbn);
+            if ($series !== null) {
+                $data['series'] = $series['name'];
+                $data['series_index'] = $series['index'];
+            }
+        }
+
         $data['isbn_formatted'] = Isbn::format($isbn);
         $data['source_label'] = t('scan.found.via', ['source' => $this->sourceLabel($found->source)]);
 

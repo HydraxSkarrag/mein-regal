@@ -1196,6 +1196,24 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .result-author { color: var(--muted); font-size: 0.88rem; margin: 3px 0 0; }
 .result-meta { color: var(--muted); font-size: 0.82rem; margin: 8px 0 0; line-height: 1.5; }
 .result-source { color: var(--muted); font-size: 0.75rem; margin: 0 0 10px; }
+.result-series { color: var(--muted); font-size: 0.82rem; margin: 8px 0 0; }
+
+/* ---- Series --------------------------------------------------------- */
+
+/* Under the title and above the authors: it says which book this is, which
+   is the title's job and not the byline's. */
+.series-line { margin: 2px 0 0; font-size: 0.95rem; }
+.series-volume { color: var(--muted); }
+.series-line + .series-steps { margin-top: 6px; }
+.series-steps { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.88rem; margin: 6px 0 0; }
+
+/* The sentence somebody came to the series page for. Accent, because a gap
+   is the one thing on that page worth acting on. */
+.series-gaps {
+  margin: 14px 0 0;
+  color: var(--accent);
+  font-weight: 600;
+}
 
 /* ---- Catalogue candidates ------------------------------------------- */
 

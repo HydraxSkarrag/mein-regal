@@ -58,6 +58,28 @@ final class Input
     }
 
     /** Half steps from 0.5 to 5.0; anything else is discarded. */
+    /**
+     * Which volume of a series, as somebody would type it.
+     *
+     * Halves are real and not a rounding artefact: a novella published
+     * between two novels is 4.5 in every list that has one, and forcing it to
+     * 4 or 5 puts it in the wrong place. A comma is accepted because a German
+     * keyboard offers one first.
+     *
+     * Anything finer than a half is rounded to one - "Band 3,7" is not a
+     * thing anybody means, and the column stores one decimal.
+     */
+    public static function volume(string $value): ?float
+    {
+        $value = str_replace(',', '.', trim($value));
+        if ($value === '' || !is_numeric($value)) {
+            return null;
+        }
+        $volume = round((float) $value * 2) / 2;
+
+        return $volume > 0 && $volume <= 9999 ? $volume : null;
+    }
+
     public static function rating(string $value): ?float
     {
         $value = str_replace(',', '.', trim($value));

@@ -30,6 +30,7 @@ use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use App\Repository\CoverRepository;
 use App\Repository\PageRepository;
+use App\Repository\SeriesRepository;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
 use PDO;
@@ -62,6 +63,7 @@ final class Application
     public readonly AuthorRepository $authors;
     public readonly TagRepository $tags;
     public readonly CoverRepository $covers;
+    public readonly SeriesRepository $series;
     public readonly PageRepository $pages;
     public readonly UserRepository $users;
     public readonly LookupChain $lookup;
@@ -91,6 +93,7 @@ final class Application
         $this->authors = new AuthorRepository($this->pdo);
         $this->tags = new TagRepository($this->pdo);
         $this->covers = new CoverRepository($this->pdo);
+        $this->series = new SeriesRepository($this->pdo);
         $this->pages = new PageRepository($this->pdo);
 
         $http = new HttpClient($config->str('api_contact'));

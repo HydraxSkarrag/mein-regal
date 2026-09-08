@@ -56,6 +56,22 @@ $splits = static function (array $counts, string $active): bool {
     <?php endforeach; ?>
   </ul>
 
+  <?php if (($seriesList ?? []) !== []): ?>
+  <?php /* Alphabetical like every other long list here, and only as many as
+           the rest: ten. A shelf with no series never sees this heading. */ ?>
+  <h2 class="sidebar-head">
+    <span><?= e(t('series.title')) ?></span>
+    <a class="facet-all" href="/series"><?= e(t('facets.all', ['count' => $formatter->number($seriesTotal)])) ?></a>
+  </h2>
+  <ul>
+    <?php foreach ($seriesList as $row): ?>
+    <li><a href="<?= e($urlFor(['series' => ($filters['series'] ?? '') === $row['slug'] ? '' : $row['slug']])) ?>"
+           aria-current="<?= ($filters['series'] ?? '') === $row['slug'] ? 'true' : 'false' ?>">
+      <span><?= e($row['name']) ?></span><span class="n"><?= e($formatter->number((int) $row['owned'])) ?></span></a></li>
+    <?php endforeach; ?>
+  </ul>
+  <?php endif; ?>
+
   <?php /*
      * The sidebar shows the biggest few. Making the heading itself a quiet
      * link hid the other 367 just as thoroughly as having no link at all -

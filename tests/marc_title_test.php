@@ -112,4 +112,9 @@ $funnel = strpos($source, 'private static function normalise');
 $call = strpos($source, 'Text::withoutSortMarks(');
 
 Assert::true('the funnel is where it happens', $call !== false && $funnel !== false && $call > $funnel);
-Assert::same('and it happens once', substr_count($source, 'Text::withoutSortMarks('), 1);
+
+/* Twice, not once: the series statement is read straight out of the MARC
+ * subfields rather than through the record parser, because oai_dc has no
+ * series field at all and that reading is its own request. Both go through
+ * the same function, which is the point. */
+Assert::same('and everywhere it is the same rule', substr_count($source, 'Text::withoutSortMarks('), 2);

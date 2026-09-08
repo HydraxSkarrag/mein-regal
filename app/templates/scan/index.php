@@ -132,6 +132,7 @@ declare(strict_types=1);
     'sources'     => t('scan.sources'),
     'detected'    => t('scan.detected'),
     'nothingShort'=> t('scan.nothing.short'),
+    'volume'      => t('book.series.only', ['number' => '{number}']),
     'save'        => t('scan.save'),
     'photo'       => t('scan.photo'),
     'openBook'    => t('scan.open.book'),

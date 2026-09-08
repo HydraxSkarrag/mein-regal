@@ -104,6 +104,10 @@ $app->router->get('/unread', $shelf->unread(...));
 /* Kept as a redirect rather than removed: it was in the bottom bar for
    months, so it is in somebody's history and possibly in an index. */
 $app->router->get('/search', static fn (): Response => Response::redirect('/', 301));
+/* Before /reihe/{slug}, and both before the book routes: "series" and
+   "reihe" are words, not slugs. */
+$app->router->get('/series', $shelf->seriesIndex(...));
+$app->router->get('/reihe/{slug}', $shelf->series(...));
 $app->router->get('/genres', $shelf->genres(...));
 $app->router->get('/authors', $shelf->authors(...));
 $app->router->get('/labels', $shelf->labels(...));

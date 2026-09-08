@@ -94,6 +94,24 @@ final class Formatter
         return $moment->format($this->locale === 'en' ? 'j M Y, H:i' : 'd.m.Y, H:i');
     }
 
+    /**
+     * A volume number as somebody would say it: "4", "4,5", never "4,0".
+     *
+     * Static because it is about the number and not about the reader: a half
+     * is written with a comma in German and a point in English, and the
+     * separator is the only thing that changes, so it goes through the
+     * instance method for that and this one only trims.
+     */
+    public static function volume(int|float|string|null $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+        $number = (float) $value;
+
+        return rtrim(rtrim(number_format($number, 1, ',', ''), '0'), ',');
+    }
+
     public function number(int|float|null $value, int $decimals = 0): string
     {
         if ($value === null) {

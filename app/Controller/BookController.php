@@ -300,6 +300,11 @@ final class BookController
             }
         }
 
+        $seriesId = $this->app->series->findOrCreate(
+            $this->app->ownerId,
+            $request->post('series')
+        );
+
         try {
             $this->app->pdo->beginTransaction();
 
@@ -325,6 +330,13 @@ final class BookController
                 'rating'           => Input::rating($request->post('rating')),
                 'notes'            => Input::text($request->post('notes'), 65535),
                 'review_url'       => Input::url($request->post('review_url')),
+                /* The name is turned into a series here rather than in the
+                   repository, because "make one if it is not there" is a
+                   decision about the shelf and the repository writes rows.
+                   An empty field takes the book out of its series and leaves
+                   the series standing - it may still have other volumes. */
+                'series_id'        => $seriesId,
+                'series_index'     => $seriesId === null ? null : Input::volume($request->post('series_index')),
             ]);
 
             $this->app->books->replaceAuthors(
@@ -631,9 +643,23 @@ final class BookController
         );
         $tagStatement->execute([$bookId]);
 
+        /* The name rather than the id, because that is what the field shows
+           and what the form posts back. A book whose series was deleted while
+           this page was open simply comes back with an empty field. */
+        $series = isset($book['series_id'])
+            ? $this->app->series->find($this->app->ownerId, (int) $book['series_id'])
+            : null;
+        $book['series_name'] = $series['name'] ?? '';
+
         $body = $this->app->view->render('shelf.edit', [
             'book'         => $book,
             'contributors' => $contributors,
+            'knownSeries'  => array_column($this->app->series->listForOwner($this->app->ownerId), 'name'),
+            /* Trailing ",0" is what the column stores and not what anybody
+               types: 4.5 keeps its half, 12 does not become "12,0". */
+            'seriesIndex'  => $book['series_index'] === null
+                ? ''
+                : rtrim(rtrim(number_format((float) $book['series_index'], 1, ',', ''), '0'), ','),
             'tagList'      => implode(', ', array_column($tagStatement->fetchAll(), 'name')),
             'knownTags'    => $this->app->tags->allForOwner($this->app->ownerId),
             'cover'        => $this->app->covers->bestFor($bookId, true),

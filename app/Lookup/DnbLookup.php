@@ -314,7 +314,7 @@ final class DnbLookup implements LookupSource
      * volumes of a series filed under one name. Nothing is lost either way,
      * the series moves to the subtitle.
      *
-     * @return array{title: string, subtitle: ?string}|null
+     * @return array{title: string, subtitle: ?string, series: ?string, seriesIndex: ?float}|null
      */
     public static function parseMarcTitle(string $xml): ?array
     {
@@ -359,19 +359,32 @@ final class DnbLookup implements LookupSource
             $part = trim(substr($part, 0, $colon), " \t\n\r\0\x0B.,:;/");
         }
 
+        /* A part name means $a is the series and not the title, which is the
+           same fact the series reading needs - so both come out of here and
+           cannot disagree. Without a part name there is no series here: $a is
+           simply the title. */
         if ($part !== '') {
             $title = $part;
             $pieces = [trim($series . ' ' . $number), $partExtra, $rest];
+            $seriesName = $series !== '' ? $series : null;
+            $seriesIndex = self::volumeNumber($number);
         } elseif ($series !== '') {
             $title = $series;
             $pieces = [$number, $rest];
+            $seriesName = null;
+            $seriesIndex = null;
         } else {
             return null;
         }
 
         $subtitle = implode('. ', array_filter($pieces, static fn (string $v): bool => $v !== ''));
 
-        return ['title' => $title, 'subtitle' => $subtitle === '' ? null : $subtitle];
+        return [
+            'title'       => $title,
+            'subtitle'    => $subtitle === '' ? null : $subtitle,
+            'series'      => $seriesName,
+            'seriesIndex' => $seriesIndex,
+        ];
     }
 
     public function parse(string $xml, string $isbn13): ?BookData
@@ -430,6 +443,150 @@ final class DnbLookup implements LookupSource
             priceCurrency: 'EUR',
             tags:          $this->subjects($dc),
         );
+    }
+
+    /**
+     * Which series a record puts the book in, and where in it.
+     *
+     * MARC has two places for this and they mean different things.
+     *
+     * 490/830 is the series statement, and it is right for a work series -
+     * "Die Sturmlicht-Chroniken $v 8" - and wrong for a publisher's numbered
+     * line, which lives in the same field: "Goldmann $v 24510 : Fantasy" is
+     * Goldmann's stock number, not the position in the Drachenlanze.
+     *
+     * What tells them apart is not the number. Measured over a few hundred
+     * records, work numbers run 1 to 13 and stock numbers 24000 upwards - but
+     * a cap would be a guess, and Perry Rhodan would break it. The structural
+     * test is the name: a publisher's line is named after the publisher, and
+     * the record says who that is a field away. Goldmann published by
+     * Goldmann is a stock number; "Die Sturmlicht-Chroniken" published by
+     * Heyne is a series.
+     *
+     * The number itself comes in five shapes, all measured: "8", "Band 13",
+     * "8. Roman", "3/4" for a volume holding two parts, and "24229 :
+     * Blanvalet : Fantasy" for the kind being rejected. A range takes its
+     * first number, which is where that volume starts.
+     *
+     * Not in the record the rest of this class reads. oai_dc has no series
+     * field at all - measured on a book that plainly is in one - so this is
+     * its own request against MARC21, made when somebody is adding a book
+     * rather than on every pass of the nightly job.
+     *
+     * @return array{name: string, index: ?float}|null
+     */
+    public function seriesFor(string $isbn13): ?array
+    {
+        $url = self::ENDPOINT . '?' . http_build_query([
+            'version'        => '1.1',
+            'operation'      => 'searchRetrieve',
+            'query'          => 'NUM=' . $isbn13,
+            'recordSchema'   => 'MARC21-xml',
+            'maximumRecords' => 1,
+        ]);
+
+        $response = $this->http->getRetrying($url, 2);
+        if ($response['status'] !== 200 || $response['body'] === '') {
+            return null;
+        }
+
+        return self::parseMarcSeries($response['body']);
+    }
+
+    /**
+     * @return array{name: string, index: ?float}|null
+     */
+    public static function parseMarcSeries(string $xml): ?array
+    {
+        $publisher = self::parseMarcPublisher($xml);
+
+        foreach (['490', '830'] as $tag) {
+            $pattern = sprintf(
+                '~<(?:\w+:)?datafield[^>]*tag="%s"[^>]*>(.*?)</(?:\w+:)?datafield>~s',
+                $tag
+            );
+            if (preg_match($pattern, $xml, $field) !== 1) {
+                continue;
+            }
+            $parts = [];
+            preg_match_all(
+                '~<(?:\w+:)?subfield[^>]*code="(\w)"[^>]*>([^<]*)</~',
+                $field[1],
+                $subfields,
+                PREG_SET_ORDER
+            );
+            foreach ($subfields as $subfield) {
+                $parts[$subfield[1]] ??= Text::withoutSortMarks(
+                    self::normalise(html_entity_decode(trim($subfield[2]), ENT_QUOTES, 'UTF-8'))
+                );
+            }
+
+            $name = trim((string) ($parts['a'] ?? ''), " \t\n\r.,:;/");
+            $volume = (string) ($parts['v'] ?? '');
+
+            if ($name === '' || self::isPublisherLine($name, $publisher, $volume)) {
+                continue;
+            }
+
+            return ['name' => $name, 'index' => self::volumeNumber($volume)];
+        }
+
+        /* No series statement, but 245 may still hold one: "$a Die Chronik
+           der Drachenlanze $n 1. $p Drachenzwielicht" is a series, a volume
+           and a title in one field. That is also where the title itself comes
+           from, so the two readings have to agree. */
+        $title = self::parseMarcTitle($xml);
+        if ($title === null || ($title['series'] ?? null) === null) {
+            return null;
+        }
+
+        return ['name' => $title['series'], 'index' => $title['seriesIndex']];
+    }
+
+    /**
+     * Is this the publisher's own numbered line rather than a work series?
+     *
+     * The two live in the same MARC field. "Goldmann $v 24510 : Fantasy" is
+     * Goldmann's stock number for a Drachenlanze volume; "Die Sturmlicht-
+     * Chroniken $v 8" is the eighth book of a series.
+     *
+     * The number does not tell them apart - work numbers ran 1 to 13 and
+     * stock numbers from 24000 in a sample of a few hundred, but a cap would
+     * be a guess and a long-running series would break it. The name does: a
+     * publisher's line is named after the publisher, and the record says who
+     * that is a field away.
+     *
+     * The colon is the second tell, and only ever appears on the stock
+     * numbers, which carry the imprint and the trade category after it.
+     */
+    private static function isPublisherLine(string $name, ?string $publisher, string $volume): bool
+    {
+        if (str_contains($volume, ':')) {
+            return true;
+        }
+        if ($publisher === null || $publisher === '') {
+            return false;
+        }
+
+        $series = Text::fold($name);
+        $house = Text::fold($publisher);
+
+        return $series !== '' && (str_contains($house, $series) || str_contains($series, $house));
+    }
+
+    /**
+     * The number out of "8", "Band 13", "8. Roman" or "3/4".
+     *
+     * All four are real, all four measured. A range is a single volume
+     * holding two parts, and it starts at the first of them.
+     */
+    private static function volumeNumber(string $volume): ?float
+    {
+        $volume = preg_replace('/^\s*(Band|Bd\.?|Vol\.?|Teil)\s*/iu', '', trim($volume)) ?? $volume;
+
+        return preg_match('/^(\d+(?:[.,]5)?)/', $volume, $m) === 1
+            ? (float) str_replace(',', '.', $m[1])
+            : null;
     }
 
     /**

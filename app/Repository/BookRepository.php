@@ -64,6 +64,10 @@ final class BookRepository
             'page_count', 'language', 'binding', 'price', 'acquisition_type',
             'acquired_at', 'reading_status', 'started_at', 'finished_at',
             'rating', 'notes', 'audio_minutes', 'review_url',
+            /* Resolved before it gets here: the form posts a series name, the
+               controller turns it into an id of a series this owner has. A
+               raw id off a form would be somebody else's series. */
+            'series_id', 'series_index',
         ];
         $data = array_intersect_key($data, array_flip($allowed));
         if ($data === []) {
@@ -286,7 +290,7 @@ final class BookRepository
     /**
      * The shelf listing.
      *
-     * @param array{search?: string, status?: string, tag?: string, author?: string, rating?: int, language?: string, cover?: string, isbn?: string, missing?: string, sort?: string, dir?: string} $filters
+     * @param array{search?: string, status?: string, series?: string, tag?: string, author?: string, rating?: int, language?: string, cover?: string, isbn?: string, missing?: string, sort?: string, dir?: string} $filters
      * @return array{rows: list<array<string,mixed>>, total: int}
      */
     /**
@@ -309,6 +313,11 @@ final class BookRepository
         'year'     => ['b.published_year', 'DESC', 'b.published_year IS NULL', 'b.title ASC'],
         'rating'   => ['b.rating', 'DESC', 'b.rating IS NULL', 'b.title ASC'],
         'read'     => ['b.finished_at', 'DESC', 'b.finished_at IS NULL', 'b.title ASC'],
+        /* Ascending by nature, unlike every other sort here: a series is read
+           from volume one, and "newest first" is what a series is not. The
+           tie-break groups the volumes of one series together rather than
+           interleaving every book numbered 1. */
+        'series'   => ['b.series_index', 'ASC', 'b.series_id IS NULL', 'b.series_id ASC, b.title ASC'],
     ];
 
     /** @return list<string> the sorts the shelf offers, in the order it offers them */
@@ -396,6 +405,11 @@ final class BookRepository
             $conditions[] = 'EXISTS (SELECT 1 FROM book_authors ba3 JOIN authors a3 ON a3.id = ba3.author_id'
                 . '            WHERE ba3.book_id = b.id AND a3.match_key = ?)';
             $parameters[] = Text::authorMatchKey((string) $filters['author']);
+        }
+        if (($filters['series'] ?? '') !== '') {
+            $conditions[] = 'b.series_id = (SELECT id FROM series WHERE owner_id = ? AND slug = ?)';
+            $parameters[] = $ownerId;
+            $parameters[] = $filters['series'];
         }
         if (($filters['tag'] ?? '') !== '') {
             // A tag taken out of use stops being a filter too, or its address

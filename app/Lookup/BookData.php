@@ -39,6 +39,12 @@ final class BookData
          * the record ends up claiming an image it never supplied.
          */
         public readonly ?string $coverSource = null,
+        /* Which series and which volume, where the record says so. A name
+           and a number rather than an id: this object knows nothing about
+           any shelf, and turning the name into a row is the controller's
+           job - the same split as with the authors. */
+        public readonly ?string $series = null,
+        public readonly ?float $seriesIndex = null,
     ) {
     }
 
@@ -79,6 +85,11 @@ final class BookData
             // source happened to answer first.
             attribution:   $this->coverUrl !== null ? $this->attribution : $other->attribution,
             coverSource:   $this->coverUrl !== null ? $this->coverSource : $other->coverSource,
+            // The number belongs to the name: taking "Die Sturmlicht-
+            // Chroniken" from one source and "8" from another would invent a
+            // numbering neither of them stated.
+            series:        $pick($this->series, $other->series),
+            seriesIndex:   $this->series !== null ? $this->seriesIndex : $other->seriesIndex,
         );
     }
 
@@ -103,6 +114,8 @@ final class BookData
             'cover_url'      => $this->coverUrl,
             'cover_source'   => $this->coverSource,
             'attribution'    => $this->attribution,
+            'series'         => $this->series,
+            'series_index'   => $this->seriesIndex,
         ];
     }
 }

@@ -478,6 +478,11 @@
            A classification code or a shop category is easiest to catch here,
            while the book is still on the screen and nothing has been
            written - afterwards it is a trip through the tag administration. */
+        (book.series
+          ? '<p class="result-series">' + esc(book.series)
+            + (book.series_index ? ' · ' + esc(text.volume.replace('{number}', String(book.series_index).replace(/\.0$/, '').replace('.', ','))) : '')
+            + '</p>'
+          : '') +
         ((book.tags || []).length
           ? '<ul class="result-tags">' + (book.tags || []).map(function (tag) {
               return '<li>' + esc(tag) + '</li>';
@@ -520,6 +525,10 @@
     body.append('acquisition_type', 'purchase');
     body.append('authors', JSON.stringify(currentBook.authors || []));
     body.append('tags', JSON.stringify(currentBook.tags || []));
+    /* Only where the catalogue actually said so - see DnbLookup::seriesFor
+       for why that is a minority, and why it is a second request. */
+    body.append('series', currentBook.series || '');
+    body.append('series_index', currentBook.series_index || '');
     /* The cover's own source, not the record's. A German book is answered
        by the DNB, which has no covers, so the image shown here came from
        somewhere further down the chain - checking the record's source threw

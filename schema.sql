@@ -94,6 +94,12 @@ CREATE TABLE IF NOT EXISTS books (
     -- for someone who reads three hundred books a year.
     rating         DECIMAL(2,1) NULL,
 
+    -- Which series, and where in it. Decimal because half steps are real:
+    -- a novella published between two novels is 4.5 in every list that has
+    -- one, and rounding it to 4 or 5 puts it in the wrong place.
+    series_id    INT UNSIGNED  NULL,
+    series_index DECIMAL(5,1)  NULL,
+
     notes         TEXT NULL,
     audio_minutes SMALLINT UNSIGNED NULL,
 
@@ -115,7 +121,9 @@ CREATE TABLE IF NOT EXISTS books (
     -- temporary structure.
     KEY idx_books_owner_created (owner_id, created_at),
     KEY idx_books_slug (slug),
-    KEY idx_books_title (title(100))
+    KEY idx_books_title (title(100)),
+    -- The series page reads in volume order, which is this index exactly.
+    KEY idx_books_series (series_id, series_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- authors: "Flechsig, Dorothea" and "Dorothea Flechsig" are the same person.
@@ -166,6 +174,40 @@ CREATE TABLE IF NOT EXISTS tags (
     PRIMARY KEY (id),
     UNIQUE KEY uniq_tags_owner_slug (owner_id, slug),
     KEY idx_tags_owner_kind (owner_id, kind)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- series: a book belongs to at most one, so this hangs off books rather than
+-- needing a join table. It is a table and not a column on books for two
+-- reasons, both of which are things that belong to the series and to no
+-- single book in it.
+--
+-- The first is total. "Band 6 von 12" needs a twelve, and that cannot be read
+-- off the shelf: owning three volumes of a trilogy and three of a septology
+-- look identical from the inside.
+--
+-- The second is which counting applies. The catalogue does not agree with
+-- itself - "Der Rhythmus des Krieges" is volume 7 in the Heyne records and 8
+-- in the audio and e-book ones, for the same text, depending on whether the
+-- novellas are counted. Somewhere there has to be one place where the owner
+-- decides, rather than whichever record answered first.
+--
+-- And a name that is typed is a name that gets typed twice. The 385 genre
+-- strings this shelf imported are the local evidence for that.
+CREATE TABLE IF NOT EXISTS series (
+    id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    owner_id INT UNSIGNED NOT NULL,
+    name     VARCHAR(190) NOT NULL,
+    slug     VARCHAR(190) NOT NULL,
+    -- How many volumes there are, where that is known. NULL means nobody has
+    -- said, and the pages then count what is on the shelf instead of claiming
+    -- a total.
+    total    SMALLINT UNSIGNED NULL,
+    -- Room for "gezählt wie bei Audible, mit den Novellen" - the sentence
+    -- that stops the same question being answered differently next year.
+    note     VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uniq_series_owner_slug (owner_id, slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS book_tags (

@@ -100,6 +100,31 @@ $value = static fn (?string $v): string => $v ?? '';
         </div>
       </div>
 
+      <?php /* Reihe und Band, nebeneinander: sie sind eine Angabe.
+               
+               A datalist rather than a free field, so that "Die
+               Sturmlicht-Chroniken" typed a second time finds the first one
+               instead of making a second series. It still accepts anything -
+               a list nobody can type past would refuse every new series. */ ?>
+      <div class="field-row">
+        <div class="field">
+          <label for="series"><?= e(t('book.series')) ?></label>
+          <input id="series" type="text" name="series" list="known-series" autocomplete="off"
+                 value="<?= e($book['series_name'] ?? '') ?>" maxlength="190">
+        </div>
+        <div class="field">
+          <label for="series_index"><?= e(t('book.series.volume')) ?></label>
+          <input id="series_index" type="text" name="series_index" inputmode="decimal" autocomplete="off"
+                 value="<?= e($seriesIndex) ?>" placeholder="1">
+        </div>
+      </div>
+      <datalist id="known-series">
+        <?php foreach ($knownSeries as $name): ?>
+        <option value="<?= e($name) ?>"></option>
+        <?php endforeach; ?>
+      </datalist>
+      <p class="note mt-0"><?= e(t('edit.series.hint')) ?></p>
+
       <div class="field" id="tag-field">
         <?php /* Not "Genre". The field said so in three places - label,
                  placeholder and hint - and created labels, which is how a

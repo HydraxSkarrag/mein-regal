@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
 use App\Repository\BookRepository;
+use App\Repository\SeriesRepository;
 use App\Repository\TagRepository;
 
 /**
@@ -37,6 +38,7 @@ final class ShelfController
             'search'   => $request->query('q'),
             'status'   => $this->oneOf($request->query('status'), ['read', 'unread', 'abandoned', 'reading']),
             'tag'      => $request->query('tag'),
+            'series'   => $request->query('series'),
             'author'   => $request->query('author'),
             /* Whatever the sources have actually put in the field, rather
                than a list of languages someone thought of: the DNB delivers
@@ -204,6 +206,18 @@ final class ShelfController
             'offset'        => $offset,
             'covers'        => $this->app->covers->bestForMany($ids, $signedIn),
             'authorLines'   => $this->authorLines($ids),
+            /* Only where there is something to filter by. A shelf with no
+               series should not carry a heading for one, and the sidebar is
+               already at the ten values that were agreed. */
+            'seriesList'    => array_slice(
+                array_values(array_filter(
+                    $this->app->series->listForOwner($this->app->ownerId),
+                    static fn (array $row): bool => (int) $row['owned'] > 0
+                )),
+                0,
+                self::FACET_ROWS
+            ),
+            'seriesTotal'   => count($this->app->series->listForOwner($this->app->ownerId)),
             'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, self::FACET_ROWS, TagRepository::KIND_GENRE),
             'tagTotal'      => $this->app->tags->count($this->app->ownerId, TagRepository::KIND_GENRE),
             'labels'        => $this->app->tags->listWithCounts($this->app->ownerId, self::FACET_ROWS, TagRepository::KIND_LABEL),
@@ -256,6 +270,59 @@ final class ShelfController
                 'url'   => '/?tag=' . rawurlencode($tag['slug']),
             ], $rows)
         );
+    }
+
+    /**
+     * Every series, with how much of each is on the shelf.
+     */
+    public function seriesIndex(): Response
+    {
+        $rows = $this->app->series->listForOwner($this->app->ownerId);
+
+        return $this->renderFacets(
+            t('series.title'),
+            'series',
+            array_map(static fn (array $series): array => [
+                'label' => $series['name'],
+                'sort'  => $series['name'],
+                'count' => (int) $series['owned'],
+                'url'   => '/reihe/' . rawurlencode($series['slug']),
+            ], $rows)
+        );
+    }
+
+    /**
+     * One series, in volume order, saying which volumes are missing.
+     *
+     * The gaps are the reason this page is worth having. A grid of the six
+     * volumes somebody owns looks complete; "Band 4 fehlt" is the sentence
+     * they came for.
+     */
+    public function series(Request $request, array $params): Response
+    {
+        $series = $this->app->series->bySlug($this->app->ownerId, (string) ($params['slug'] ?? ''));
+        if ($series === null) {
+            return $this->app->notFound();
+        }
+
+        $volumes = $this->app->series->volumes($this->app->ownerId, (int) $series['id']);
+        $ids = array_map(static fn (array $b): int => (int) $b['id'], $volumes);
+
+        $body = $this->app->view->render('shelf.series', [
+            'series'      => $series,
+            'volumes'     => $volumes,
+            'gaps'        => SeriesRepository::gaps($volumes, $series['total'] === null ? null : (int) $series['total']),
+            'covers'      => $this->app->covers->bestForMany($ids, $this->app->auth->isSignedIn()),
+            'authorLines' => $this->authorLines($ids),
+            'view'        => $this->app->view,
+        ]);
+
+        return Response::html($this->app->view->render('layout.base', [
+            'content'   => $body,
+            'title'     => $series['name'],
+            'current'   => 'shelf',
+            'canonical' => $this->app->url('/reihe/' . $series['slug']),
+        ]));
     }
 
     /**
@@ -441,7 +508,33 @@ final class ShelfController
 
         $authorLine = implode(', ', array_column($authors, 'name'));
 
+        /* The series, and the two books either side of it in that series.
+           
+           Which is the whole point of recording a volume number: from a book
+           in hand, the next one is one click away instead of a search. Only
+           volumes on this shelf are offered - a link to a book somebody does
+           not own would be a link to nothing. */
+        $series = null;
+        $neighbours = ['previous' => null, 'next' => null];
+        if (isset($book['series_id'])) {
+            $series = $this->app->series->find($this->app->ownerId, (int) $book['series_id']);
+        }
+        if ($series !== null) {
+            $volumes = $this->app->series->volumes($this->app->ownerId, (int) $series['id']);
+            foreach ($volumes as $position => $volume) {
+                if ((int) $volume['id'] !== $bookId) {
+                    continue;
+                }
+                $neighbours['previous'] = $volumes[$position - 1] ?? null;
+                $neighbours['next'] = $volumes[$position + 1] ?? null;
+                break;
+            }
+            $series['owned'] = count($volumes);
+        }
+
         $body = $this->app->view->render('shelf.detail', [
+            'series'        => $series,
+            'neighbours'    => $neighbours,
             'book'          => $book,
             'cover'         => $cover,
             'contributors'  => $contributors,
