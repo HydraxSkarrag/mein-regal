@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/"><version>1.1</version><numberOfRecords>1</numberOfRecords><records><record><recordSchema>oai_dc</recordSchema><recordPacking>xml</recordPacking><recordData><dc xmlns:dnb="http://d-nb.de/standards/dnbterms" xmlns:tel="http://krait.kb.nl/coop/tel/handbook/telterms.html" xmlns="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>Breath - Atem : Neues Wissen über die vergessene Kunst des Atmens / James Nestor</dc:title>
+  <dc:creator>James Nestor, James [Künstler]</dc:creator>
+  <dc:creator>Nestor, James [Verfasser]</dc:creator>
+  <dc:creator>Kolb, Dominic [Erzähler]</dc:creator>
+  <dc:publisher>Copenhagen : SAGA Egmont</dc:publisher>
+  <dc:date>2024</dc:date>
+  <dc:language>ger</dc:language>
+  <dc:identifier xsi:type="tel:URN">urn:nbn:de:101:1-2602060821277.081068394800</dc:identifier>
+  <dc:identifier xsi:type="tel:URL">http://nbn-resolving.de/urn:nbn:de:101:1-2602060821277.081068394800</dc:identifier>
+  <dc:identifier xsi:type="tel:ISBN">978-1-62861-384-1</dc:identifier>
+  <dc:identifier xsi:type="tel:URL">http://d-nb.info/1389130665/34</dc:identifier>
+  <dc:identifier xsi:type="dnb:IDN">1389130665</dc:identifier>
+  <dc:subject>610 Medizin, Gesundheit</dc:subject>
+  <dc:type>Online-Ressource</dc:type>
+</dc></recordData><recordPosition>1</recordPosition></record></records><echoedSearchRetrieveRequest><version>1.1</version><query>NUM=9781628613841</query><xQuery xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"/><maximumRecords>1</maximumRecords><recordSchema>oai_dc</recordSchema></echoedSearchRetrieveRequest></searchRetrieveResponse>

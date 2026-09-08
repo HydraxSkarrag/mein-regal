@@ -412,6 +412,7 @@ final class DnbLookup implements LookupSource
 
         $identifiers = $this->allValues($dc, 'identifier');
         $bindingAndPrice = $this->identifierWithPrice($identifiers);
+        $people = $this->contributors($dc);
 
         return new BookData(
             source:        $this->name(),
@@ -419,16 +420,45 @@ final class DnbLookup implements LookupSource
             isbn10:        Isbn::to10($isbn13),
             title:         $title,
             subtitle:      $subtitle,
-            authors:       $this->contributors($dc),
+            authors:       $people,
             publisher:     $this->publisher($this->first($dc, 'publisher')),
             publishedYear: $this->year($this->first($dc, 'date')),
             pageCount:     $this->pages($this->first($dc, 'format')),
             language:      $this->language($this->first($dc, 'language')),
-            binding:       Binding::fromText($bindingAndPrice),
+            binding:       Binding::fromText($bindingAndPrice) ?? self::bindingFromRoles($people),
             price:         $this->price($bindingAndPrice),
             priceCurrency: 'EUR',
             tags:          $this->subjects($dc),
         );
+    }
+
+    /**
+     * A book with somebody reading it aloud is an audiobook.
+     *
+     * The DNB spells the binding out in a free-text identifier field -
+     * "Festeinband", "Kartoniert" - and for an audiobook it usually says
+     * nothing at all. The record does carry the evidence, one field further
+     * on: a contributor with the role Erzähler. A printed book has no reader.
+     *
+     * dc:type would be the obvious place to look and is the wrong one. For
+     * the audiobook that prompted this it says "Online-Ressource", which the
+     * keyword list reads as an e-book - the same word for a download of a
+     * novel and a download of a recording of one.
+     *
+     * Only where the text said nothing. An explicit binding is evidence and
+     * this is an inference, and evidence wins.
+     *
+     * @param list<array{name: string, role: string}> $people
+     */
+    private static function bindingFromRoles(array $people): ?string
+    {
+        foreach ($people as $person) {
+            if (($person['role'] ?? '') === 'narrator') {
+                return Binding::AUDIOBOOK;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -107,6 +107,18 @@ final class Text
         // separately because a compound surname carries a space of its own -
         // "van Gogh, Vincent" must not become two people.
         if (count($parts) === 2) {
+            /* Unless the first part is the whole name already and the second
+             * only repeats its beginning.
+             *
+             * The DNB writes some contributors as "James Nestor, James" - the
+             * surname field holding the full name, the given name after the
+             * comma a second time. Flipped like an ordinary inverted pair
+             * that becomes "James James Nestor", a person who does not exist,
+             * standing in the author list beside the one who does. */
+            if (self::repeatsGivenName($parts[0], $parts[1])) {
+                return ['names' => [self::tidyName($parts[0])], 'ambiguous' => false];
+            }
+
             return [
                 'names'     => [self::tidyName($parts[1] . ' ' . $parts[0])],
                 'ambiguous' => false,
@@ -143,6 +155,26 @@ final class Text
         }
 
         return ['names' => $names, 'ambiguous' => false];
+    }
+
+    /**
+     * Does "James Nestor" already begin with "James"?
+     *
+     * Whole words and folded, so case and accents do not decide it. The first
+     * part has to carry more than one word: "Thomas, Thomas" is somebody
+     * called Thomas Thomas and has to stay that way, while "Thomas Mann,
+     * Thomas" is one name written one and a half times.
+     */
+    private static function repeatsGivenName(string $whole, string $given): bool
+    {
+        $wholeWords = explode(' ', self::fold(self::tidyName($whole)));
+        $givenWords = explode(' ', self::fold(self::tidyName($given)));
+
+        if (count($wholeWords) < 2 || $givenWords === [''] || count($givenWords) >= count($wholeWords)) {
+            return false;
+        }
+
+        return array_slice($wholeWords, 0, count($givenWords)) === $givenWords;
     }
 
     /**
