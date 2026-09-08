@@ -435,6 +435,18 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* A book wider than it is tall.
+ *
+ * Filling a 2:3 tile with a landscape picture shows a strip out of the middle
+ * of it - on the four comics that prompted this, between a third and three
+ * fifths of the cover was cut away, and Simons Katze was a slice of cat.
+ *
+ * The tile keeps its shape, because a shelf of tiles that each did as they
+ * pleased would not read as a shelf, and the picture sits inside it whole.
+ * Only covers that are actually landscape get this: a portrait one an inch
+ * off 2:3 still fills its tile, and there are three thousand of those. */
+.cover--wide img { object-fit: contain; }
+
 /* A generated stand-in, so a missing cover reads as a book spine rather
    than a broken image. The colour is derived from the ISBN, so the same
    book always looks the same. */
@@ -515,6 +527,23 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .book-detail { grid-template-columns: 220px minmax(0, 1fr); gap: 32px; }
 }
 .book-detail .cover { max-width: 220px; border-radius: var(--radius-sm); }
+
+/* The detail page is the one place with room to show a cover as it is.
+ *
+ * There is one book on the screen and nothing to line it up with, so the
+ * frame takes the shape of the picture instead of the other way round -
+ * no strip out of the middle, and no bars around a wide one either.
+ *
+ * The stand-in keeps 2:3: it is drawn rather than photographed, and a
+ * generated spine has no shape of its own to respect. */
+.book-detail .cover:not(.cover--placeholder) {
+  aspect-ratio: auto;
+  background: none;
+}
+.book-detail .cover:not(.cover--placeholder) img {
+  height: auto;
+  object-fit: contain;
+}
 
 .meta { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 .meta th {

@@ -133,7 +133,9 @@ final class CoverRepository
      */
     public function bestFor(int $bookId, bool $viewerIsSignedIn): ?array
     {
-        $sql = 'SELECT source, path, external_url, attribution, width, created_at FROM covers'
+        /* height as well as width: the shape of the picture decides how it is
+           drawn, and a book is not always taller than it is wide. */
+        $sql = 'SELECT source, path, external_url, attribution, width, height, created_at FROM covers'
             . ' WHERE book_id = ? AND rejected_at IS NULL';
         $parameters = [$bookId];
         if (!$viewerIsSignedIn) {
@@ -160,7 +162,7 @@ final class CoverRepository
             return [];
         }
         $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
-        $sql = 'SELECT book_id, source, path, external_url, attribution, width, created_at FROM covers'
+        $sql = 'SELECT book_id, source, path, external_url, attribution, width, height, created_at FROM covers'
             . " WHERE book_id IN ($placeholders) AND rejected_at IS NULL";
         if (!$viewerIsSignedIn) {
             $sql .= ' AND is_public = 1';
