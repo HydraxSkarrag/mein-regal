@@ -78,11 +78,33 @@ final class Config
         return $cursor;
     }
 
+    /**
+     * A setting as text, with an empty one counting as unset.
+     *
+     * The sample config ships most keys present and empty, because a list of
+     * every option is easier to fill in than a list of the ones somebody
+     * thought to mention. That made "present but empty" the normal state, and
+     * returning it verbatim meant the default was reached only by deleting
+     * the line - which nobody does.
+     *
+     * It showed on the project page: the sample says of repository_url "left
+     * empty it points at the original repository", and what shipped was
+     * <a href="">, a button that reloaded the page it was on. Both shelves
+     * had it, and so would every installation that followed the sample.
+     *
+     * Every caller that offers a default wants this reading. db_host falls
+     * back to localhost, db_charset to utf8mb4, site_name to the name of the
+     * software - and an empty value for any of those is a hole in the
+     * configuration, not a decision. Callers that mean "empty is a real
+     * answer" - blog_url, review_blog_url, where empty means nobody is ever
+     * contacted - pass no default, so nothing changes for them.
+     */
     public function str(string $key, string $default = ''): string
     {
         $value = $this->get($key, $default);
+        $value = is_scalar($value) ? (string) $value : $default;
 
-        return is_scalar($value) ? (string) $value : $default;
+        return $value === '' ? $default : $value;
     }
 
     /**

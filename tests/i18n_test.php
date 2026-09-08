@@ -318,3 +318,47 @@ Assert::true(
     'no group heading repeats a status below it',
     $german['edit.group.reading'] !== $german['status.read']
 );
+
+Assert::group('A setting that is present and empty is not a setting');
+
+/* The sample config ships most keys present and empty - a list of every
+ * option is easier to fill in than a list of the ones somebody thought to
+ * mention - so "present but empty" is the normal state of a fresh
+ * installation, and the default was reachable only by deleting the line.
+ *
+ * It showed on the project page. The sample says of repository_url "left
+ * empty it points at the original repository"; what shipped was <a href="">,
+ * a button that reloaded the page it was on. Both shelves had it, and so
+ * would every installation that followed the sample.
+ */
+$config = new App\Core\Config(['repository_url' => '', 'site_name' => '']);
+
+Assert::same(
+    'an empty value falls back',
+    $config->str('repository_url', 'https://github.com/HydraxSkarrag/mein-regal'),
+    'https://github.com/HydraxSkarrag/mein-regal'
+);
+Assert::same('and so does an absent one', $config->str('nothing.here', 'Mein Regal'), 'Mein Regal');
+Assert::same('a real value still wins', (new App\Core\Config(['site_name' => 'Das Regal']))->str('site_name', 'Mein Regal'), 'Das Regal');
+
+/* Callers that mean "empty is a real answer" pass no default, and for them
+ * nothing changes: an empty blog_url is what makes a shelf without a blog
+ * contact nobody at all. */
+Assert::same('empty stays empty where that is the answer', $config->str('repository_url'), '');
+Assert::same('and an absent key too', $config->str('blog_url'), '');
+
+// The page that started it: the link has to lead somewhere.
+$controller = (string) file_get_contents(PROJECT_ROOT . '/app/Controller/PageController.php');
+Assert::true(
+    'the project page offers the repository as the default',
+    str_contains($controller, "str('repository_url', self::REPOSITORY)")
+);
+Assert::true('and that is a real address', str_starts_with(App\Controller\PageController::REPOSITORY, 'https://'));
+
+/* The sample documents this reading, and the code now matches what it
+ * promises rather than the other way round. */
+$sample = (string) file_get_contents(PROJECT_ROOT . '/config.sample.php');
+Assert::true(
+    'the sample says empty means the original',
+    str_contains($sample, 'left empty it points at the original repository')
+);
