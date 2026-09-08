@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\RunLog;
 use App\Export\Exporter;
 use App\Http\Application;
 use App\Import\CsvReader;
@@ -143,6 +144,10 @@ final class MaintenanceController
             'report'    => $report,
             'csrfField' => $this->app->csrf->field(),
             'bookCount' => (int) ($this->app->books->totals($this->app->ownerId)['books'] ?? 0),
+            /* What the cron job has been doing. Read from a file rather than
+               a table on purpose: a night that failed because the database
+               was unreachable is the night most worth reading about. */
+            'runs'      => RunLog::read(20),
         ]);
 
         return Response::html($this->app->view->render('layout.base', [

@@ -241,6 +241,7 @@ return [
 
     'error.404.title'    => 'Nicht gefunden',
     'error.404.body'     => 'Diese Seite gibt es nicht.',
+    'error.404.quip'     => 'Zwischen Seite 403 und Seite 405 fehlt etwas.',
     'error.500.title'    => 'Etwas ist schiefgelaufen',
     'error.500.body'     => 'Der Fehler wurde vermerkt. Bitte später erneut versuchen.',
     'error.csrf'         => 'Das Formular war zu alt. Bitte noch einmal absenden.',
@@ -400,6 +401,9 @@ return [
     'maintenance.import.notempty'          => 'Im Regal stehen bereits {count} Bücher. Ein zweiter Import legt Bücher ohne ISBN doppelt an.',
     'maintenance.cron'                     => 'Nächtlicher Abgleich',
     'maintenance.cron.hint'                => 'Fehlende Cover und Angaben trägt der Cronjob nach, nicht diese Seite. Er wartet zwischen den Abfragen, um die Datenquellen nicht zu überlasten – für dreitausend Bücher wären das Stunden, die kein Browserfenster durchhält.',
+
+    'maintenance.cron.none'                => 'Bisher ist kein Lauf verzeichnet. Entweder ist der Cronjob noch nicht eingerichtet, oder er hat noch nicht das erste Mal angeklopft.',
+    'maintenance.cron.runs'                => 'Die letzten Läufe',
 
     'filter.isbn'          => 'ISBN',
     'filter.isbn.yes'      => 'Mit ISBN',

@@ -1251,6 +1251,30 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .candidates .btn { width: 100%; }
 }
 
+/* ---- The nightly job's own log -------------------------------------- */
+
+/* A stack of short reports, read from the top. Monospaced figures, because
+   the whole use of the thing is comparing last night's numbers with the
+   nights before it and eyes do that down a column, not across a page. */
+.runs { list-style: none; margin: 12px 0 0; padding: 0; }
+.runs > li + li { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+.runs time {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.runs ul { list-style: none; margin: 0; padding: 0; }
+.runs ul li {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  /* A report line is one line. Wrapping it mid-number turns a column of
+     figures into prose, so it scrolls in its own box instead. */
+  white-space: nowrap;
+  overflow-x: auto;
+}
+.runs .run-failed { color: var(--accent); font-weight: 600; }
+
 /* ---- Bottom bar (phones) -------------------------------------------- */
 
 .bottom-nav { display: none; }
@@ -1633,7 +1657,16 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .w-thumb { max-width: 110px; }
 
 /* The middle of an otherwise empty page: a 404, a filter with no matches. */
-.page-empty { text-align: center; padding: 48px 16px; }
+/* Left, like every other page. Centring was the last of it: on a wide screen
+   a centred 404 puts the heading, the sentence and the way back in three
+   different places, and the eye starts again at each one. */
+.page-empty { padding: 40px 0 64px; max-width: 46ch; }
+.page-empty .error-quip {
+  margin-top: 4px;
+  color: var(--muted);
+  font-family: var(--font-head);
+  font-style: italic;
+}
 
 /* The split bar's five steps and the sixteen placeholder grounds are classes
    rather than computed colours, so a theme can restate them and the markup

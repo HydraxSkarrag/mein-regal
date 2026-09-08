@@ -215,6 +215,27 @@ between requests on purpose, so as not to lean on the free data sources — for
 three thousand books that would be hours, which no cron job survives. Adjust with
 `&budget=180` (clamped to between 20 and 240 seconds).
 
+The three steps can be split with `&do=`, because they are not one kind of work.
+The copy takes seconds and should happen every night; the lookups are minutes of
+waiting on other people's servers, and once a shelf is full they have almost
+nothing left to find:
+
+```
+https://regal.example.org/cron?key=SECRET&do=backup,purge   nightly
+https://regal.example.org/cron?key=SECRET&do=enrich         weekly, say
+```
+
+Naming no step runs all three, which is the sensible default: one entry in the
+control panel is one thing to get right, and the copy is made first so a night
+that runs out of time has still left a backup. A name it does not know runs
+nothing and says so — a typo that quietly did the whole job would look like it
+had worked.
+
+Each run is appended to `storage/cron.log` and shown under **Verwaltung → Daten**,
+newest first, with failed steps picked out. The file keeps the last forty runs.
+Without it every run existed only as the answer to the cron call: fine for "did
+it work last night", useless for "since when has it been finding nothing".
+
 ## Tools
 
 ```bash

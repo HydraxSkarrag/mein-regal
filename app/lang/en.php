@@ -216,6 +216,7 @@ return [
 
     'error.404.title'    => 'Not found',
     'error.404.body'     => 'There is no such page.',
+    'error.404.quip'     => 'Something is missing between page 403 and page 405.',
     'error.500.title'    => 'Something went wrong',
     'error.500.body'     => 'The error has been logged. Please try again later.',
     'error.csrf'         => 'That form had gone stale. Please send it again.',
@@ -375,6 +376,9 @@ return [
     'maintenance.import.notempty'          => 'The shelf already holds {count} books. A second import will duplicate any book without an ISBN.',
     'maintenance.cron'                     => 'The nightly job',
     'maintenance.cron.hint'                => 'Missing covers and details are filled in by the cron job, not by this page. It waits between requests so as not to hammer the sources - for three thousand books that is hours, which no browser window survives.',
+
+    'maintenance.cron.none'                => 'No run recorded yet. Either the cron job is not set up, or it has not knocked for the first time.',
+    'maintenance.cron.runs'                => 'The last runs',
 
     'filter.isbn'          => 'ISBN',
     'filter.isbn.yes'      => 'With an ISBN',

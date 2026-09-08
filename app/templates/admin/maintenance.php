@@ -73,4 +73,33 @@ declare(strict_types=1);
 <div class="panel mt-l">
   <h2><?= e(t('maintenance.cron')) ?></h2>
   <p class="note mt-0"><?= e(t('maintenance.cron.hint')) ?></p>
+
+  <?php if ($runs === []): ?>
+  <?php /* Either it has not run yet or it is not set up, and the page cannot
+           tell those apart - so it says what it knows and points at the one
+           thing that would explain both. */ ?>
+  <p class="note"><?= e(t('maintenance.cron.none')) ?></p>
+  <?php else: ?>
+  <h3><?= e(t('maintenance.cron.runs')) ?></h3>
+  <?php /* Newest first, and no paging: forty runs is a month, and the reason
+           anybody opens this is to compare last night with the nights before
+           it. */ ?>
+  <ul class="runs">
+    <?php foreach ($runs as $run): ?>
+    <li>
+      <?php if ($run['at'] !== null): ?>
+      <time datetime="<?= e($run['at']) ?>"><?= e($formatter->dateTime($run['at'])) ?></time>
+      <?php endif; ?>
+      <ul>
+        <?php foreach ($run['lines'] as $line): ?>
+        <?php /* A line that says FAILED is the one worth finding in a wall of
+                 successful nights. Matched on the word the job itself writes,
+                 not on a status carried alongside it. */ ?>
+        <li<?= str_contains($line, 'FAILED') ? ' class="run-failed"' : '' ?>><?= e($line) ?></li>
+        <?php endforeach; ?>
+      </ul>
+    </li>
+    <?php endforeach; ?>
+  </ul>
+  <?php endif; ?>
 </div>

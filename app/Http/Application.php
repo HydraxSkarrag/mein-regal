@@ -275,6 +275,7 @@ final class Application
             'title'   => t('error.404.title'),
             'heading' => t('error.404.title'),
             'body'    => t('error.404.body'),
+            'quip'    => t('error.404.quip'),
             'noIndex' => true,
         ]), 404);
     }

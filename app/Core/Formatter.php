@@ -56,6 +56,44 @@ final class Formatter
         return $date->format($this->locale === 'en' ? 'j M Y' : 'd.m.Y');
     }
 
+    /**
+     * A moment, with the time of day, for a log of nightly runs.
+     *
+     * Separate from date() because that one deliberately drops the clock: an
+     * acquisition date or a finishing date is a day, and printing 00:00 after
+     * it would be inventing precision. Here the clock is the point - two runs
+     * on one night look identical without it.
+     *
+     * Takes what date('c') writes, offset and all, and shows it in the
+     * server's own zone, which is where the job ran.
+     */
+    public function dateTime(?string $iso): string
+    {
+        if ($iso === null || $iso === '') {
+            return '';
+        }
+
+        try {
+            $moment = new DateTimeImmutable($iso);
+        } catch (\Exception $e) {
+            return $iso;
+        }
+
+        if ($this->hasIntl && class_exists(IntlDateFormatter::class)) {
+            $formatter = new IntlDateFormatter(
+                $this->icuLocale(),
+                IntlDateFormatter::MEDIUM,
+                IntlDateFormatter::SHORT
+            );
+            $formatted = $formatter->format($moment);
+            if (is_string($formatted)) {
+                return $formatted;
+            }
+        }
+
+        return $moment->format($this->locale === 'en' ? 'j M Y, H:i' : 'd.m.Y, H:i');
+    }
+
     public function number(int|float|null $value, int $decimals = 0): string
     {
         if ($value === null) {

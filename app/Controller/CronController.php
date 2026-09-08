@@ -6,6 +6,7 @@ namespace App\Controller;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\RunLog;
 use App\Http\Application;
 use Throwable;
 
@@ -38,6 +39,36 @@ final class CronController
             return $this->app->notFound();
         }
 
+        /* Which of the three, so they need not share a rhythm.
+         *
+         * They are one call by default because setting up a cron job on this
+         * host is a form in a control panel, and one entry is one thing to
+         * get right. But they are not one kind of work: the copy takes
+         * seconds and has to happen every night without fail, the housekeeping
+         * takes milliseconds, and the lookups are minutes of waiting on other
+         * people's servers - the only part that can hang, be throttled, or
+         * run out of budget.
+         *
+         * The order already protects the important one: the copy is made
+         * first, so a night that runs out of time has still left a backup.
+         * What it cannot do is give them different schedules, and there is a
+         * good case for that once a shelf is full - the lookups then have
+         * almost nothing left to find and could as well run weekly.
+         *
+         *   /cron?key=…                       all three, as before
+         *   /cron?key=…&do=backup,purge       nightly
+         *   /cron?key=…&do=enrich             weekly, or whenever
+         *
+         * An unknown name runs nothing rather than everything: a typo in a
+         * cron URL that quietly did the whole job would look like it worked.
+         */
+        $steps = trim($request->query('do'));
+        $wanted = $steps === ''
+            ? ['backup', 'enrich', 'purge']
+            : array_map('trim', explode(',', strtolower($steps)));
+
+        $doing = static fn (string $step): bool => in_array($step, $wanted, true);
+
         /* A budget rather than a book count.
          *
          * Enrichment waits between requests on purpose, so a hundred books
@@ -56,7 +87,7 @@ final class CronController
 
         // The copy comes first. It takes seconds; the lookups take minutes,
         // and a night that runs out of time should still have left a backup.
-        if ($request->query('backup') !== 'nein') {
+        if ($doing('backup')) {
             try {
                 require_once PROJECT_ROOT . '/bin/backup.php';
                 $result = backup(
@@ -77,40 +108,56 @@ final class CronController
             }
         }
 
-        try {
-            require_once PROJECT_ROOT . '/bin/enrich.php';
-            $stats = enrich(
-                $this->app->pdo,
-                $this->app->config,
-                (int) max(1, min(500, $request->queryInt('limit', 500))),
-                $this->app->ownerId,
-                false,
-                $budget
-            );
-            $lines[] = sprintf(
-                'enrich: looked up %d, covers %d, metadata %d, misses %d%s',
-                $stats['looked_up'],
-                $stats['covers'],
-                $stats['metadata'],
-                $stats['misses'],
-                $stats['stopped_early'] ? ' (budget reached, rest waits for tomorrow)' : ''
-            );
-        } catch (Throwable $e) {
-            error_log('[regal] cron enrich failed: ' . $e->getMessage());
-            $lines[] = 'enrich: FAILED - ' . $e->getMessage();
+        if ($doing('enrich')) {
+            try {
+                require_once PROJECT_ROOT . '/bin/enrich.php';
+                $stats = enrich(
+                    $this->app->pdo,
+                    $this->app->config,
+                    (int) max(1, min(500, $request->queryInt('limit', 500))),
+                    $this->app->ownerId,
+                    false,
+                    $budget
+                );
+                $lines[] = sprintf(
+                    'enrich: looked up %d, covers %d, metadata %d, misses %d%s',
+                    $stats['looked_up'],
+                    $stats['covers'],
+                    $stats['metadata'],
+                    $stats['misses'],
+                    $stats['stopped_early'] ? ' (budget reached, rest waits for tomorrow)' : ''
+                );
+            } catch (Throwable $e) {
+                error_log('[regal] cron enrich failed: ' . $e->getMessage());
+                $lines[] = 'enrich: FAILED - ' . $e->getMessage();
+            }
         }
 
-        try {
-            // Expired sign-in tokens and stale login attempts. Server logs are
-            // the host's business; this is ours.
-            (new Auth($this->app->pdo, $this->app->session, $this->app->users, $this->app->cookies))
-                ->purgeExpired();
-            $lines[] = 'purge: expired tokens and old login attempts removed';
-        } catch (Throwable $e) {
-            $lines[] = 'purge: FAILED - ' . $e->getMessage();
+        if ($doing('purge')) {
+            try {
+                // Expired sign-in tokens and stale login attempts. Server logs
+                // are the host's business; this is ours.
+                (new Auth($this->app->pdo, $this->app->session, $this->app->users, $this->app->cookies))
+                    ->purgeExpired();
+                $lines[] = 'purge: expired tokens and old login attempts removed';
+            } catch (Throwable $e) {
+                $lines[] = 'purge: FAILED - ' . $e->getMessage();
+            }
+        }
+
+        // A call that asked for nothing recognisable says so, rather than
+        // reporting a run that consisted of taking the time.
+        if ($lines === []) {
+            $lines[] = 'nothing to do: no known step in "' . $steps . '" (backup, enrich, purge)';
         }
 
         $lines[] = sprintf('took %.1fs', microtime(true) - $started);
+
+        /* The same lines, kept. The answer below is read once, by whoever or
+           whatever made the call; a fortnight later the question is usually
+           "since when has it been finding nothing", and that needs a run
+           before this one to compare with. */
+        RunLog::record($lines);
 
         return Response::text(implode("\n", $lines) . "\n")->noIndex();
     }
