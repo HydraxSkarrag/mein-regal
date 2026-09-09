@@ -1060,6 +1060,15 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .field-row--picker > .picker-list,
 .field-row--picker > .picker-warning { grid-column: 1 / -1; }
 
+/* Its own two columns, spelled out, rather than the auto-fit the other rows
+   use. auto-fit counts a track as empty and collapses it, and a list spanning
+   1/-1 is in every track - so the moment the suggestions appeared the row
+   went from two wide columns to as many 150px ones as fit, and the field you
+   had just clicked into shrank from 257 pixels to 167 under the cursor.
+   
+   Two to one because that is the shape of the thing: a name and a number. */
+.field-row--picker { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+
 /* Half a phone screen is not enough for a series name, so this one row stacks
    earlier than the rest - at the width where the name field would start
    truncating rather than at the width where the inputs would. */
@@ -1530,15 +1539,26 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 
 /* Columns rather than one long run: seventeen hundred names in a single
-   column is a list nobody reads to the end. */
+   column is a list nobody reads to the end.
+   
+   A grid rather than CSS columns, because columns give an entry the column's
+   width and never more. Measured on the series page at 1400px: twelve letter
+   groups holding one series each, every one squeezed into 269 of the 1160
+   pixels available - seven of thirteen names wrapping onto a second line with
+   three quarters of the row empty beside them.
+   
+   auto-fit collapses the tracks nothing is in, so a group of one takes the
+   whole width and a group of two hundred still gets its columns. Same 260px
+   as before on purpose: the dense pages are unchanged, and only the groups
+   that were leaving room empty use it. */
 .facet-list {
-  columns: 260px;
-  column-gap: 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0 28px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.facet-list li { break-inside: avoid; }
 .facet-list a {
   display: flex;
   justify-content: space-between;

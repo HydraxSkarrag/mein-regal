@@ -199,3 +199,30 @@ Assert::true(
         $stylesheet
     )
 );
+
+/* And the row it sits in has its columns spelled out.
+ *
+ * The other field rows use auto-fit, which collapses a track nothing is in.
+ * A list spanning 1/-1 is in every track, so the moment the suggestions
+ * appeared the row went from two wide columns to as many narrow ones as fit -
+ * measured at 1400px, the field under the cursor shrank from 257 pixels to
+ * 167 the instant it was clicked into. A field that changes size when you
+ * focus it is not a field anybody trusts. */
+Assert::true(
+    'the picker row does not depend on a track being empty',
+    (bool) preg_match(
+        '/\.field-row--picker \{ grid-template-columns: minmax\(0, 2fr\) minmax\(0, 1fr\); \}/',
+        $stylesheet
+    )
+);
+
+/* The A-Z lists, for the same reason on a different page: CSS columns give an
+ * entry the column width and never more, so twelve letter groups holding one
+ * series each sat in 269 of 1160 pixels with the name wrapped onto a second
+ * line. A grid whose empty tracks collapse gives a group of one the whole row
+ * and leaves a group of 226 exactly as it was - both measured. */
+Assert::true(
+    'the facet list is a grid that collapses what it does not need',
+    str_contains($stylesheet, 'grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));')
+        && !str_contains($stylesheet, 'columns: 260px;')
+);
