@@ -83,3 +83,34 @@ Assert::true(
     'and not behind a test for a cover that may arrive later',
     !str_contains($editPage, "<?php if (\$cover !== null): ?>\n<form id=\"cover-delete\"")
 );
+
+Assert::group('The answer does not read as more of the explanation');
+
+/* It wore .note, the same small grey text as the sentence describing the
+ * button above it, so "Cover gefunden und gespeichert" went under. It gets
+ * the box the page's own messages get, and it sits between the button and the
+ * hint - under the thing pressed, above the thing describing it. */
+Assert::true(
+    'the status is a flash, not a note',
+    str_contains($script, "status.className = 'flash flash--' + kind;")
+        && !str_contains($script, "status.className = 'note")
+);
+Assert::true(
+    'and says which of the three it is',
+    str_contains($script, "say(text.searching, 'hint')")
+        && str_contains($script, "data.found ? 'ok' : 'error'")
+);
+Assert::true(
+    'it goes in front of the hint, not after it',
+    str_contains($script, "wrapper.insertBefore(status, wrapper.querySelector('.note'))")
+);
+Assert::true(
+    'and there is nothing to see before there is something to say',
+    str_contains($script, 'status.hidden = true;')
+);
+
+$stylesheet = (string) file_get_contents(PROJECT_ROOT . '/public/css/style.css');
+Assert::true(
+    'the box is spaced for where it sits',
+    str_contains($stylesheet, '.cover-search .flash { margin: 12px 0 0; }')
+);

@@ -29,17 +29,27 @@
 
   /* Beside the button, not in the flash bar at the top of the page. What
      happened and the thing it happened to belong together; a sentence two
-     screens up is one nobody reads. */
+     screens up is one nobody reads.
+     
+     But it wore .note, which is what the sentence above it wears - so the
+     answer looked like more of the explanation and went under. It gets the
+     same box the page's own messages get, and it sits between the button and
+     the hint: under the thing pressed, above the thing describing it. */
   var status = document.createElement('p');
-  status.className = 'note';
   status.setAttribute('role', 'status');
-  wrapper.appendChild(status);
+  status.hidden = true;
+  wrapper.insertBefore(status, wrapper.querySelector('.note'));
+
+  function say(message, kind) {
+    status.className = 'flash flash--' + kind;
+    status.textContent = message;
+    status.hidden = false;
+  }
 
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     if (button) { button.disabled = true; }
-    status.className = 'note';
-    status.textContent = text.searching;
+    say(text.searching, 'hint');
 
     fetch(form.action, {
       method: 'POST',
@@ -49,14 +59,12 @@
     }).then(function (response) {
       return response.json();
     }).then(function (data) {
-      status.className = data.found ? 'note' : 'note note--danger';
-      status.textContent = data.message || text.failed;
+      say(data.message || text.failed, data.found ? 'ok' : 'error');
       if (data.found && data.block) {
         block.innerHTML = data.block;
       }
     }).catch(function () {
-      status.className = 'note note--danger';
-      status.textContent = text.failed;
+      say(text.failed, 'error');
     }).then(function () {
       if (button) { button.disabled = false; }
     });

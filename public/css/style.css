@@ -1101,6 +1101,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
    cover read as two choices rather than one long form. */
 .cover-search { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
 .cover-search .note { margin-bottom: 0; }
+/* The answer sits between the button and the hint and is the page's own
+   message box, not a second line of small grey text - as .note it read as
+   more of the explanation above it and went under. */
+.cover-search .flash { margin: 12px 0 0; }
 
 /* The captured frame, shown large enough that a blurred or half-cropped
    cover is obvious before it is kept. */
