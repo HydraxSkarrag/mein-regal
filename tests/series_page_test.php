@@ -176,3 +176,26 @@ foreach ($folds as $fold) {
 }
 sort($unclickable);
 Assert::same('every one of them shows a pointer', $unclickable, []);
+
+/* The suggestion list, and how wide it is allowed to be.
+ *
+ * It was built into the input's own field, which is one column of a two column
+ * row - so "Die Chronik der Drachenlanze" broke over three lines in a box half
+ * the width of the row, next to a field holding the number 1. It is a grid item
+ * of the row now, spanning both columns.
+ *
+ * Both halves are checked, because either one alone puts it back: the script
+ * has to hang it on the row, and the rule has to let it span. */
+$script = (string) file_get_contents(PROJECT_ROOT . '/public/js/series.js');
+
+Assert::true(
+    'the list hangs on the row, not on the field around the input',
+    str_contains($script, 'field.appendChild(list)') && !str_contains($script, 'input.parentNode.insertBefore(list')
+);
+Assert::true(
+    'and the row lets it span every column it has',
+    (bool) preg_match(
+        '/\.field-row--picker > \.picker-list,\s*\.field-row--picker > \.picker-warning \{[^}]*grid-column: 1 \/ -1/',
+        $stylesheet
+    )
+);

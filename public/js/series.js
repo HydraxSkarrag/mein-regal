@@ -85,8 +85,13 @@
   warning.className = 'picker-warning';
   warning.hidden = true;
 
-  input.parentNode.insertBefore(list, input.nextSibling);
-  input.parentNode.insertBefore(warning, list.nextSibling);
+  /* Into the row, not into the field. A series name is long - "Die Chronik
+     der Drachenlanze" broke over three lines in a box the width of the input
+     - while the field beside it holds a number and needs none of its width.
+     So the list is a grid item of its own, spanning the whole row, and the
+     name has the room the shelf actually gives it. */
+  field.appendChild(list);
+  field.appendChild(warning);
 
   function esc(value) {
     var d = document.createElement('div');

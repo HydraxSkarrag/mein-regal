@@ -1051,10 +1051,17 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
    Below that the fields stack instead. */
 .field-row { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
-/* The row whose first field completes what is typed. Its suggestion list is
-   as wide as the field it belongs to, and half a phone screen is not enough
-   for a series name and how many of it are on the shelf - so this one row
-   stacks earlier than the rest, at the width where the list would start
+/* The row whose first field completes what is typed. The suggestion list is a
+   grid item of the row rather than a child of the input's field, so it has the
+   whole width to draw a name in: under the input alone, "Die Chronik der
+   Drachenlanze" wrapped onto three lines beside a field holding the number 1.
+   In flow, not floating - it pushes the hint down the way the genre list does,
+   which needs no z-index and can cover nothing. */
+.field-row--picker > .picker-list,
+.field-row--picker > .picker-warning { grid-column: 1 / -1; }
+
+/* Half a phone screen is not enough for a series name, so this one row stacks
+   earlier than the rest - at the width where the name field would start
    truncating rather than at the width where the inputs would. */
 @media (max-width: 560px) {
   .field-row--picker { grid-template-columns: 1fr; }
