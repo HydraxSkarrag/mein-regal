@@ -1217,10 +1217,55 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 /* Under the title and above the authors: it says which book this is, which
    is the title's job and not the byline's. */
-.series-line { margin: 2px 0 0; font-size: 0.95rem; }
+/* The series, as one thing you can act on rather than three more lines.
+   
+   It was three bare lines under the title - subtitle, series, next volume -
+   the same size and the same colour as everything around them, with an arrow
+   at the end of a book title as the only sign that one of them led somewhere
+   else. A surface and a border say "this is a control"; the labels say what
+   it controls. */
+.series-nav {
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.series-line { margin: 0; font-size: 0.95rem; }
 .series-volume { color: var(--muted); }
-.series-line + .series-steps { margin-top: 6px; }
-.series-steps { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.88rem; margin: 6px 0 0; }
+.series-line + .series-steps { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+.series-steps { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
+
+/* Each step is a block, not a word in a sentence: the whole thing is the
+   target, which matters most on a phone. */
+.series-step {
+  flex: 1 1 44%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  text-decoration: none;
+}
+.series-step:hover { border-color: var(--accent); }
+/* Right-aligned when it points right, so the two steps lean apart rather
+   than both hugging the left edge. */
+.series-step--next { text-align: right; }
+.series-step--next:only-child { margin-left: auto; }
+
+/* Which volume first, because that is what the step is about; the title is
+   which book that turns out to be. */
+.series-step-label { font-size: 0.75rem; color: var(--muted); }
+.series-step-title {
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* The sentence somebody came to the series page for. Accent, because a gap
    is the one thing on that page worth acting on. */

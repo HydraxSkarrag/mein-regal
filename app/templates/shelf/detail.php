@@ -40,44 +40,13 @@ declare(strict_types=1);
 
   <div>
     <h1><?= e($book['title']) ?></h1>
-    <?php if (($book['subtitle'] ?? null) !== null): ?>
+    <?php /* Not the series name a second time. Catalogues put the series in
+             the subtitle because a record has to say it somewhere, and with
+             the series on its own line below that is the same words twice in
+             three lines. Only when it is exactly that and nothing else. */ ?>
+    <?php if (($book['subtitle'] ?? null) !== null
+        && !($series !== null && App\Core\Text::repeatsSeries((string) $book['subtitle'], (string) $series['name']))): ?>
     <p class="lede"><?= e($book['subtitle']) ?></p>
-    <?php endif; ?>
-
-    <?php if ($series !== null): ?>
-    <?php /* Under the title, above the authors: it says which book this is,
-             which is the same job the title does and a different one from
-             saying who wrote it.
-             
-             "Band 6 von 12" only where a twelve was written down. Counting
-             what is on the shelf instead would turn three volumes of a
-             septology into "Band 3 von 3". */ ?>
-    <p class="series-line">
-      <a href="/reihe/<?= e($series['slug']) ?>"><?= e($series['name']) ?></a>
-      <?php if ($book['series_index'] !== null): ?>
-        <span class="series-volume"><?= e($series['total'] !== null
-            ? t('book.series.of', [
-                'number' => App\Core\Formatter::volume($book['series_index']),
-                'total'  => $series['total'],
-              ])
-            : t('book.series.only', ['number' => App\Core\Formatter::volume($book['series_index'])])) ?></span>
-      <?php endif; ?>
-    </p>
-
-    <?php if ($neighbours['previous'] !== null || $neighbours['next'] !== null): ?>
-    <?php /* The reason a volume number is worth typing: from the book in
-             hand, the one before and the one after are a click away. Only
-             volumes actually on the shelf - a link to a book nobody owns
-             leads nowhere. */ ?>
-    <p class="series-steps">
-      <?php if ($neighbours['previous'] !== null): ?>
-      <a href="/book/<?= e($neighbours['previous']['slug']) ?>">&larr; <?= e($neighbours['previous']['title']) ?></a>
-      <?php endif; ?>
-      <?php if ($neighbours['next'] !== null): ?>
-      <a href="/book/<?= e($neighbours['next']['slug']) ?>"><?= e($neighbours['next']['title']) ?> &rarr;</a>
-      <?php endif; ?>
-    </p>
-    <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($authors !== []): ?>
@@ -87,6 +56,70 @@ declare(strict_types=1);
       <?php endforeach; ?>
     </p>
     <?php endif; ?>
+
+    <?php if ($series !== null): ?>
+    <?php /* One box, below the author, and it looks like a box.
+             
+             It used to be three bare lines in a stack - subtitle, series,
+             next volume - all the same size and all the same colour, and
+             the only thing marking the last one as a way out of this page
+             was an arrow at the end of a book title. Nothing said the two
+             books either side were the neighbouring volumes rather than
+             two more links about this one.
+             
+             So: a surface with a border, a heading that names what it is,
+             and every step labelled with the band it leads to before the
+             title of it. "Band 2" first, because that is what the step is
+             about; the title is which book that turns out to be.
+             
+             "Band 6 von 12" only where a twelve was written down. Counting
+             what is on the shelf instead would turn three volumes of a
+             septology into "Band 3 von 3". */ ?>
+    <nav class="series-nav" aria-label="<?= e(t('book.series')) ?>">
+      <p class="series-line">
+        <a href="/reihe/<?= e($series['slug']) ?>"><?= e($series['name']) ?></a>
+        <?php if ($book['series_index'] !== null): ?>
+          <span class="series-volume"><?= e($series['total'] !== null
+              ? t('book.series.of', [
+                  'number' => App\Core\Formatter::volume($book['series_index']),
+                  'total'  => $series['total'],
+                ])
+              : t('book.series.only', ['number' => App\Core\Formatter::volume($book['series_index'])])) ?></span>
+        <?php endif; ?>
+      </p>
+
+      <?php if ($neighbours['previous'] !== null || $neighbours['next'] !== null): ?>
+      <?php /* The reason a volume number is worth typing: from the book in
+               hand, the one before and the one after are a click away. Only
+               volumes actually on the shelf - a link to a book nobody owns
+               leads nowhere. */ ?>
+      <?php
+        $stepLabel = static function (?array $volume, string $fallback): string {
+            return $volume !== null && ($volume['series_index'] ?? null) !== null
+                ? t('book.series.only', [
+                    'number' => App\Core\Formatter::volume($volume['series_index']),
+                  ])
+                : t($fallback);
+        };
+      ?>
+      <p class="series-steps">
+        <?php if ($neighbours['previous'] !== null): ?>
+        <a class="series-step" href="/book/<?= e($neighbours['previous']['slug']) ?>">
+          <span class="series-step-label">&larr; <?= e($stepLabel($neighbours['previous'], 'book.series.previous')) ?></span>
+          <span class="series-step-title"><?= e($neighbours['previous']['title']) ?></span>
+        </a>
+        <?php endif; ?>
+        <?php if ($neighbours['next'] !== null): ?>
+        <a class="series-step series-step--next" href="/book/<?= e($neighbours['next']['slug']) ?>">
+          <span class="series-step-label"><?= e($stepLabel($neighbours['next'], 'book.series.next')) ?> &rarr;</span>
+          <span class="series-step-title"><?= e($neighbours['next']['title']) ?></span>
+        </a>
+        <?php endif; ?>
+      </p>
+      <?php endif; ?>
+    </nav>
+    <?php endif; ?>
+
 
     <?php /* Everybody else, under what they did. In the byline they read as
              co-authors, which is what a bracket after a name does. */ ?>

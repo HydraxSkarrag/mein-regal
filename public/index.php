@@ -177,6 +177,9 @@ $app->router->post('/admin/import', $data->import(...));
 $app->router->get('/admin/export/{format}', $data->export(...));
 $app->router->post('/api/preview', $pages->preview(...));
 $app->router->get('/book/{slug}/edit', $books->form(...));
+/* On the series page, because that is where somebody is standing when they
+   notice the name is wrong or the series should not exist. */
+$app->router->post('/reihe/{slug}', $shelf->saveSeries(...));
 $app->router->post('/book/{slug}/edit', $books->save(...));
 $app->router->post('/book/{slug}/delete', $books->delete(...));
 $app->router->post('/book/{slug}/cover-delete', $books->deleteCover(...));

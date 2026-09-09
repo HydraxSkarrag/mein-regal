@@ -345,6 +345,96 @@ final class Text
      * because only the first has been seen and the second is the same thing
      * one parser setting away.
      */
+    /**
+     * Articles that are skipped when a title is filed under a letter.
+     *
+     * Every library does this and has done it for a century: "Die Chronik der
+     * Drachenlanze" files under C, "The Hobbit" under H. The catalogue this
+     * shelf asks says so in the record itself - MARC marks the article with a
+     * non-sorting character, and the DNB delivers those (which Text strips a
+     * few lines down). A name somebody typed carries no such mark, so the
+     * words have to be known.
+     *
+     * German takes the whole declension of the definite article, not just
+     * the three nominatives: "Des Kaisers neue Kleider" and "Dem Himmel so
+     * nah" file under K and H. English adds a/an/the. The two that turn up on
+     * a German shelf without anybody thinking of them as foreign are French
+     * and Italian - "Le Petit Prince", "Il Nome della Rosa".
+     *
+     * Where it stops, and why. "Einer", "eines", "einem", "einen" are
+     * articles in a grammar book and pronouns in a title: "Einer flog über
+     * das Kuckucksnest" is "one flew", and filing it under F would be worse
+     * than leaving it under E. This is the ambiguity a library record does
+     * not have - MARC marks the article in the record instead of guessing
+     * from the word - so where the word alone cannot decide, the word stays.
+     *
+     * Dutch is left out for the same reason: "de" would be safe, "het" would
+     * not, and there is no Dutch on this shelf to pay for the risk.
+     */
+    private const FILING_ARTICLES = [
+        // German. The definite article in every case, and only the two
+        // indefinite forms that are reliably articles.
+        'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine',
+        // English
+        'the', 'a', 'an',
+        // French, including the elided l' before a vowel
+        'le', 'la', 'les', 'l', 'un', 'une',
+        // Italian
+        'il', 'lo', 'gli', 'uno',
+    ];
+
+    /**
+     * The name with its leading article dropped, for filing under a letter.
+     *
+     * Only for filing. What is shown stays what was written - a series is
+     * called "Die Chronik der Drachenlanze" and appears under C, it does not
+     * become "Chronik der Drachenlanze, Die". The comma-turned form is a card
+     * catalogue habit and reads as a mistake on a screen.
+     *
+     * The article has to be followed by something, or "Die" on its own would
+     * file as nothing at all.
+     */
+    public static function filingName(string $name): string
+    {
+        $trimmed = trim($name);
+        if (!preg_match('/^(\p{L}+)[\s\x{2019}\']+(.+)$/u', $trimmed, $parts)) {
+            return $trimmed;
+        }
+
+        return in_array(mb_strtolower($parts[1]), self::FILING_ARTICLES, true)
+            ? trim($parts[2])
+            : $trimmed;
+    }
+
+    /**
+     * Is this subtitle just the series name again?
+     *
+     * Catalogues put the series in the subtitle, because a record has to say
+     * it somewhere and the subtitle is where it fits: "Drachenzwielicht" with
+     * "Die Chronik der Drachenlanze 1" under it. Once the shelf shows the
+     * series on a line of its own, that subtitle is the same words twice in
+     * three lines, and the reader has to work out that they are not two
+     * different facts.
+     *
+     * Only when it is exactly the name plus a number - letters compared,
+     * everything else dropped. "Die Sturmlicht-Chroniken 7. Roman" keeps its
+     * "Roman" and is therefore shown: it says something the series line does
+     * not, and dropping a subtitle that carries anything of its own would be
+     * worse than repeating one.
+     */
+    public static function repeatsSeries(string $subtitle, string $seriesName): bool
+    {
+        $letters = static fn (string $value): string => (string) preg_replace(
+            '/[^\p{L}]+/u',
+            '',
+            mb_strtolower($value)
+        );
+
+        $subtitle = $letters($subtitle);
+
+        return $subtitle !== '' && $subtitle === $letters($seriesName);
+    }
+
     public static function withoutSortMarks(string $value): string
     {
         return str_replace(

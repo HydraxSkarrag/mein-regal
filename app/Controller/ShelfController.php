@@ -7,6 +7,7 @@ use App\Core\Input;
 use App\Core\Isbn;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Text;
 use App\Http\Application;
 use App\Repository\BookRepository;
 use App\Repository\SeriesRepository;
@@ -292,16 +293,22 @@ final class ShelfController
     {
         $rows = $this->app->series->listForOwner($this->app->ownerId);
 
-        return $this->renderFacets(
-            t('series.title'),
-            'series',
-            array_map(static fn (array $series): array => [
-                'label' => $series['name'],
-                'sort'  => $series['name'],
-                'count' => (int) $series['owned'],
-                'url'   => '/reihe/' . rawurlencode($series['slug']),
-            ], $rows)
-        );
+        /* Filed without the leading article, the way every library files a
+           title: "Die Chronik der Drachenlanze" under C, not under D with
+           every other series that happens to begin with "Die". The name
+           shown is untouched - only where it lands changes. */
+        $entries = array_map(static fn (array $series): array => [
+            'label' => $series['name'],
+            'sort'  => Text::filingName($series['name']),
+            'count' => (int) $series['owned'],
+            'url'   => '/reihe/' . rawurlencode($series['slug']),
+        ], $rows);
+
+        // And ordered by the same key, or C would be right and the order
+        // inside it would still be the one the database chose.
+        usort($entries, static fn (array $a, array $b): int => strcoll($a['sort'], $b['sort']));
+
+        return $this->renderFacets(t('series.title'), 'series', $entries);
     }
 
     /**
@@ -322,6 +329,7 @@ final class ShelfController
         $ids = array_map(static fn (array $b): int => (int) $b['id'], $volumes);
 
         $body = $this->app->view->render('shelf.series', [
+            'signedIn'    => $this->app->auth->isSignedIn(),
             'series'      => $series,
             'volumes'     => $volumes,
             'gaps'        => SeriesRepository::gaps($volumes, $series['total'] === null ? null : (int) $series['total']),
@@ -336,6 +344,57 @@ final class ShelfController
             'current'   => 'shelf',
             'canonical' => $this->app->url('/reihe/' . $series['slug']),
         ]));
+    }
+
+    /**
+     * Change a series, or take it away.
+     *
+     * Both live on the series page itself, because that is where somebody is
+     * standing when they notice - a name typed wrong, a total worth writing
+     * down, or a series that only exists because a finger slipped in the
+     * edit form and made "d".
+     *
+     * Removing one is not like removing a book. Nothing is lost: the volumes
+     * stay on the shelf and simply stop belonging to a series, which is why
+     * this asks for a click and not for a word typed out.
+     */
+    public function saveSeries(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $series = $this->app->series->bySlug($this->app->ownerId, (string) ($params['slug'] ?? ''));
+        if ($series === null) {
+            return $this->app->notFound();
+        }
+        if (!$this->app->csrf->isValid($request->allPost())) {
+            return $this->app->notFound();
+        }
+
+        /* postBool, not post() !== null. post() answers '' for a key that is
+           not there and never null, so "was the remove button the one that
+           was pressed" was true every time - and Speichern deleted the series
+           it was meant to save, taking six books' volume numbers with it. */
+        if ($request->postBool('remove')) {
+            $this->app->series->delete($this->app->ownerId, (int) $series['id']);
+
+            return Response::redirect('/series');
+        }
+
+        $this->app->series->update($this->app->ownerId, (int) $series['id'], [
+            'name'  => (string) $request->post('name'),
+            /* A total nobody knows is not a total. Empty means "as many as
+               there are", and "Band 3 von 3" for a septology would be worse
+               than saying nothing. */
+            'total' => Input::int($request->post('total'), 1, 9999),
+            'note'  => Input::text($request->post('note'), 255),
+        ]);
+
+        $fresh = $this->app->series->find($this->app->ownerId, (int) $series['id']);
+
+        return Response::redirect('/reihe/' . ($fresh['slug'] ?? $series['slug']));
     }
 
     /**
