@@ -69,6 +69,9 @@ final class Input
      * Anything finer than a half is rounded to one - "Band 3,7" is not a
      * thing anybody means, and the column stores one decimal.
      */
+    /** Beyond this a span is a slip of the finger, not a binding. */
+    private const MAX_SPAN = 100;
+
     public static function volume(string $value): ?float
     {
         $value = str_replace(',', '.', trim($value));
@@ -78,6 +81,42 @@ final class Input
         $volume = round((float) $value * 2) / 2;
 
         return $volume > 0 && $volume <= 9999 ? $volume : null;
+    }
+
+    /**
+     * A volume, or the span of volumes one book holds.
+     *
+     * A Sammelband is one book and several volumes. Entering only the first
+     * of them makes the series page report the rest as missing for good -
+     * which is the one thing that page is for. So the field takes a span:
+     * "5-6", "5/6" as a catalogue writes it, or an en dash as this page
+     * prints it back.
+     *
+     * A span that runs backwards or stands still is not one, and neither is
+     * a hundred volumes in one binding - that is a typo, and marking a
+     * hundred volumes as owned is a worse answer than ignoring the second
+     * number.
+     *
+     * @return array{0: ?float, 1: ?float} the volume, and the last it covers
+     */
+    public static function volumeSpan(string $value): array
+    {
+        $parts = preg_split('/\s*[-\x{2013}\x{2014}\/]\s*/u', trim($value), 2);
+        if ($parts === false || $parts === []) {
+            return [null, null];
+        }
+
+        $start = self::volume($parts[0]);
+        if ($start === null) {
+            return [null, null];
+        }
+
+        $end = isset($parts[1]) ? self::volume($parts[1]) : null;
+        if ($end === null || $end <= $start || $end - $start > self::MAX_SPAN) {
+            return [$start, null];
+        }
+
+        return [$start, $end];
     }
 
     public static function rating(string $value): ?float

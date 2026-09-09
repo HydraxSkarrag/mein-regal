@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS books (
     -- one, and rounding it to 4 or 5 puts it in the wrong place.
     series_id    INT UNSIGNED  NULL,
     series_index DECIMAL(5,1)  NULL,
+    -- The last volume a Sammelband holds; NULL for a single volume.
+    series_index_end DECIMAL(5,1) NULL,
 
     notes         TEXT NULL,
     audio_minutes SMALLINT UNSIGNED NULL,

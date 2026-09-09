@@ -173,17 +173,13 @@ $value = static fn (?string $v): string => $v ?? '';
     <div>
       <div class="panel">
         <h2><?= e(t('edit.group.cover')) ?></h2>
-        <?php if ($cover !== null): ?>
-        <div class="cover-current">
-          <div class="w-thumb">
-            <?= $view->render('partials.cover', ['book' => $book, 'cover' => $cover, 'authorLine' => '', 'sizes' => '110px']) ?>
-          </div>
-          <div>
-            <p class="note mt-0"><?= e(t('cover.from.' . $cover['source'])) ?></p>
-            <button class="btn btn--danger" type="submit" form="cover-delete"><?= e(t('cover.remove')) ?></button>
-          </div>
-        </div>
-        <?php endif; ?>
+        <?php /* Swapped in place when the search button finds one, which is
+                 why it has a name to be found by. */ ?>
+        <div id="cover-current"><?= $view->render('partials.cover_current', [
+            'book'  => $book,
+            'cover' => $cover,
+            'view'  => $view,
+        ]) ?></div>
         <div class="field">
           <label for="cover"><?= e(t('edit.cover.upload')) ?></label>
           <input id="cover" type="file" name="cover" accept="image/*" capture="environment">
@@ -193,6 +189,10 @@ $value = static fn (?string $v): string => $v ?? '';
         <div class="cover-search">
           <?php if (($book['isbn13'] ?? null) !== null): ?>
           <button class="btn" type="submit" form="cover-search"><?= e(t('cover.search')) ?></button>
+          <script type="application/json" id="cover-i18n"><?= json_for_script([
+              'searching' => t('scan.searching'),
+              'failed'    => t('scan.server.error'),
+          ]) ?></script>
           <p class="note"><?= e(t('cover.search.hint')) ?></p>
           <?php else: ?>
           <!-- Hiding the button without a word looks like a fault. Say why
@@ -298,11 +298,12 @@ $value = static fn (?string $v): string => $v ?? '';
   </div>
 </form>
 
-<?php if ($cover !== null): ?>
+<?php /* Always, not only when there is a cover: one that arrives through the
+         search button, with no page reload, brings a remove button with it,
+         and a button whose form does not exist does nothing at all. */ ?>
 <form id="cover-delete" method="post" action="/book/<?= e($book['slug']) ?>/cover-delete" hidden>
   <?= $csrfField ?>
 </form>
-<?php endif; ?>
 
 <?php if (($book['isbn13'] ?? null) !== null): ?>
 <form id="cover-search" method="post" action="/book/<?= e($book['slug']) ?>/cover-find" hidden>

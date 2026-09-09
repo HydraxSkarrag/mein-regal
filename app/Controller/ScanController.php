@@ -192,6 +192,16 @@ final class ScanController
             return Response::json(['error' => t('scan.duplicate')], 409);
         }
 
+        /* The series the card showed.
+         *
+         * It has travelled with this form since the scanner learned to read
+         * one, and nothing here read it back: the card named the series, the
+         * book was catalogued without it, and the same book added by hand
+         * kept it. A field posted and never received leaves no trace at all
+         * to notice it by. */
+        $seriesId = $this->app->series->findOrCreate($this->app->ownerId, $request->post('series'));
+        $volume = Input::volumeSpan($request->post('series_index'));
+
         $this->app->pdo->beginTransaction();
         try {
             $bookId = $this->app->books->insert($this->app->ownerId, [
@@ -211,6 +221,9 @@ final class ScanController
                 ),
                 'acquired_at'    => (new \DateTimeImmutable())->format('Y-m-d'),
                 'reading_status' => Input::oneOf($request->post('reading_status'), ['read', 'unread', 'abandoned', 'reading']) ?? 'unread',
+                'series_id'      => $seriesId,
+                'series_index'   => $seriesId === null ? null : $volume[0],
+                'series_index_end' => $seriesId === null ? null : $volume[1],
             ]);
 
             foreach ($this->decodeAuthors($request->post('authors')) as $position => $person) {

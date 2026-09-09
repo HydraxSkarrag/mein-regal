@@ -16,8 +16,23 @@ declare(strict_types=1);
   <a href="/">&larr; <?= e(t('book.back')) ?></a>
   <?php if ($signedIn): ?>
   <a href="/book/<?= e($book['slug']) ?>/edit"><?= e(t('book.edit')) ?></a>
+  <?php /* A missing cover is noticed here, on the page that shows it, and
+           going into a form to fix something that is not typed was the odd
+           part. Only when there is none: replacing a cover that is already
+           there is an edit, and the edit page has the whole set of ways to
+           do it. */ ?>
+  <?php if ($cover === null && ($book['isbn13'] ?? null) !== null): ?>
+  <button class="link-button" type="submit" form="cover-find"><?= e(t('cover.search')) ?></button>
+  <?php endif; ?>
   <?php endif; ?>
 </p>
+
+<?php if ($signedIn && $cover === null && ($book['isbn13'] ?? null) !== null): ?>
+<form id="cover-find" method="post" action="/book/<?= e($book['slug']) ?>/cover-find" hidden>
+  <?= $csrfField ?>
+  <input type="hidden" name="from" value="book">
+</form>
+<?php endif; ?>
 
 <div class="book-detail">
   <div>
@@ -81,10 +96,10 @@ declare(strict_types=1);
         <?php if ($book['series_index'] !== null): ?>
           <span class="series-volume"><?= e($series['total'] !== null
               ? t('book.series.of', [
-                  'number' => App\Core\Formatter::volume($book['series_index']),
+                  'number' => App\Core\Formatter::volume($book['series_index'], $book['series_index_end'] ?? null),
                   'total'  => $series['total'],
                 ])
-              : t('book.series.only', ['number' => App\Core\Formatter::volume($book['series_index'])])) ?></span>
+              : t('book.series.only', ['number' => App\Core\Formatter::volume($book['series_index'], $book['series_index_end'] ?? null)])) ?></span>
         <?php endif; ?>
       </p>
 
@@ -97,7 +112,10 @@ declare(strict_types=1);
         $stepLabel = static function (?array $volume, string $fallback): string {
             return $volume !== null && ($volume['series_index'] ?? null) !== null
                 ? t('book.series.only', [
-                    'number' => App\Core\Formatter::volume($volume['series_index']),
+                    'number' => App\Core\Formatter::volume(
+                        $volume['series_index'],
+                        $volume['series_index_end'] ?? null
+                    ),
                   ])
                 : t($fallback);
         };

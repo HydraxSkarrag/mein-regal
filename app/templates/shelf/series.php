@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 use App\Core\Formatter;
+use App\Repository\SeriesRepository;
 ?>
 <?php /* The same bar the book page has, and for the same reason: a thing is
          changed from a button on the thing, not from a fold. Folding away is
@@ -27,9 +28,12 @@ use App\Core\Formatter;
 
 <div class="page-head">
   <h1><?= e($series['name']) ?></h1>
+  <?php /* Volumes, not books: a Sammelband is one of the second and several
+           of the first, and the word next to the number is "Bände". */ ?>
+  <?php $owned = SeriesRepository::countVolumes($volumes); ?>
   <span class="count"><?= e($series['total'] !== null
-      ? t('series.owned.of', ['owned' => count($volumes), 'total' => $series['total']])
-      : t('series.owned', ['owned' => count($volumes)])) ?></span>
+      ? t('series.owned.of', ['owned' => $owned, 'total' => $series['total']])
+      : t('series.owned', ['owned' => $owned])) ?></span>
 </div>
 
 <?php if (($series['note'] ?? '') !== ''): ?>
@@ -73,7 +77,9 @@ use App\Core\Formatter;
                trust. */ ?>
       <p class="book-sortvalue">
         <?= e($book['series_index'] !== null
-            ? t('book.series.only', ['number' => Formatter::volume($book['series_index'])])
+            ? t('book.series.only', [
+                'number' => Formatter::volume($book['series_index'], $book['series_index_end'] ?? null),
+              ])
             : t('series.unnumbered')) ?>
       </p>
     </a>

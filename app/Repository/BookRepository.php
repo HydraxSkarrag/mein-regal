@@ -67,7 +67,7 @@ final class BookRepository
             /* Resolved before it gets here: the form posts a series name, the
                controller turns it into an id of a series this owner has. A
                raw id off a form would be somebody else's series. */
-            'series_id', 'series_index',
+            'series_id', 'series_index', 'series_index_end',
         ];
         $data = array_intersect_key($data, array_flip($allowed));
         if ($data === []) {

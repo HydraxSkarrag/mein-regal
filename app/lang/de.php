@@ -132,7 +132,7 @@ return [
     'series.remove.hint'   => 'Entfernt nur die Reihe. Die Bücher bleiben im Regal und gehören danach zu keiner Reihe mehr.',
     'book.series.previous' => 'Band davor',
     'book.series.next'     => 'Band danach',
-    'edit.series.hint'     => 'Leer lassen, wenn das Buch zu keiner Reihe gehört. Der Band darf eine halbe Zahl sein – 4,5 für eine Novelle zwischen Band 4 und 5.',
+    'edit.series.hint'     => 'Leer lassen, wenn das Buch zu keiner Reihe gehört. Der Band darf eine halbe Zahl sein – 4,5 für eine Novelle zwischen Band 4 und 5. Ein Sammelband bekommt beide Bände: 5-6.',
     'edit.series.new'      => 'neue Reihe',
     'edit.series.similar'  => 'Ähnlich vorhanden: „{name}“ – vielleicht ist das gemeint?',
     'edit.series.books'    => 'Bände im Regal',

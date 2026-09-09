@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\CoverStorage;
+use App\Core\Formatter;
 use App\Core\Input;
 use App\Core\Isbn;
 use App\Core\Request;
@@ -304,6 +305,7 @@ final class BookController
             $this->app->ownerId,
             $request->post('series')
         );
+        $volume = Input::volumeSpan($request->post('series_index'));
 
         try {
             $this->app->pdo->beginTransaction();
@@ -336,7 +338,11 @@ final class BookController
                    An empty field takes the book out of its series and leaves
                    the series standing - it may still have other volumes. */
                 'series_id'        => $seriesId,
-                'series_index'     => $seriesId === null ? null : Input::volume($request->post('series_index')),
+                /* One field for both numbers. A Sammelband is typed the way
+                   it is written on the spine - "5-6" - rather than needing a
+                   second box that stays empty for every other book. */
+                'series_index'     => $seriesId === null ? null : $volume[0],
+                'series_index_end' => $seriesId === null ? null : $volume[1],
             ]);
 
             $this->app->books->replaceAuthors(
@@ -492,6 +498,20 @@ final class BookController
      *
      * The nightly job works through the backlog on its own, but for a book
      * in front of you right now, waiting until tomorrow is silly.
+     *
+     * Two things about how it answers, both of them the same complaint:
+     * pressing this used to leave the page. Inside the edit form that meant
+     * everything typed and not yet saved was gone - a button that goes and
+     * fetches a picture has no business discarding a paragraph of notes. So
+     * it answers JSON when the page asks with fetch, and the block with the
+     * cover in it is swapped where it stands. Without scripting the form
+     * still posts and still redirects, exactly as before.
+     *
+     * And it now comes back to where it was pressed. The button also sits on
+     * the book page, where a missing cover is what you actually notice, and
+     * being dropped into the edit form afterwards is not an answer either.
+     * Two fixed addresses rather than one posted along, because a return
+     * address off a form is somebody else's redirect.
      */
     public function findCover(Request $request, array $params): Response
     {
@@ -505,14 +525,37 @@ final class BookController
             return $this->app->notFound();
         }
         if (!$this->app->csrf->isValid($request->allPost())) {
-            return $this->render($book, t('error.csrf'));
+            return $request->wantsJson()
+                ? Response::json(['found' => false, 'message' => t('error.csrf')], 400)
+                : $this->render($book, t('error.csrf'));
         }
+
+        $back = '/book/' . $book['slug'] . ($request->post('from') === 'book' ? '' : '/edit');
+
+        $answer = function (bool $found, string $message, string $type) use ($request, $book, $back): Response {
+            if ($request->wantsJson()) {
+                return Response::json([
+                    'found'   => $found,
+                    'message' => $message,
+                    /* The block as this page draws it, rendered once, here.
+                       Handing back a URL instead would mean a second copy of
+                       the markup in JavaScript, and the two would drift. */
+                    'block'   => $found ? $this->app->view->render('partials.cover_current', [
+                        'book'  => $book,
+                        'cover' => $this->app->covers->bestFor((int) $book['id'], true),
+                        'view'  => $this->app->view,
+                    ]) : '',
+                ]);
+            }
+
+            $this->app->session->flash($message, $type);
+
+            return Response::redirect($back);
+        };
 
         $isbn = $book['isbn13'] ?? null;
         if ($isbn === null) {
-            $this->app->session->flash(t('cover.search.no.isbn'), 'error');
-
-            return Response::redirect('/book/' . $book['slug'] . '/edit');
+            return $answer(false, t('cover.search.no.isbn'), 'error');
         }
 
         /* What is on the page right now, so that pressing this button changes
@@ -544,22 +587,19 @@ final class BookController
                 }
             }
 
-            $this->app->session->flash(
+            return $answer(
+                true,
                 t('cover.search.found') . ' ' . t('cover.from.' . $result['source']),
                 'ok'
             );
-
-            return Response::redirect('/book/' . $book['slug'] . '/edit');
         }
 
         // "No cover found" is only true when every source was actually asked.
-        $this->app->session->flash(match (LookupChain::verdict($result['failures'])) {
+        return $answer(false, match (LookupChain::verdict($result['failures'])) {
             'quota'       => t('cover.search.quota'),
             'unreachable' => t('cover.search.unreachable'),
             default       => t('cover.search.none'),
         }, 'error');
-
-        return Response::redirect('/book/' . $book['slug'] . '/edit');
     }
 
     /**
@@ -656,10 +696,13 @@ final class BookController
             'contributors' => $contributors,
             'knownSeries'  => $this->app->series->listForOwner($this->app->ownerId),
             /* Trailing ",0" is what the column stores and not what anybody
-               types: 4.5 keeps its half, 12 does not become "12,0". */
-            'seriesIndex'  => $book['series_index'] === null
-                ? ''
-                : rtrim(rtrim(number_format((float) $book['series_index'], 1, ',', ''), '0'), ','),
+               types: 4.5 keeps its half, 12 does not become "12,0". A
+               Sammelband comes back as "5-6", which is what was typed and
+               what volumeSpan reads again. */
+            'seriesIndex'  => Formatter::volume(
+                $book['series_index'],
+                $book['series_index_end'] ?? null
+            ),
             'tagList'      => implode(', ', array_column($tagStatement->fetchAll(), 'name')),
             'knownTags'    => $this->app->tags->allForOwner($this->app->ownerId),
             'cover'        => $this->app->covers->bestFor($bookId, true),

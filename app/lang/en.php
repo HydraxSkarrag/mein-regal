@@ -107,7 +107,7 @@ return [
     'series.remove.hint'   => 'Removes only the series. The books stay on the shelf and afterwards belong to no series.',
     'book.series.previous' => 'Volume before',
     'book.series.next'     => 'Volume after',
-    'edit.series.hint'     => 'Leave empty if the book is not part of a series. The volume may be a half - 4.5 for a novella between four and five.',
+    'edit.series.hint'     => 'Leave empty if the book is not part of a series. The volume may be a half - 4.5 for a novella between four and five. A book holding several volumes takes both: 5-6.',
     'edit.series.new'      => 'new series',
     'edit.series.similar'  => 'Similar already exists: "{name}" - did you mean that?',
     'edit.series.books'    => 'volumes on the shelf',

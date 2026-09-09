@@ -372,7 +372,9 @@ final class ShelfController
 
         $body = $this->app->view->render('shelf.series_edit', [
             'series' => $series,
-            'owned'  => count($this->app->series->volumes($this->app->ownerId, (int) $series['id'])),
+            'owned'  => SeriesRepository::countVolumes(
+                $this->app->series->volumes($this->app->ownerId, (int) $series['id'])
+            ),
         ]);
 
         return Response::html($this->app->view->render('layout.base', [
@@ -626,7 +628,7 @@ final class ShelfController
                 $neighbours['next'] = $volumes[$position + 1] ?? null;
                 break;
             }
-            $series['owned'] = count($volumes);
+            $series['owned'] = SeriesRepository::countVolumes($volumes);
         }
 
         $body = $this->app->view->render('shelf.detail', [

@@ -100,7 +100,16 @@ final class SeriesRepository
     public function listForOwner(int $ownerId): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT s.id, s.name, s.slug, s.total, COUNT(b.id) AS owned
+            /* The same count as countVolumes(), in SQL, because this page
+               asks it of every series at once. A Sammelband counts for the
+               volumes it holds; a book with no numbers counts for itself. */
+            'SELECT s.id, s.name, s.slug, s.total,
+                    COALESCE(SUM(CASE
+                        WHEN b.id IS NULL THEN 0
+                        WHEN b.series_index IS NOT NULL AND b.series_index_end IS NOT NULL
+                            THEN b.series_index_end - b.series_index + 1
+                        ELSE 1
+                    END), 0) AS owned
                FROM series s
           LEFT JOIN books b ON b.series_id = s.id AND b.owner_id = s.owner_id
               WHERE s.owner_id = ?
@@ -182,7 +191,7 @@ final class SeriesRepository
         $this->pdo->beginTransaction();
         try {
             $this->pdo->prepare(
-                'UPDATE books SET series_id = NULL, series_index = NULL
+                'UPDATE books SET series_id = NULL, series_index = NULL, series_index_end = NULL
                   WHERE owner_id = ? AND series_id = ?'
             )->execute([$ownerId, $id]);
             $this->pdo->prepare('DELETE FROM series WHERE owner_id = ? AND id = ?')
@@ -194,6 +203,30 @@ final class SeriesRepository
             }
             throw $e;
         }
+    }
+
+    /**
+     * How many volumes stand on the shelf, which is not how many books do.
+     *
+     * The label says "Bände", and one Sammelband is several of them. Counting
+     * books would have a complete ten volume series report five, with nothing
+     * missing underneath it - two numbers on one page contradicting each
+     * other, and neither of them wrong on its own terms.
+     *
+     * @param list<array<string, mixed>> $volumes
+     */
+    public static function countVolumes(array $volumes): int
+    {
+        $count = 0;
+        foreach ($volumes as $volume) {
+            $index = $volume['series_index'] ?? null;
+            $end = $volume['series_index_end'] ?? null;
+            $count += $index !== null && $end !== null
+                ? max(1, (int) floor((float) $end) - (int) floor((float) $index) + 1)
+                : 1;
+        }
+
+        return $count;
     }
 
     /**
@@ -219,9 +252,19 @@ final class SeriesRepository
             if ($index === null) {
                 continue;
             }
-            $highest = max($highest, (int) floor((float) $index));
-            if ((float) $index == (int) (float) $index) {
-                $have[(int) (float) $index] = true;
+            /* A Sammelband is one book and several volumes, and every volume
+               between its two numbers is on the shelf. Entering only the
+               first of them was what made this list name a book that is
+               standing right there. */
+            $end = $volume['series_index_end'] ?? null;
+            $highest = max($highest, (int) floor((float) ($end ?? $index)));
+            if ((float) $index != (int) (float) $index) {
+                continue;
+            }
+            $first = (int) (float) $index;
+            $last = $end !== null ? (int) floor((float) $end) : $first;
+            for ($held = $first; $held <= $last; $held++) {
+                $have[$held] = true;
             }
         }
         if ($have === [] && $highest === 0) {

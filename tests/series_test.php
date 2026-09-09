@@ -96,6 +96,53 @@ $withHalf = [['series_index' => 1.0], ['series_index' => 2.0], ['series_index' =
 Assert::same('halves are not counted as missing', SeriesRepository::gaps($withHalf, null), [3, 4]);
 Assert::same('nothing numbered, nothing missing', SeriesRepository::gaps([['series_index' => null]], 5), []);
 
+Assert::group('One book, several volumes');
+
+/* The Sammelband. Entering only the first of the volumes it holds made this
+ * page claim, permanently, that the rest were missing - while the book stood
+ * on the shelf. Measured in the collection this was built for: seven of 3,042
+ * books, of which about three are genuine multi-volume bindings. Rare, and
+ * the gap list is the only thing the series page does, so a gap list that
+ * names a book you own is worse than none at all.
+ */
+Assert::same('a plain volume', Input::volumeSpan('5'), [5.0, null]);
+Assert::same('a span with a hyphen', Input::volumeSpan('5-6'), [5.0, 6.0]);
+Assert::same('with an en dash, which is how it is printed back', Input::volumeSpan('5' . "\u{2013}" . '6'), [5.0, 6.0]);
+Assert::same('and with the slash a catalogue writes', Input::volumeSpan('5/6'), [5.0, 6.0]);
+Assert::same('nothing at all', Input::volumeSpan(''), [null, null]);
+
+/* A second number that is not a span is dropped rather than refused: the
+ * volume is right either way, and refusing the whole field over it would
+ * lose the number somebody did mean. */
+Assert::same('backwards is not a span', Input::volumeSpan('6-5'), [6.0, null]);
+Assert::same('nor is a slipped finger', Input::volumeSpan('5-600'), [5.0, null]);
+
+Assert::same('and it reads back as it was typed', Formatter::volume(5.0, 6.0), '5' . "\u{2013}" . '6');
+
+$sammelband = [
+    ['series_index' => 1.0, 'series_index_end' => null],
+    ['series_index' => 2.0, 'series_index_end' => 3.0],
+    ['series_index' => 5.0, 'series_index_end' => 6.0],
+];
+Assert::same(
+    'every volume between the two numbers is on the shelf',
+    SeriesRepository::gaps($sammelband, 6),
+    [4]
+);
+Assert::same(
+    'and the count says volumes, because that is the word next to it',
+    SeriesRepository::countVolumes($sammelband),
+    5
+);
+
+/* The same sum in SQL, because the list of every series asks it of all of
+ * them at once and two counts that disagree is the fault this replaces. */
+$bound = $series->findOrCreate(1, 'Hanni und Nanni');
+$books->insert(1, ['title' => 'Sammelband 1', 'series_id' => $bound, 'series_index' => 1.0, 'series_index_end' => 3.0]);
+$books->insert(1, ['title' => 'Sammelband 2', 'series_id' => $bound, 'series_index' => 4.0, 'series_index_end' => 6.0]);
+$counted = array_column($series->listForOwner(1), 'owned', 'name');
+Assert::same('two books, six volumes', (int) ($counted['Hanni und Nanni'] ?? 0), 6);
+
 Assert::group('How many there are is not how many you have');
 
 Assert::same('nobody has said yet', $series->find(1, $first)['total'], null);
@@ -200,5 +247,6 @@ Assert::true(
 );
 Assert::true(
     'and the volume is dropped with the series',
-    str_contains($controller, "\$seriesId === null ? null : Input::volume(")
+    str_contains($controller, "\$seriesId === null ? null : \$volume[0]")
+        && str_contains($controller, "\$seriesId === null ? null : \$volume[1]")
 );

@@ -101,14 +101,26 @@ final class Formatter
      * is written with a comma in German and a point in English, and the
      * separator is the only thing that changes, so it goes through the
      * instance method for that and this one only trims.
+     *
+     * With a second number it is a Sammelband and reads as a span - "5-6" -
+     * with an en dash, which is what a range is set with in both languages.
      */
-    public static function volume(int|float|string|null $value): string
+    public static function volume(int|float|string|null $value, int|float|string|null $end = null): string
     {
         if ($value === null || $value === '') {
             return '';
         }
-        $number = (float) $value;
+        $number = self::trimmed((float) $value);
 
+        if ($end === null || $end === '') {
+            return $number;
+        }
+
+        return $number . "\u{2013}" . self::trimmed((float) $end);
+    }
+
+    private static function trimmed(float $number): string
+    {
         return rtrim(rtrim(number_format($number, 1, ',', ''), '0'), ',');
     }
 
