@@ -313,11 +313,15 @@ final class BookRepository
         'year'     => ['b.published_year', 'DESC', 'b.published_year IS NULL', 'b.title ASC'],
         'rating'   => ['b.rating', 'DESC', 'b.rating IS NULL', 'b.title ASC'],
         'read'     => ['b.finished_at', 'DESC', 'b.finished_at IS NULL', 'b.title ASC'],
-        /* Ascending by nature, unlike every other sort here: a series is read
-           from volume one, and "newest first" is what a series is not. The
-           tie-break groups the volumes of one series together rather than
-           interleaving every book numbered 1. */
-        'series'   => ['b.series_index', 'ASC', 'b.series_id IS NULL', 'b.series_id ASC, b.title ASC'],
+        /* Two columns, and the order of the two is the whole point: the
+           series first, the volume within it second. Sorting by the volume
+           first lines up every book numbered 1 from every series, then every
+           book numbered 2 - which is not what anybody means by "by series".
+           
+           Ascending by nature, unlike every other sort here, because a
+           series is read from volume one and "newest first" is what a series
+           is not. */
+        'series'   => ['b.series_id, b.series_index', 'ASC', 'b.series_id IS NULL', 'b.title ASC'],
     ];
 
     /** @return list<string> the sorts the shelf offers, in the order it offers them */
@@ -344,7 +348,12 @@ final class BookRepository
         // books that have a value ahead of the ones that do not, whichever
         // way the values themselves are being read.
         $parts = $emptyTest === null ? [] : [$emptyTest . ' ASC'];
-        $parts[] = $column . ' ' . $direction;
+        // A sort may name more than one column - "by series" is the series
+        // and then the volume in it - and the direction belongs to all of
+        // them, or turning it round would reverse half a sort.
+        foreach (explode(', ', $column) as $part) {
+            $parts[] = $part . ' ' . $direction;
+        }
         $parts[] = $tieBreak;
 
         return implode(', ', $parts);
@@ -381,9 +390,10 @@ final class BookRepository
         if (($filters['search'] ?? '') !== '') {
             $term = '%' . Dialect::escapeLike((string) $filters['search']) . '%';
             // The ISBN is matched without separators, the way it is stored.
-            $conditions[] = "(b.title LIKE ? ESCAPE '\\' OR b.subtitle LIKE ? ESCAPE '\\' OR b.isbn13 LIKE ? ESCAPE '\\'"
+            $escape = " ESCAPE '" . Dialect::LIKE_ESCAPE . "'";
+            $conditions[] = "(b.title LIKE ?{$escape} OR b.subtitle LIKE ?{$escape} OR b.isbn13 LIKE ?{$escape}"
                 . ' OR EXISTS (SELECT 1 FROM book_authors ba2 JOIN authors a2 ON a2.id = ba2.author_id'
-                . "            WHERE ba2.book_id = b.id AND a2.name LIKE ? ESCAPE '\\'))";
+                . "            WHERE ba2.book_id = b.id AND a2.name LIKE ?{$escape}))";
             array_push($parameters, $term, $term, $term, $term);
         }
         if (($filters['status'] ?? '') !== '') {

@@ -80,9 +80,31 @@ final class Dialect
         return sprintf('%s ON DUPLICATE KEY UPDATE %s', $base, $assignments);
     }
 
+    /**
+     * The character that escapes a wildcard in a LIKE pattern.
+     *
+     * Not the backslash, which is the obvious choice and the wrong one. The
+     * clause has to name it - ESCAPE '<char>' - and MySQL reads a backslash
+     * inside a string literal as escaping whatever follows it, so naming a
+     * lone backslash there swallows the closing quote of its own literal and
+     * the statement never parses. SQLite gives a backslash no such meaning,
+     * so the same SQL runs there - which is how a search that works on every
+     * test can fail on every live shelf.
+     *
+     * An exclamation mark has no meaning in either dialect, so one clause is
+     * correct in both, and the difference stops being something to remember.
+     */
+    public const LIKE_ESCAPE = '!';
+
     /** Escape the wildcards in a user-supplied search term. */
     public static function escapeLike(string $term): string
     {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term);
+        // The escape character itself first, or escaping a % would then have
+        // its own escape character escaped.
+        return str_replace(
+            [self::LIKE_ESCAPE, '%', '_'],
+            [self::LIKE_ESCAPE . self::LIKE_ESCAPE, self::LIKE_ESCAPE . '%', self::LIKE_ESCAPE . '_'],
+            $term
+        );
     }
 }

@@ -40,6 +40,15 @@ $splits = static function (array $counts, string $active): bool {
   <ul>
     <?php foreach (App\Repository\BookRepository::sorts() as $sort): ?>
       <?php
+        /* "By series" is offered once there is a series to sort by. A sort
+           never hides a book, so on a shelf where nothing is in a series it
+           would change nothing at all while promising an order - which reads
+           as broken rather than as empty. An address that names it keeps
+           working; it is only off the list. */
+        if ($sort === 'series' && ($seriesTotal ?? 0) < 1 && ($filters['sort'] ?? '') !== 'series') {
+            continue;
+        }
+
         /* Clicking the sort you are already on turns it round. Picking a
            different one starts from its own natural direction - newest
            first for a date, A to Z for a title - because that is what
