@@ -394,9 +394,9 @@ return [
 
     'maintenance.title'                    => 'Daten',
     'maintenance.export'                   => 'Herunterladen',
-    'maintenance.export.hint'              => 'Eine Kopie, die auch ohne diese Anwendung lesbar bleibt. Genau daran hat es beim Vorgänger gefehlt.',
+    'maintenance.export.hint'              => 'Eine Kopie, die lesbar bleibt, auch wenn es diese Anwendung einmal nicht mehr geben sollte.',
     'maintenance.export.bookstats'         => 'Bookstats-Format (CSV)',
-    'maintenance.export.bookstats.hint'    => 'Die ursprünglichen 19 Spalten. Weniger Felder, liest sich aber hier wieder ein.',
+    'maintenance.export.bookstats.hint'    => 'Die ursprünglichen 19 Spalten – weniger Felder als die anderen beiden, dafür nimmt „Bestand einlesen“ diese Datei wieder an.',
     'maintenance.export.full'              => 'Alle Felder (CSV)',
     'maintenance.export.full.hint'         => 'Für Tabellenprogramme. Enthält alles, auch Verlag, Untertitel und Rezensionslink.',
     'maintenance.export.json'              => 'Alles (JSON)',
@@ -414,7 +414,7 @@ return [
     'maintenance.import.nofile'            => 'Es kam keine Datei an.',
     'maintenance.import.notempty'          => 'Im Regal stehen bereits {count} Bücher. Ein zweiter Import legt Bücher ohne ISBN doppelt an.',
     'maintenance.cron'                     => 'Nächtlicher Abgleich',
-    'maintenance.cron.hint'                => 'Fehlende Cover und Angaben trägt der Cronjob nach, nicht diese Seite. Er wartet zwischen den Abfragen, um die Datenquellen nicht zu überlasten – für dreitausend Bücher wären das Stunden, die kein Browserfenster durchhält.',
+    'maintenance.cron.hint'                => 'Diese Seite ergänzt keine fehlenden Cover und Angaben – das übernimmt der nächtliche Lauf. Er wartet zwischen den Abfragen, um die Datenquellen zu schonen; bei dreitausend Büchern dauert das Stunden, die kein Browserfenster durchhält.',
 
     'maintenance.cron.none'                => 'Bisher ist kein Lauf verzeichnet. Entweder ist der Cronjob noch nicht eingerichtet, oder er hat noch nicht das erste Mal angeklopft.',
     'maintenance.cron.runs'                => 'Die letzten Läufe',

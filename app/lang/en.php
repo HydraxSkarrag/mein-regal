@@ -369,9 +369,9 @@ return [
 
     'maintenance.title'                    => 'Data',
     'maintenance.export'                   => 'Download',
-    'maintenance.export.hint'              => 'A copy that stays readable without this application. That is exactly what was missing when the last one shut down.',
+    'maintenance.export.hint'              => 'A copy that stays readable even if this application one day does not.',
     'maintenance.export.bookstats'         => 'Bookstats format (CSV)',
-    'maintenance.export.bookstats.hint'    => 'The original nineteen columns. Fewer fields, but it reads back in here.',
+    'maintenance.export.bookstats.hint'    => 'The original nineteen columns - fewer fields than the other two, but Import a collection takes this file back in.',
     'maintenance.export.full'              => 'All fields (CSV)',
     'maintenance.export.full.hint'         => 'For spreadsheets. Everything, including publisher, subtitle and review link.',
     'maintenance.export.json'              => 'Everything (JSON)',
@@ -389,7 +389,7 @@ return [
     'maintenance.import.nofile'            => 'No file arrived.',
     'maintenance.import.notempty'          => 'The shelf already holds {count} books. A second import will duplicate any book without an ISBN.',
     'maintenance.cron'                     => 'The nightly job',
-    'maintenance.cron.hint'                => 'Missing covers and details are filled in by the cron job, not by this page. It waits between requests so as not to hammer the sources - for three thousand books that is hours, which no browser window survives.',
+    'maintenance.cron.hint'                => 'This page does not fill in missing covers and details; the nightly job does. It waits between requests to go easy on the sources, and for three thousand books that takes hours - longer than any browser window lasts.',
 
     'maintenance.cron.none'                => 'No run recorded yet. Either the cron job is not set up, or it has not knocked for the first time.',
     'maintenance.cron.runs'                => 'The last runs',
