@@ -51,6 +51,28 @@ Assert::same(
  * become something else. */
 Assert::same('sorting leaves the heading alone', heading(['sort' => 'title', 'dir' => 'asc']), t('shelf.all.books'));
 
+/* A search is the most deliberate thing on the page - a status is picked from
+ * four chips, an author from a list, but a term was typed - so it outranks
+ * both. "Alle Bücher" over three results of three thousand was simply wrong.
+ */
+Assert::same(
+    'a search says what was searched for',
+    heading(['search' => 'milla']),
+    t('shelf.found', ['term' => 'milla'])
+);
+Assert::same(
+    'and it outranks a status',
+    heading(['search' => 'milla', 'status' => 'unread']),
+    t('shelf.found', ['term' => 'milla'])
+);
+Assert::same(
+    'and an author',
+    heading(['search' => 'milla', 'author' => 'cornelia-funke'], 'Cornelia Funke'),
+    t('shelf.found', ['term' => 'milla'])
+);
+// An empty q= in the address is not a search, and must not become a heading.
+Assert::same('an empty term is no search', heading(['search' => '   ']), t('shelf.all.books'));
+
 Assert::group('Shelf heading: the browser tab is a different question');
 
 /* "Alle Bücher – Mein Regal" is a fine title for a selection and a poor one
@@ -72,3 +94,14 @@ Assert::same(
 
 // A sort is still the front page, so the tab keeps saying so.
 Assert::same('sorting does not retitle the tab', documentTitle(['sort' => 'title'], t('shelf.all.books')), 'Mein Regal');
+
+Assert::same(
+    'a search retitles the tab',
+    documentTitle(['search' => 'milla'], t('shelf.found', ['term' => 'milla'])),
+    t('shelf.found', ['term' => 'milla'])
+);
+Assert::same(
+    'an empty one does not',
+    documentTitle(['search' => ''], t('shelf.all.books')),
+    'Mein Regal'
+);

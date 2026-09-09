@@ -49,6 +49,17 @@ $splits = static function (array $counts, string $active): bool {
             continue;
         }
 
+        /* And "Zuletzt gelesen" once there are dates to put in an order.
+           Below that it is one book followed by the alphabet, which reads as
+           a broken sort rather than as an empty one - and "gelesen" the
+           status is a different fact from "zuletzt gelesen" the date, which
+           is not something a sidebar can explain. */
+        if ($sort === 'read'
+            && ($datedCount ?? 0) < App\Repository\BookRepository::MIN_READING_DATES
+            && ($filters['sort'] ?? '') !== 'read') {
+            continue;
+        }
+
         /* Clicking the sort you are already on turns it round. Picking a
            different one starts from its own natural direction - newest
            first for a date, A to Z for a title - because that is what

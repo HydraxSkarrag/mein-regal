@@ -120,11 +120,11 @@
   entry.setAttribute('aria-label', text.placeholder);
 
   var list = document.createElement('ul');
-  list.className = 'tagbox-list';
+  list.className = 'picker-list';
   list.hidden = true;
 
   var warning = document.createElement('p');
-  warning.className = 'tagbox-warning';
+  warning.className = 'picker-warning';
   warning.hidden = true;
 
   box.appendChild(chips);
@@ -188,7 +188,7 @@
          the same blindness at the other end of the same field. */
       var kind = tag.kind === 'genre' ? text.kindGenre : text.kindLabel;
       li.innerHTML = '<span>' + esc(tag.name) + '</span>' +
-        '<span class="tagbox-kind">' + esc(kind) + '</span>' +
+        '<span class="picker-kind">' + esc(kind) + '</span>' +
         '<span class="n">' + tag.n + ' ' + esc(text.books) + '</span>';
       li.addEventListener('mousedown', function (event) {
         event.preventDefault();
@@ -212,7 +212,7 @@
         { kind: 'genre', text: text.newGenre }
       ].forEach(function (option) {
         var li = document.createElement('li');
-        li.className = 'tagbox-new';
+        li.className = 'picker-new';
         li.innerHTML = '<span>' + esc(query) + '</span>' +
           '<span class="n">' + esc(option.text) + '</span>';
         li.addEventListener('mousedown', function (event) {

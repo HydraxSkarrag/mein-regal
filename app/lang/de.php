@@ -83,6 +83,7 @@ return [
     'filter.mobile.on'   => 'aktiv',
     'filter.reset'       => 'Filter zurücksetzen',
 
+    'shelf.found'        => 'Gesucht nach „{term}“',
     'sort.by'            => 'Danach sortieren',
     'sort.turn.asc'      => 'Aufsteigend sortieren',
     'sort.turn.desc'     => 'Absteigend sortieren',
@@ -122,6 +123,9 @@ return [
     'book.series.of'       => 'Band {number} von {total}',
     'book.series.only'     => 'Band {number}',
     'edit.series.hint'     => 'Leer lassen, wenn das Buch zu keiner Reihe gehört. Der Band darf eine halbe Zahl sein – 4,5 für eine Novelle zwischen Band 4 und 5.',
+    'edit.series.new'      => 'neue Reihe',
+    'edit.series.similar'  => 'Ähnlich vorhanden: „{name}“ – vielleicht ist das gemeint?',
+    'edit.series.books'    => 'Bände im Regal',
     'book.title'         => 'Titel',
     'book.publisher'     => 'Verlag',
     'book.year'          => 'Ausgabe erschienen',

@@ -45,7 +45,7 @@ declare(strict_types=1);
     $filterData = compact(
         'filters', 'urlFor', 'hasFilters', 'formatter',
         'tags', 'tagTotal', 'labels', 'labelTotal', 'topAuthors', 'authorTotal',
-        'languageCounts', 'languages',
+        'languageCounts', 'languages', 'seriesList', 'seriesTotal', 'datedCount',
         'coverCounts', 'isbnCounts', 'reviewCounts'
     );
   ?>

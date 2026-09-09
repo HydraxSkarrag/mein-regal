@@ -654,7 +654,7 @@ final class BookController
         $body = $this->app->view->render('shelf.edit', [
             'book'         => $book,
             'contributors' => $contributors,
-            'knownSeries'  => array_column($this->app->series->listForOwner($this->app->ownerId), 'name'),
+            'knownSeries'  => $this->app->series->listForOwner($this->app->ownerId),
             /* Trailing ",0" is what the column stores and not what anybody
                types: 4.5 keeps its half, 12 does not become "12,0". */
             'seriesIndex'  => $book['series_index'] === null
@@ -679,7 +679,7 @@ final class BookController
             'title'   => t('book.edit') . ' – ' . $book['title'],
             'current' => 'shelf',
             'noIndex' => true,
-            'scripts' => ['/js/tags.js', '/js/edit.js'],
+            'scripts' => ['/js/tags.js', '/js/series.js', '/js/edit.js'],
         ]), $error === '' ? 200 : 422)->noIndex();
     }
 

@@ -93,6 +93,14 @@ final class ShelfController
      */
     private static function headingFor(array $filters, ?string $authorName): string
     {
+        /* A search outranks everything, because it is the most deliberate
+           thing on the page: a status is picked from four chips, an author
+           from a list, but a search term was typed. "Alle Bücher" over three
+           results of three thousand was simply wrong. */
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            return t('shelf.found', ['term' => $search]);
+        }
         if ($authorName !== null) {
             return $authorName;
         }
@@ -123,7 +131,9 @@ final class ShelfController
      */
     private static function documentTitle(array $filters, string $heading, string $siteName): string
     {
-        $unfiltered = ($filters['author'] ?? '') === '' && ($filters['status'] ?? '') === '';
+        $unfiltered = ($filters['author'] ?? '') === ''
+            && ($filters['status'] ?? '') === ''
+            && trim((string) ($filters['search'] ?? '')) === '';
 
         return $unfiltered ? $siteName : $heading;
     }
@@ -226,6 +236,9 @@ final class ShelfController
             'languageCounts' => $this->app->books->countBy($this->app->ownerId, 'language'),
             'authorTotal'   => $this->app->authors->count($this->app->ownerId),
             'statusCounts'  => $this->app->books->countBy($this->app->ownerId, 'reading_status'),
+            /* How many books carry a reading date, which decides whether
+               "Zuletzt gelesen" is offered at all. */
+            'datedCount'    => $this->app->books->countDated($this->app->ownerId),
             'reviewCounts'  => $this->app->books->countByReview($this->app->ownerId),
             'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
             'isbnCounts'    => $this->app->books->countByIsbn($this->app->ownerId),

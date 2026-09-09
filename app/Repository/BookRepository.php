@@ -523,6 +523,33 @@ final class BookRepository
         ];
     }
 
+    /**
+     * How few reading dates make "Zuletzt gelesen" a sort worth offering.
+     *
+     * The sort orders by the date a book was finished. Books without one land
+     * together at the end, and on a shelf where almost nothing carries a date
+     * that is the whole shelf: one book, then the alphabet. It looks broken,
+     * and the reason it is not - "gelesen" the status and "zuletzt gelesen"
+     * the date are different facts - is not something a sidebar can explain.
+     *
+     * Five rather than a share of the shelf. A share would take the sort away
+     * from somebody who has just started dating their books, exactly while
+     * they are watching the list grow; five is the point where there is an
+     * order to look at, whether the shelf holds fifty books or three thousand.
+     */
+    public const MIN_READING_DATES = 5;
+
+    /** Books with a finishing date, which is not the same as books read. */
+    public function countDated(int $ownerId): int
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT COUNT(finished_at) FROM books WHERE owner_id = ?'
+        );
+        $statement->execute([$ownerId]);
+
+        return (int) $statement->fetchColumn();
+    }
+
     /** @return array{with: int, without: int} */
     public function countByCover(int $ownerId): array
     {

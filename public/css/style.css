@@ -815,7 +815,13 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .recent a:hover { color: var(--accent); }
 .recent .when { color: var(--muted); font-size: 0.78rem; }
 
-/* ---- Tag picker ------------------------------------------------------ */
+/* ---- Pickers --------------------------------------------------------- */
+
+/* Two fields complete what is typed against what the shelf already holds -
+   the genre field and the series field - and they have to look like one
+   thing, because they are one thing to the person using them. So the list,
+   the badge and the warning are named for the job rather than for the first
+   field that needed them; only the chips below are the tag field's own. */
 
 .tagbox {
   display: flex;
@@ -866,7 +872,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .tagbox-entry:focus { outline: none; }
 
-.tagbox-list {
+.picker-list {
   list-style: none;
   margin: 4px 0 0;
   padding: 4px;
@@ -877,7 +883,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   max-height: 240px;
   overflow-y: auto;
 }
-.tagbox-list li {
+.picker-list li {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -886,15 +892,15 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   font-size: 0.88rem;
   cursor: pointer;
 }
-.tagbox-list li:hover, .tagbox-list li.is-active { background: var(--surface-2); }
-.tagbox-list li > span:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.tagbox-list .n { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
-.tagbox-list .tagbox-new .n { color: var(--accent); }
+.picker-list li:hover, .picker-list li.is-active { background: var(--surface-2); }
+.picker-list li > span:first-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.picker-list .n { color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+.picker-list .picker-new .n { color: var(--accent); }
 
 /* Which sort a suggestion is, next to its name. Quiet on purpose: it is there
    to be read when you look for it, not to compete with the name you are
    scanning the list for. */
-.tagbox-kind {
+.picker-kind {
   font-size: 0.7rem;
   color: var(--muted);
   border: 1px solid var(--border);
@@ -904,7 +910,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   align-self: center;
 }
 
-.tagbox-warning {
+.picker-warning {
   margin: 6px 0 0;
   font-size: 0.8rem;
   color: var(--danger);
@@ -1044,6 +1050,15 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
    between a long option like "Rezensionsexemplar" and the dropdown arrow.
    Below that the fields stack instead. */
 .field-row { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+/* The row whose first field completes what is typed. Its suggestion list is
+   as wide as the field it belongs to, and half a phone screen is not enough
+   for a series name and how many of it are on the shelf - so this one row
+   stacks earlier than the rest, at the width where the list would start
+   truncating rather than at the width where the inputs would. */
+@media (max-width: 560px) {
+  .field-row--picker { grid-template-columns: 1fr; }
+}
 
 .contributors { border: 0; margin: 0 0 16px; padding: 0; }
 .contributors legend {

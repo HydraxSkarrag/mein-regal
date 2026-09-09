@@ -101,12 +101,15 @@ $value = static fn (?string $v): string => $v ?? '';
       </div>
 
       <?php /* Reihe und Band, nebeneinander: sie sind eine Angabe.
-               
-               A datalist rather than a free field, so that "Die
-               Sturmlicht-Chroniken" typed a second time finds the first one
-               instead of making a second series. It still accepts anything -
-               a list nobody can type past would refuse every new series. */ ?>
-      <div class="field-row">
+
+               The series is completed against the ones already on the shelf,
+               so that "Die Sturmlicht-Chroniken" typed a second time finds
+               the first one instead of making a second. series.js does that,
+               in the genre field's clothes; the datalist below is what is
+               left when there is no JavaScript. Either way the field accepts
+               anything - a list nobody can type past would refuse every new
+               series. */ ?>
+      <div class="field-row field-row--picker" id="series-field">
         <div class="field">
           <label for="series"><?= e(t('book.series')) ?></label>
           <input id="series" type="text" name="series" list="known-series" autocomplete="off"
@@ -119,10 +122,19 @@ $value = static fn (?string $v): string => $v ?? '';
         </div>
       </div>
       <datalist id="known-series">
-        <?php foreach ($knownSeries as $name): ?>
-        <option value="<?= e($name) ?>"></option>
+        <?php foreach ($knownSeries as $series): ?>
+        <option value="<?= e($series['name']) ?>"></option>
         <?php endforeach; ?>
       </datalist>
+      <script type="application/json" id="known-series-data"><?= json_for_script(array_map(
+          static fn (array $s): array => ['name' => $s['name'], 'n' => (int) $s['owned']],
+          $knownSeries
+      )) ?></script>
+      <script type="application/json" id="series-i18n"><?= json_for_script([
+          'newSeries' => t('edit.series.new'),
+          'similar'   => t('edit.series.similar'),
+          'books'     => t('edit.series.books'),
+      ]) ?></script>
       <p class="note mt-0"><?= e(t('edit.series.hint')) ?></p>
 
       <div class="field" id="tag-field">

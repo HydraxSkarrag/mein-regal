@@ -58,6 +58,7 @@ return [
     'filter.mobile.on'   => 'on',
     'filter.reset'       => 'Clear filters',
 
+    'shelf.found'        => 'Searched for "{term}"',
     'sort.by'            => 'Sort by this',
     'sort.turn.asc'      => 'Sort ascending',
     'sort.turn.desc'     => 'Sort descending',
@@ -97,6 +98,9 @@ return [
     'book.series.of'       => 'Volume {number} of {total}',
     'book.series.only'     => 'Volume {number}',
     'edit.series.hint'     => 'Leave empty if the book is not part of a series. The volume may be a half - 4.5 for a novella between four and five.',
+    'edit.series.new'      => 'new series',
+    'edit.series.similar'  => 'Similar already exists: "{name}" - did you mean that?',
+    'edit.series.books'    => 'volumes on the shelf',
     'book.title'         => 'Title',
     'book.publisher'     => 'Publisher',
     'book.year'          => 'Edition published',
