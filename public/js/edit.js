@@ -5,6 +5,64 @@
  * it, scroll to it and put the cursor in the confirmation field. Nothing here
  * is required for the page to function.
  */
+/* Looking for a cover without leaving the page.
+ *
+ * The button posted a form of its own and the answer was a redirect, so
+ * everything typed into the edit form and not yet saved was thrown away by a
+ * button that only went to fetch a picture. Nobody expects that, and there is
+ * no way to get the paragraph back.
+ *
+ * The same request, asked with fetch, answers JSON and the cover block is
+ * swapped where it stands. With scripting off the form still posts and still
+ * redirects - that path is untouched, which is why the button stays a submit
+ * button in a real form rather than becoming an onclick.
+ */
+(function () {
+  var form = document.getElementById('cover-search');
+  var block = document.getElementById('cover-current');
+  var wrapper = document.querySelector('.cover-search');
+  var strings = document.getElementById('cover-i18n');
+  if (!form || !block || !wrapper || !strings || !window.fetch) { return; }
+
+  var text = JSON.parse(strings.textContent);
+  var button = document.querySelector('[form="cover-search"]');
+
+  /* Beside the button, not in the flash bar at the top of the page. What
+     happened and the thing it happened to belong together; a sentence two
+     screens up is one nobody reads. */
+  var status = document.createElement('p');
+  status.className = 'note';
+  status.setAttribute('role', 'status');
+  wrapper.appendChild(status);
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (button) { button.disabled = true; }
+    status.className = 'note';
+    status.textContent = text.searching;
+
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'X-Requested-With': 'fetch' },
+      credentials: 'same-origin'
+    }).then(function (response) {
+      return response.json();
+    }).then(function (data) {
+      status.className = data.found ? 'note' : 'note note--danger';
+      status.textContent = data.message || text.failed;
+      if (data.found && data.block) {
+        block.innerHTML = data.block;
+      }
+    }).catch(function () {
+      status.className = 'note note--danger';
+      status.textContent = text.failed;
+    }).then(function () {
+      if (button) { button.disabled = false; }
+    });
+  });
+})();
+
 (function () {
   'use strict';
 
