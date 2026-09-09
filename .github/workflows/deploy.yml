@@ -53,7 +53,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Empty falls back to the commit this run was started from, which is
           # what actions/checkout would have used on its own.
