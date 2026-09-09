@@ -545,13 +545,13 @@ final class DnbLookup implements LookupSource
             return null;
         }
 
-        return self::parseMarcSeries($response['body']);
+        return self::parseMarcSeries($response['body'], $isbn13);
     }
 
     /**
      * @return array{name: string, index: ?float}|null
      */
-    public static function parseMarcSeries(string $xml): ?array
+    public static function parseMarcSeries(string $xml, ?string $isbn13 = null): ?array
     {
         $publisher = self::parseMarcPublisher($xml);
 
@@ -579,7 +579,7 @@ final class DnbLookup implements LookupSource
             $name = trim((string) ($parts['a'] ?? ''), " \t\n\r.,:;/");
             $volume = (string) ($parts['v'] ?? '');
 
-            if ($name === '' || self::isPublisherLine($name, $publisher, $volume)) {
+            if ($name === '' || self::isPublisherLine($name, $publisher, $volume, $isbn13)) {
                 continue;
             }
 
@@ -613,10 +613,29 @@ final class DnbLookup implements LookupSource
      *
      * The colon is the second tell, and only ever appears on the stock
      * numbers, which carry the imprint and the trade category after it.
+     *
+     * The third is the ISBN, and it is the one that catches the rest. A stock
+     * number is the ISBN's own title block: "dtv 13697" belongs to
+     * 978-3-423-13697-6 and "Goldmann 24510" to 978-3-442-24510-9. Comparing
+     * the name against the publisher missed the first of those, because the
+     * record spells the house out as "Dt. Taschenbuch-Verl." while the line
+     * is called dtv - the same firm, no shared letters.
+     *
+     * Only from four digits up, which is where the guessing would otherwise
+     * start: volume 3 of anything appears in half the ISBNs ever issued, and
+     * no series numbers its volumes in the thousands except the ones that
+     * genuinely do - and their numbers are not in their ISBNs.
      */
-    private static function isPublisherLine(string $name, ?string $publisher, string $volume): bool
-    {
+    private static function isPublisherLine(
+        string $name,
+        ?string $publisher,
+        string $volume,
+        ?string $isbn13 = null
+    ): bool {
         if (str_contains($volume, ':')) {
+            return true;
+        }
+        if ($isbn13 !== null && self::isStockNumber($volume, $isbn13)) {
             return true;
         }
         if ($publisher === null || $publisher === '') {
@@ -627,6 +646,17 @@ final class DnbLookup implements LookupSource
         $house = Text::fold($publisher);
 
         return $series !== '' && (str_contains($house, $series) || str_contains($series, $house));
+    }
+
+    /** Is this "volume" the publisher's stock number, taken from the ISBN? */
+    private static function isStockNumber(string $volume, string $isbn13): bool
+    {
+        $digits = preg_replace('/\D+/', '', $volume) ?? '';
+        if (strlen($digits) < 4) {
+            return false;
+        }
+
+        return str_contains((string) preg_replace('/\D+/', '', $isbn13), $digits);
     }
 
     /**

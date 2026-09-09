@@ -33,6 +33,33 @@ final class SeriesRepository
     }
 
     /**
+     * The series under this name, if the shelf already keeps one.
+     *
+     * Never makes one. The catalogue's series statement is not evidence
+     * enough to found a series with: MARC 490 holds the publisher's own
+     * numbered line in the same field as a work series, and "dtv 13697" for
+     * an ISBN ending 13697-6 came through as a series called dtv. A shelf
+     * grows names it was never told about that way, and the owner is left
+     * deleting them.
+     *
+     * So a record may put a book into a series that is already there, and
+     * only a person may start one.
+     */
+    public function findByName(int $ownerId, string $name): ?int
+    {
+        $slug = Text::slug(Text::tidyName($name), 190);
+        if ($slug === '') {
+            return null;
+        }
+
+        $statement = $this->pdo->prepare('SELECT id FROM series WHERE owner_id = ? AND slug = ?');
+        $statement->execute([$ownerId, $slug]);
+        $id = $statement->fetchColumn();
+
+        return $id === false ? null : (int) $id;
+    }
+
+    /**
      * The series under this name, made if it is not there yet.
      *
      * Matched on the slug, so "Die Sturmlicht-Chroniken" and "Die

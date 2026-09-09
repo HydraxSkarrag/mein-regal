@@ -192,14 +192,19 @@ final class ScanController
             return Response::json(['error' => t('scan.duplicate')], 409);
         }
 
-        /* The series the card showed.
+        /* The series the card showed - but only if the shelf already keeps
+         * one under that name.
          *
-         * It has travelled with this form since the scanner learned to read
-         * one, and nothing here read it back: the card named the series, the
-         * book was catalogued without it, and the same book added by hand
-         * kept it. A field posted and never received leaves no trace at all
-         * to notice it by. */
-        $seriesId = $this->app->series->findOrCreate($this->app->ownerId, $request->post('series'));
+         * The field had travelled with this form since the scanner learned to
+         * read a series and was received by nobody, so a scanned book landed
+         * without the series the card had just named. Reading it fixed that
+         * and brought a second thing: the catalogue founded series. "dtv
+         * 13697" is the publisher's stock number for an ISBN ending 13697-6,
+         * and it arrived on the shelf as a series called dtv.
+         *
+         * A catalogue may file a book into a series somebody keeps. Starting
+         * one is a decision, and it stays with the person making it. */
+        $seriesId = $this->app->series->findByName($this->app->ownerId, $request->post('series'));
         $volume = Input::volumeSpan($request->post('series_index'));
 
         $this->app->pdo->beginTransaction();

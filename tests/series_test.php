@@ -200,6 +200,35 @@ $drachenlanze = DnbLookup::parseMarcSeries($marc('9783442245116'));
 Assert::same('the stock number is refused', $drachenlanze['name'], 'Die Chronik der Drachenlanze');
 Assert::same('and the real volume found in 245 instead', $drachenlanze['index'], 2.0);
 
+/* The publisher's name is not always the publisher's name. "dtv 13697" is dtv's
+ * stock number and the record spells the house out as "Dt. Taschenbuch-Verl.",
+ * so comparing the two finds nothing in common - and there is no colon either.
+ * It arrived on a real shelf as a series called dtv.
+ *
+ * What settles it is the ISBN: a stock number is the ISBN's own title block.
+ * 978-3-423-13697-6 holds 13697, and 978-3-442-24510-9 holds 24510. From four
+ * digits up, because volume 3 of anything appears in half the ISBNs ever
+ * issued - and the series that really do number into the thousands do not
+ * carry those numbers in their ISBNs.
+ */
+Assert::same(
+    'a stock number the publisher name does not catch',
+    DnbLookup::parseMarcSeries($marc('9783423136976'), '9783423136976'),
+    null
+);
+Assert::same(
+    'and without the ISBN it is the old, weaker reading',
+    DnbLookup::parseMarcSeries($marc('9783423136976'))['name'] ?? null,
+    'dtv'
+);
+
+$stock = new ReflectionMethod(DnbLookup::class, 'isStockNumber');
+$stock->setAccessible(true);
+Assert::true('13697 out of 978-3-423-13697-6', $stock->invoke(null, '13697', '9783423136976'));
+Assert::true('24510 out of 978-3-442-24510-9', $stock->invoke(null, '24510', '9783442245109'));
+Assert::true('a real volume is too short to be one', !$stock->invoke(null, '8', '9783789147470'));
+Assert::true('and a long one that is not in the ISBN survives', !$stock->invoke(null, '3200', '9783453317314'));
+
 // A book in no series says so, rather than being filed under its publisher.
 Assert::same('no series is no series', DnbLookup::parseMarcSeries($marc('9783932170973')), null);
 
@@ -250,3 +279,29 @@ Assert::true(
     str_contains($controller, "\$seriesId === null ? null : \$volume[0]")
         && str_contains($controller, "\$seriesId === null ? null : \$volume[1]")
 );
+
+Assert::group('Only a person starts a series');
+
+/* The catalogue may file a book into a series the shelf already keeps. It may
+ * not found one: MARC holds the publisher's numbered line in the same field as
+ * a work series, and a shelf that believes it grows names nobody asked for.
+ * "dtv" arrived that way and had to be deleted by hand.
+ */
+Assert::true(
+    'the scanner looks a series up',
+    str_contains($scan, '$this->app->series->findByName(')
+);
+Assert::true(
+    'and cannot make one',
+    !str_contains($scan, 'series->findOrCreate(')
+);
+Assert::true(
+    'the form still can, because a person filled it in',
+    str_contains($controller, '$this->app->series->findOrCreate(')
+);
+
+$known = $series->findByName(1, 'Die Sturmlicht Chroniken');
+Assert::same('a name already on the shelf is found, however it is spelled', $known, $first);
+Assert::same('one that is not is simply not there', $series->findByName(1, 'dtv'), null);
+Assert::same('and nothing was made by asking', $series->findByName(1, 'dtv'), null);
+Assert::same('an empty name is nothing at all', $series->findByName(1, '  '), null);
