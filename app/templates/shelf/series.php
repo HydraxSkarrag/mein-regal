@@ -14,6 +14,17 @@ declare(strict_types=1);
 
 use App\Core\Formatter;
 ?>
+<?php /* The same bar the book page has, and for the same reason: a thing is
+         changed from a button on the thing, not from a fold. Folding away is
+         what this shelf does for deleting a book and for the filters on a
+         phone - neither of which is "edit this". */ ?>
+<p class="detail-actions">
+  <a href="/series">&larr; <?= e(t('series.title')) ?></a>
+  <?php if ($signedIn): ?>
+  <a href="/reihe/<?= e($series['slug']) ?>/edit"><?= e(t('series.edit')) ?></a>
+  <?php endif; ?>
+</p>
+
 <div class="page-head">
   <h1><?= e($series['name']) ?></h1>
   <span class="count"><?= e($series['total'] !== null
@@ -35,46 +46,6 @@ use App\Core\Formatter;
       ? t('series.gap.one', ['number' => $gaps[0]])
       : t('series.gap.many', ['numbers' => implode(', ', $gaps)])) ?>
 </p>
-<?php endif; ?>
-
-<?php if ($signedIn): ?>
-<?php /* Folded away, because the page is for looking at a series and not for
-         editing one - but on the page itself, because that is where somebody
-         is standing when they notice the name is wrong.
-         
-         Removing a series is not removing books: the volumes stay on the
-         shelf and stop belonging to a series. That is why it takes a click
-         and not a typed-out word, unlike deleting a book - and why the button
-         says so rather than saying "Löschen". */ ?>
-<details class="series-edit">
-  <summary><?= e(t('series.edit')) ?></summary>
-  <form method="post" action="/reihe/<?= e($series['slug']) ?>">
-    <?= $csrfField ?>
-    <div class="field-row">
-      <div class="field">
-        <label for="series-name"><?= e(t('book.series')) ?></label>
-        <input id="series-name" type="text" name="name" maxlength="190"
-               value="<?= e($series['name']) ?>" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="series-total"><?= e(t('series.total')) ?></label>
-        <input id="series-total" type="text" name="total" inputmode="numeric" autocomplete="off"
-               value="<?= e($series['total'] === null ? '' : (string) $series['total']) ?>" placeholder="<?= e(t('series.total.unknown')) ?>">
-      </div>
-    </div>
-    <div class="field">
-      <label for="series-note"><?= e(t('series.note')) ?></label>
-      <input id="series-note" type="text" name="note" maxlength="255" autocomplete="off"
-             value="<?= e((string) ($series['note'] ?? '')) ?>">
-      <p class="note"><?= e(t('series.note.hint')) ?></p>
-    </div>
-    <div class="edit-actions">
-      <button class="btn btn--primary" type="submit"><?= e(t('common.save')) ?></button>
-      <button class="btn btn--danger" type="submit" name="remove" value="1"><?= e(t('series.remove')) ?></button>
-    </div>
-    <p class="note"><?= e(t('series.remove.hint')) ?></p>
-  </form>
-</details>
 <?php endif; ?>
 
 <?php if ($volumes === []): ?>

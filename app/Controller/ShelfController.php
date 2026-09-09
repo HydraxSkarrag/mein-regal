@@ -358,6 +358,31 @@ final class ShelfController
      * stay on the shelf and simply stop belonging to a series, which is why
      * this asks for a click and not for a word typed out.
      */
+    public function editSeries(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $series = $this->app->series->bySlug($this->app->ownerId, (string) ($params['slug'] ?? ''));
+        if ($series === null) {
+            return $this->app->notFound();
+        }
+
+        $body = $this->app->view->render('shelf.series_edit', [
+            'series' => $series,
+            'owned'  => count($this->app->series->volumes($this->app->ownerId, (int) $series['id'])),
+        ]);
+
+        return Response::html($this->app->view->render('layout.base', [
+            'content' => $body,
+            'title'   => $series['name'],
+            'current' => 'shelf',
+            'noIndex' => true,
+        ]))->noIndex();
+    }
+
     public function saveSeries(Request $request, array $params): Response
     {
         $guard = $this->app->requireSignIn();

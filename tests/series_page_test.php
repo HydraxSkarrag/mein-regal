@@ -103,15 +103,30 @@ Assert::true(
     str_contains($controller, "postBool('remove')")
 );
 
-Assert::group('And the page offers all of that');
+Assert::group('Changed from a button, on a page of its own');
 
+/* Which is what this shelf does with a thing you change: a book has
+ * /book/{slug}/edit behind a link in the same bar. Folding a form away is
+ * what it does for deleting a book and for the filters on a phone, and
+ * neither of those is "edit this" - so a fold here read as neither. */
 $page = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/series.php');
-Assert::true('the form is on the page', str_contains($page, 'action="/reihe/'));
+Assert::true('the series page has the same action bar', str_contains($page, 'class="detail-actions"'));
+Assert::true('with a way to the edit page', str_contains($page, '/edit"><?= e(t(\'series.edit\'))'));
 Assert::true('only when signed in', str_contains($page, 'if ($signedIn)'));
-Assert::true('it carries a CSRF token', str_contains($page, '$csrfField'));
-Assert::true('the total can be typed', str_contains($page, 'name="total"'));
-Assert::true('the note too', str_contains($page, 'name="note"'));
-Assert::true('and the series can be removed', str_contains($page, 'name="remove"'));
+Assert::true('and no form folded into it', !str_contains($page, '<details'));
+
+$form = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/series_edit.php');
+Assert::true('the form is its own page', str_contains($form, 'action="/reihe/'));
+Assert::true('it carries a CSRF token', str_contains($form, '$csrfField'));
+Assert::true('the total can be typed', str_contains($form, 'name="total"'));
+Assert::true('the note too', str_contains($form, 'name="note"'));
+Assert::true('and the series can be removed', str_contains($form, 'name="remove"'));
+
+/* Removing is folded, because that is where this shelf keeps a way of
+ * removing something - but without the typed-out word a book asks for.
+ * Nothing is lost here, and asking for one would say otherwise. */
+Assert::true('removal sits in the same fold a book uses', str_contains($form, 'class="danger"'));
+Assert::true('and asks for no typed word', !str_contains($form, 'name="confirm"'));
 
 /* Saying what it does, because "Löschen" beside a page full of covers reads
  * as "delete these books". */
@@ -125,4 +140,39 @@ Assert::true(
 );
 
 $routes = (string) file_get_contents(PROJECT_ROOT . '/public/index.php');
-Assert::true('the address exists', str_contains($routes, "post('/reihe/{slug}'"));
+Assert::true('the page has an address', str_contains($routes, "get('/reihe/{slug}/edit'"));
+Assert::true('and so has saving it', str_contains($routes, "post('/reihe/{slug}/edit'"));
+
+Assert::group('A fold that opens a form has to look like one');
+
+/* The series form was folded into a <details> and given no rules at all, so
+ * its summary was a line of text that happened to open something: no pointer
+ * under the mouse, no colour that moved. Both other <details> on this shelf
+ * set exactly that, which is what made the omission invisible to me and
+ * obvious to somebody using it.
+ *
+ * So: every fold in the templates has a rule that says it can be clicked. */
+$stylesheet = (string) file_get_contents(PROJECT_ROOT . '/public/css/style.css');
+
+$folds = [];
+foreach (['shelf/index.php', 'shelf/series_edit.php', 'shelf/edit.php'] as $template) {
+    $markup = (string) file_get_contents(PROJECT_ROOT . '/app/templates/' . $template);
+    if (preg_match_all('/<details class="([a-z-]+)/', $markup, $found)) {
+        $folds = array_merge($folds, $found[1]);
+    }
+}
+$folds = array_values(array_unique($folds));
+Assert::true('there are folds to check', count($folds) >= 2);
+
+$unclickable = [];
+foreach ($folds as $fold) {
+    // The rule for that fold's summary, wherever in the file it sits.
+    $rule = preg_match('/\.' . preg_quote($fold, '/') . '[^{]*summary[^{]*\{([^}]*)\}/', $stylesheet, $body)
+        ? $body[1]
+        : '';
+    if (!str_contains($rule, 'cursor: pointer')) {
+        $unclickable[] = $fold;
+    }
+}
+sort($unclickable);
+Assert::same('every one of them shows a pointer', $unclickable, []);

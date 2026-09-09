@@ -125,6 +125,7 @@ return [
     'series.edit'          => 'Reihe bearbeiten',
     'series.total'         => 'Bände insgesamt',
     'series.total.unknown' => 'unbekannt',
+    'series.total.hint'    => 'Wie viele Bände die Reihe insgesamt hat. Leer lassen, wenn du es nicht weißt – dann zählt das Regal nur, was dasteht ({owned}).',
     'series.note'          => 'Notiz zur Zählung',
     'series.note.hint'     => 'Etwa „gezählt wie bei Audible, mit den Novellen“. Die Kataloge sind sich hier nicht immer einig; hier steht, welche Zählung dieses Regal benutzt.',
     'series.remove'        => 'Reihe entfernen',

@@ -100,6 +100,7 @@ return [
     'series.edit'          => 'Edit the series',
     'series.total'         => 'Volumes in total',
     'series.total.unknown' => 'unknown',
+    'series.total.hint'    => 'How many volumes the series has altogether. Leave it empty if you do not know - then the shelf counts only what is there ({owned}).',
     'series.note'          => 'Note on the counting',
     'series.note.hint'     => 'Something like "counted the way Audible does, novellas included". The catalogues do not always agree; this says which counting this shelf uses.',
     'series.remove'        => 'Remove the series',
