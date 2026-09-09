@@ -71,7 +71,9 @@ final class ScanController
             $raw = preg_replace('/\D/', '', $request->post('isbn')) ?? '';
 
             return Response::json([
-                'error' => strlen($raw) === 13 ? t('scan.not.a.book') : t('scan.invalid.isbn'),
+                'error' => strlen($raw) === 13
+                    ? t('scan.not.a.book', ['code' => $raw])
+                    : t('scan.invalid.isbn', ['code' => trim((string) $request->post('isbn'))]),
             ], 422);
         }
 
@@ -92,10 +94,15 @@ final class ScanController
             return Response::json([
                 'found'   => false,
                 'isbn'    => $isbn,
+                /* With the number in it. Every one of these ends with
+                   "von Hand erfassen", and the ISBN is the first thing the
+                   form then wants back - reading it off the message beats
+                   fetching the book again. It also settles, in a screenshot,
+                   which number was actually asked about. */
                 'message' => match (LookupChain::verdict($outcome['failures'])) {
-                    'quota'       => t('scan.quota'),
-                    'unreachable' => t('scan.unreachable'),
-                    default       => t('scan.nothing'),
+                    'quota'       => t('scan.quota', ['isbn' => Isbn::format($isbn)]),
+                    'unreachable' => t('scan.unreachable', ['isbn' => Isbn::format($isbn)]),
+                    default       => t('scan.nothing', ['isbn' => Isbn::format($isbn)]),
                 },
                 'tried'   => $outcome['tried'],
             ]);

@@ -76,6 +76,15 @@ final class DnbLookup implements LookupSource
             throw LookupUnavailable::unreachable($this->name(), 'HTTP ' . $response['status']);
         }
 
+        /* An SRU service answers "I have no such record" and "I cannot serve
+           you right now" with the same 200, and until now both arrived here
+           as null - which the chain reads as "nowhere has this book" and
+           reports as "nichts gefunden". The catalogue is then blamed for not
+           holding a book it holds, and the nightly job writes the miss down
+           for a month. What the answer actually says is in it: a diagnostics
+           block, or a record count that does not match what came back. */
+        self::refuseIfNotAnAnswer($response['body'], $this->name());
+
         $book = $this->parse($response['body'], $isbn13);
         if ($book === null) {
             return $book;
@@ -385,6 +394,52 @@ final class DnbLookup implements LookupSource
             'series'      => $seriesName,
             'seriesIndex' => $seriesIndex,
         ];
+    }
+
+    /**
+     * Tell an empty answer apart from a broken one, and refuse the broken one.
+     *
+     * Three shapes, all of them HTTP 200:
+     *
+     *   a diagnostics block          the service says why it will not answer
+     *   nothing that parses as XML   something in front of it answered
+     *   n records promised, none in  the answer was cut off on the way
+     *
+     * None of those is "this ISBN is unknown", and only numberOfRecords=0 is.
+     *
+     * @throws LookupUnavailable
+     */
+    public static function refuseIfNotAnAnswer(string $xml, string $source): void
+    {
+        if (str_contains($xml, 'diagnostic')) {
+            $why = preg_match('#<[^>]*message>([^<]{1,120})<#i', $xml, $m)
+                ? trim($m[1])
+                : 'the service returned a diagnostic';
+
+            throw LookupUnavailable::unreachable($source, $why);
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        $document = simplexml_load_string($xml);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if ($document === false) {
+            throw LookupUnavailable::unreachable($source, 'the answer was not XML');
+        }
+
+        if (!preg_match('#<[^>]*numberOfRecords>\s*(\d+)#i', $xml, $count)) {
+            // No count at all is not the shape of an SRU answer either.
+            throw LookupUnavailable::unreachable($source, 'the answer had no record count');
+        }
+
+        // Zero is a real answer, and the only one that means "unknown here".
+        if ((int) $count[1] > 0 && !str_contains($xml, 'recordData')) {
+            throw LookupUnavailable::unreachable(
+                $source,
+                $count[1] . ' records promised, none delivered'
+            );
+        }
     }
 
     public function parse(string $xml, string $isbn13): ?BookData
