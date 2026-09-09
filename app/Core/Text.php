@@ -482,6 +482,18 @@ final class Text
      * for a shelf; it is the catalogue talking to itself. A bare four-digit
      * number is spared, because that is a year and somebody may well have
      * filed a book under one.
+     *
+     * The other thing that is the catalogue talking to itself is the machine
+     * tag: "nyt:series_books=2011-03-26", which Open Library files a book
+     * under to record that it was on that week's bestseller list. It came
+     * through untouched - the notation rule looks for digits or a capital at
+     * the front, and this starts with "nyt" - and stood in the shelf's own
+     * tag list as nyt-series-books-2011-03-26, on two books.
+     *
+     * The shape gives it away and no real subject has it: a namespace, a
+     * colon, a key, an equals sign, and not a space anywhere in it. Matched
+     * on that rather than on "nyt", because the next one will be called
+     * something else.
      */
     public static function withoutClassification(string $subject): ?string
     {
@@ -490,6 +502,13 @@ final class Text
         $notation = '\d{2,4}(?:\.\d+)?[a-z]?';
 
         $clean = trim($subject);
+
+        // A machine tag: namespace:key=value, no whitespace. Written by a
+        // catalogue for a catalogue, and never a subject anybody reads.
+        if (preg_match('/^[^\s:=]+:[^\s=]*=\S*$/u', $clean) === 1) {
+            return null;
+        }
+
         $clean = trim(preg_replace('/^(?:[A-Z]|' . $notation . ')\s+/u', '', $clean) ?? $clean);
 
         // Nothing but a code: two or three digits, or any number carrying a

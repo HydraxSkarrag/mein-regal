@@ -219,3 +219,38 @@ $tidy = strpos($routes, "/admin/tags/tidy");
 $byId = strpos($routes, "/admin/tags/{id}");
 Assert::true('the route exists', $tidy !== false);
 Assert::true('and comes before the numbered ones', (int) $tidy < (int) $byId);
+
+Assert::group('The catalogue talking to itself');
+
+/* Open Library files a book under "nyt:series_books=2011-03-26" to record
+ * that it stood on that week's bestseller list. It is not a subject, it is a
+ * note between machines - and it came through untouched, because the notation
+ * rule looks for digits or a capital at the front and this begins with "nyt".
+ * Two books on a real shelf carried it, and it had its own page in the tag
+ * list.
+ *
+ * Matched on the shape and not on "nyt": a namespace, a colon, a key, an
+ * equals sign, no whitespace anywhere. The next one will be called something
+ * else.
+ */
+foreach ([
+    'nyt:series_books=2011-03-26',
+    'nyt:combined-print-and-e-book-fiction=2011-05-01',
+    'nyt:hardcover-graphic-books=2015-05-31',
+] as $machine) {
+    Assert::same('"' . $machine . '" is not a subject', Text::withoutClassification($machine), null);
+}
+
+/* And the shapes it must not eat. Measured against 957 distinct subjects off
+ * 39 Open Library records from this shelf: three machine tags dropped, two
+ * bare classification codes that the older rule already dropped, and nothing
+ * else touched. */
+foreach ([
+    'New York Times bestseller' => 'New York Times bestseller',
+    'Fiction: general'          => 'Fiction: general',
+    'Paris (france), fiction'   => 'Paris (france), fiction',
+    'Flamel, Nicholas, 1418'    => 'Flamel, Nicholas, 1418',
+    '20. Jahrhundert'           => '20. Jahrhundert',
+] as $subject => $want) {
+    Assert::same('"' . $subject . '" survives', Text::withoutClassification($subject), $want);
+}
