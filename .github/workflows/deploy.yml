@@ -152,5 +152,6 @@ jobs:
               --exclude '(^|/)dev\.sh$' \
               --exclude '\.csv$' \
               --exclude '\.md$' \
+              --exclude '(^|/)docs/' \
               ./ '$TARGET';
           "

@@ -12,6 +12,10 @@ linking to the project and to that blog — please leave it there. It is a
 request rather than a condition: the licence asks nothing of what a running
 installation puts on the screen.
 
+<p>
+  <img src="docs/screenshots/regal.png" alt="The shelf: a grid of book covers, filters for series, genre and author down the left, search and the reading-status chips across the top." width="880">
+</p>
+
 ## What it does
 
 - **Scan barcodes** in the browser, on a phone or a desktop. Uses the browser's
@@ -35,6 +39,27 @@ installation puts on the screen.
 - Interface in German and English — `'language_switcher' => false` drops the
   switch for a shelf that is only read in one — and about, imprint and privacy
   policy are written in the browser, one text per language.
+
+## What it looks like
+
+Shown with the shipped defaults — no logo, no theme of anybody's. An
+installation with its own [logo and colours](#4-your-own-logo-and-colours) looks
+different from the first page on.
+
+| | |
+|---|---|
+| [![One book](docs/screenshots/buch.png)](docs/screenshots/buch.png)<br>**One book.** Everything from the catalogue, the series it belongs to and the volume after it — one click away. | [![One series](docs/screenshots/reihe.png)](docs/screenshots/reihe.png)<br>**One series**, in volume order. A volume published in two parts sits at 9 and 9,5, and where a total is recorded the page names the volumes that are missing. |
+| [![Adding a book](docs/screenshots/erfassen.png)](docs/screenshots/erfassen.png)<br>**Adding a book:** the camera, or the digits typed in, or a search by title. | [![Statistics](docs/screenshots/statistik.png)](docs/screenshots/statistik.png)<br>**Statistics**, drawn server-side in CSS and SVG. No chart library, and nothing fetched from anywhere. |
+
+<p>
+  <img src="docs/screenshots/mobil.png" alt="The shelf on a phone: two columns of covers, and a bottom bar with the shelf, the pile, the round scan button and the statistics." width="300" align="right">
+</p>
+
+**On a phone**, which is where a shelf is actually filled: the filters fold into
+a drawer, and the scan button is the round one in the middle of the bar. That is
+the one action that matters standing in front of a bookcase.
+
+<br clear="all">
 
 ## Requirements
 
@@ -327,6 +352,10 @@ REGAL_CONFIG=$PWD/config.dev.php php -S localhost:8931 -t public router.dev.php
 There is no build step and no runtime dependency. That is not purism, it follows
 from the hosting: with no shell there is no Composer on the server. What is needed
 in the way of libraries sits ready in `public/js/`.
+
+[ARCHITECTURE.md](ARCHITECTURE.md) is the tour of the source: what lives in
+which directory and why, the path a request takes, and the order to read the
+files in.
 
 ### What to keep in mind when changing things
 

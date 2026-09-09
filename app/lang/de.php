@@ -67,7 +67,7 @@ return [
     'filter.status'      => 'Status',
     'series.title'         => 'Reihen',
     'series.all'           => 'Alle Reihen',
-    'series.owned'         => '{owned} im Regal',
+    'series.owned'         => '{owned} Bände im Regal',
     'series.owned.of'      => '{owned} von {total} im Regal',
     'series.gap.one'       => 'Es fehlt Band {number}.',
     'series.gap.many'      => 'Es fehlen die Bände {numbers}.',
