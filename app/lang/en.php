@@ -156,6 +156,7 @@ return [
     'scan.searching'     => 'Looking it up …',
     'scan.found.via'     => 'Found via {source}',
     'scan.nothing'       => 'Nothing found for {isbn}. You can enter the book by hand.',
+    'scan.server.error'  => 'Something went wrong while looking this up - it was not the ISBN. Try again; if it keeps happening the reason is in the error file next to the configuration.',
     'scan.quota'         => 'Google Books is used up for today, and the other sources do not know {isbn}. Try again tomorrow, or enter the book by hand.',
     'scan.unreachable'   => 'A source could not be reached, so {isbn} has not really been answered. Try again, or enter the book by hand.',
     'scan.save'          => 'Add to shelf',

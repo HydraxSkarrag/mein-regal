@@ -148,16 +148,20 @@ declare(strict_types=1);
     'again'       => t('scan.again'),
     'markedRead'  => t('scan.read.on'),
     'markedUnread'=> t('scan.read.off'),
-    'nothing'     => t('scan.nothing'),
+    /* The placeholder is handed over rather than filled in, because these
+       three are the browser's own fallbacks: it uses them when the server
+       said nothing it could show, and by then only the browser knows which
+       number was typed. Same arrangement as 'volume' and 'count' above. */
+    'nothing'     => t('scan.nothing', ['isbn' => '{isbn}']),
     'duplicate'   => t('scan.duplicate'),
     'noCamera'    => t('scan.no.camera'),
     'noDecoder'   => t('scan.no.decoder'),
     'noHttps'     => t('scan.no.https'),
     'denied'      => t('scan.denied'),
-    'invalidIsbn' => t('scan.invalid.isbn'),
-    'notABook'    => t('scan.not.a.book'),
+    'invalidIsbn' => t('scan.invalid.isbn', ['code' => '{code}']),
     'aim'         => t('scan.aim'),
     'count'       => t('scan.count', ['count' => '{count}']),
     'error'       => t('error.500.title'),
+    'serverError' => t('scan.server.error'),
 ]) ?>
 </script>

@@ -12,6 +12,8 @@ use App\Core\Text;
 use App\Http\Application;
 use App\Lookup\CoverFinder;
 use App\Lookup\CoverPreviews;
+use App\Lookup\DnbLookup;
+use App\Lookup\HttpClient;
 use App\Lookup\LookupChain;
 use App\Repository\CoverRepository;
 use Throwable;

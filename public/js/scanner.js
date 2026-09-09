@@ -355,6 +355,17 @@
     return { status: response.status, data: await response.json().catch(function () { return {}; }) };
   }
 
+  /* The one thing standing between a placeholder and the screen.
+   *
+   * A few of the strings handed over arrive with a {name} still in them,
+   * because only this side knows what goes there. Filling one in is a
+   * one-line job and skipping it is invisible until somebody reads
+   * "Zu {isbn} wurde nichts gefunden" on their phone - which is exactly
+   * what happened. */
+  function fill(template, name, value) {
+    return String(template).replace('{' + name + '}', String(value));
+  }
+
   async function lookup(isbn) {
     /* Its own step rather than a line under the back button.
      *
@@ -398,9 +409,21 @@
       return;
     }
     if (reply.status === 422) {
-      var message = reply.data.error || text.invalidIsbn;
+      var message = reply.data.error || fill(text.invalidIsbn, 'code', isbn);
       say(message, 'error');
       overlaySay(message, 'bad');
+      flashReticle('miss');
+      backToOrigin();
+      return;
+    }
+    /* Anything else that is not a plain 200 is the shelf breaking, not the
+       catalogue answering. Without this the next line decides - reply.data
+       has no `found` in it, so a 500 came out as "nichts gefunden", and a
+       missing import in the lookup was reported for a day as three
+       catalogues that had never heard of the book. */
+    if (reply.status !== 200) {
+      say(text.serverError, 'error');
+      overlaySay(text.error, 'bad');
       flashReticle('miss');
       backToOrigin();
       return;
@@ -431,7 +454,7 @@
       return;
     }
     if (!reply.data.found) {
-      say(reply.data.message || text.nothing, 'error');
+      say(reply.data.message || fill(text.nothing, 'isbn', isbn), 'error');
       overlaySay(text.nothingShort, 'bad');
       flashReticle('miss');
       backToOrigin();
@@ -859,9 +882,12 @@
 
   manualForm.addEventListener('submit', function (event) {
     event.preventDefault();
-    var value = isbnInput.value.replace(/[^0-9Xx]/g, '');
+    var typed = isbnInput.value.trim();
+    var value = typed.replace(/[^0-9Xx]/g, '');
     if (value.length !== 10 && value.length !== 13) {
-      say(text.invalidIsbn, 'error');
+      // Quoting it back is the whole point here: a digit too few looks
+      // exactly like a digit too many until you see the number again.
+      say(fill(text.invalidIsbn, 'code', typed), 'error');
       return;
     }
     lookup(value);

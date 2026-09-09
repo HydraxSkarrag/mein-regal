@@ -181,6 +181,7 @@ return [
     'scan.searching'     => 'Wird gesucht …',
     'scan.found.via'     => 'Gefunden über {source}',
     'scan.nothing'       => 'Zu {isbn} wurde nichts gefunden. Du kannst das Buch von Hand erfassen.',
+    'scan.server.error'  => 'Beim Nachschlagen ist etwas schiefgegangen – das lag nicht an der ISBN. Noch einmal versuchen; bleibt es dabei, steht der Grund in der Fehlerdatei neben der Konfiguration.',
     'scan.quota'         => 'Google Books ist für heute ausgeschöpft; die übrigen Quellen kennen {isbn} nicht. Morgen noch einmal – oder von Hand erfassen.',
     'scan.unreachable'   => 'Eine Quelle war nicht erreichbar, {isbn} ist also noch nicht beantwortet. Noch einmal versuchen, oder das Buch von Hand erfassen.',
     'scan.save'          => 'Ins Regal',
