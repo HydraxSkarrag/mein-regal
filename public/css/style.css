@@ -2111,7 +2111,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .result-status {
   display: block;
   width: 100%;
-  margin: 0 0 12px;
+  /* Room above it. The tag list ends flush and the card's other blocks carry
+     their spacing on top, so without this the sentence sat against the last
+     tag as if it belonged to the list. */
+  margin: 14px 0 12px;
   padding: 8px 10px;
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
