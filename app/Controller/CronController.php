@@ -43,6 +43,10 @@ use Throwable;
  */
 final class CronController
 {
+    private const BUDGET_DEFAULT = 120;
+    private const BUDGET_MIN     = 20;
+    private const BUDGET_MAX     = 240;
+
     public function __construct(private readonly Application $app)
     {
     }
@@ -66,6 +70,25 @@ final class CronController
     }
 
     /**
+     * How long one run may take, in seconds.
+     *
+     * A budget rather than a book count. Enrichment waits between requests on
+     * purpose, so a hundred books take minutes, and the cron service on the
+     * other end has its own patience. Working to a clock keeps the run inside
+     * it; whatever is left waits for tomorrow, which is what a nightly job is
+     * for.
+     *
+     * Clamped rather than refused: the number arrives in a query string, and
+     * a cron entry with a typo in it should still do a night's work rather
+     * than none. Its own function so the clamp can be checked without
+     * starting a run.
+     */
+    public static function budgetFor(int $requested): int
+    {
+        return max(self::BUDGET_MIN, min(self::BUDGET_MAX, $requested));
+    }
+
+    /**
      * @param list<string> $steps
      */
     private function perform(Request $request, array $steps): Response
@@ -82,13 +105,7 @@ final class CronController
             return $this->app->notFound();
         }
 
-        /* A budget rather than a book count.
-         *
-         * Enrichment waits between requests on purpose, so a hundred books
-         * take minutes - and the cron service on the other end has its own
-         * patience. Working to a clock keeps the run inside it; whatever is
-         * left waits for tomorrow, which is what a nightly job is for. */
-        $budget = max(20, min(240, $request->queryInt('budget', 120)));
+        $budget = self::budgetFor($request->queryInt('budget', self::BUDGET_DEFAULT));
 
         // Room for the budget plus the backup, and the job finishes even if
         // the caller hangs up on it.
