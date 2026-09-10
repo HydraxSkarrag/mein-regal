@@ -354,11 +354,12 @@ final class PageController
         $pages = [
             ['/', '1.0'],
             ['/?status=unread', '0.6'],
-            // The three ways into the shelf that are not the shelf itself.
+            // The four ways into the shelf that are not the shelf itself.
             // Without them a crawler reaches a book only through the front
             // page, which lists sixty of three thousand.
             ['/genres', '0.6'],
             ['/authors', '0.6'],
+            ['/series', '0.5'],
             ['/labels', '0.5'],
             ['/about', '0.4'],
             ['/project', '0.3'],

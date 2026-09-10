@@ -51,3 +51,21 @@ Assert::same('but Google-Extended is', str_contains($blocked, 'User-agent: Googl
 $allowed = PageController::robotsTxt('https://x/sitemap.xml', true, true);
 Assert::same('one setting lets them all in', str_contains($allowed, 'GPTBot'), false);
 Assert::same('the rest of the file is unchanged', str_contains($allowed, 'Disallow: /admin'), true);
+
+Assert::group('The sitemap names every way into the shelf');
+
+/* A crawler that only has the front page reaches sixty books of three
+ * thousand. The four index pages are what make the rest reachable, and the
+ * series index was missing from the list while the other three were in it -
+ * it was the last of the four to be built.
+ */
+$source = (string) file_get_contents(PROJECT_ROOT . '/app/Controller/PageController.php');
+$sitemap = substr($source, (int) strpos($source, 'public function sitemap'));
+$sitemap = substr($sitemap, 0, (int) strpos($sitemap, 'public function manifest'));
+
+foreach (['/genres', '/authors', '/labels', '/series'] as $index) {
+    Assert::true(
+        $index . ' is in the sitemap',
+        str_contains($sitemap, "['" . $index . "',")
+    );
+}
