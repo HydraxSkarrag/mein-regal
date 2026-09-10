@@ -18,6 +18,8 @@ declare(strict_types=1);
 use App\Core\Formatter;
 use App\Core\View;
 
+require_once __DIR__ . '/support/SqliteSchema.php';
+
 Assert::group('Shelf filters: a facet that cannot divide the shelf');
 
 $render = static function (
@@ -129,4 +131,97 @@ Assert::true('the sticky bar still exists for the page it was written for', str_
 Assert::true(
     'and only it stretches its first button',
     str_contains($style, '.edit-actions > :first-child') && !str_contains($style, '.form-actions > :first-child')
+);
+
+Assert::group('Stars, read as "at least"');
+
+/* The filter existed in the repository and nowhere else: buildWhere() had the
+ * condition, index() never read the parameter, and no template linked to it.
+ * Measured before it was wired up, ?rating=4 returned all 180 books on the
+ * running shelf, because the value went nowhere.
+ */
+$controller = (string) file_get_contents(PROJECT_ROOT . '/app/Controller/ShelfController.php');
+$partial = (string) file_get_contents(PROJECT_ROOT . '/app/templates/partials/shelf_filters.php');
+$page = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/index.php');
+
+Assert::true(
+    'the controller reads it, and only whole stars',
+    str_contains($controller, "\$this->oneOf(\$request->query('rating'), ['1', '2', '3', '4', '5'])")
+);
+Assert::true('the sidebar offers it', str_contains($partial, "\$urlFor(['rating'"));
+Assert::true('and the counts reach the sidebar', str_contains($page, "'ratingCounts'"));
+
+$pdo = new PDO('sqlite::memory:');
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+Tests\Support\SqliteSchema::apply($pdo, PROJECT_ROOT . '/schema.sql');
+(new App\Repository\UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
+
+$books = new App\Repository\BookRepository($pdo);
+
+/* Cumulative, and a half belongs to the step below it. "ab 4 Sternen" holds
+ * the fives and the four and a halves, because somebody looking for the good
+ * ones does not mean "exactly four" - and 4.5 turning up under 5 rather than
+ * under 4 is the one row nobody expects it in.
+ */
+foreach ([5.0, 5.0, 4.5, 4.0, 3.5, 1.0] as $stars) {
+    $books->insert(1, ['title' => 'Bewertet mit ' . $stars, 'rating' => $stars]);
+}
+$books->insert(1, ['title' => 'Noch ungelesen', 'rating' => null]);
+
+$atLeast = $books->countByRating(1);
+
+Assert::same('two books have five stars', $atLeast[5], 2);
+Assert::same('four reach four, the half among them', $atLeast[4], 4);
+Assert::same('five reach three', $atLeast[3], 5);
+Assert::same('and six reach one', $atLeast[1], 6);
+Assert::same('nothing changes at two', $atLeast[2], 5);
+
+// The unrated book is in none of them. It is not a bad book, it is a book
+// nobody has said anything about yet.
+Assert::true('an unrated book counts nowhere', $atLeast[1] < 7);
+
+/* The list agrees with the number beside the row. A count that promised more
+ * than the page delivers is the fault this replaces. */
+$found = $books->search(1, ['rating' => '4'], 100, 0);
+Assert::same('and the filter returns exactly that many', $found['total'], $atLeast[4]);
+
+$halves = array_filter(
+    $found['rows'],
+    static fn (array $row): bool => (float) $row['rating'] === 4.5
+);
+Assert::same('with the half star among them', count($halves), 1);
+
+Assert::group('The order of the sidebar');
+
+/* Rated by how likely somebody is to browse by it, not by how easy the facet
+ * was to build. The series list stood at the top because it was written last.
+ *
+ * ISBN and review sit after the language because both are working queues:
+ * useful while filling gaps, not while looking for something to read.
+ */
+$heads = [];
+if (preg_match_all("/t\('(filter\.[a-z]+|series\.title)'\)/", $partial, $found)) {
+    foreach ($found[1] as $key) {
+        if (!in_array($key, $heads, true) && $key !== 'filter.reset') {
+            $heads[] = $key;
+        }
+    }
+}
+
+Assert::same(
+    'what a book is about first, the record last',
+    $heads,
+    [
+        'filter.sort',
+        'filter.genre',
+        'filter.label',
+        'filter.author',
+        'series.title',
+        'filter.rating',
+        'filter.review',
+        'filter.cover',
+        'filter.language',
+        'filter.isbn',
+    ]
 );

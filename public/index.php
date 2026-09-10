@@ -185,6 +185,7 @@ $app->router->post('/book/{slug}/edit', $books->save(...));
 $app->router->post('/book/{slug}/delete', $books->delete(...));
 $app->router->post('/book/{slug}/cover-delete', $books->deleteCover(...));
 $app->router->post('/book/{slug}/cover-find', $books->findCover(...));
+$app->router->post('/book/{slug}/status', $books->setStatus(...));
 
 // Scheduled work. all-inkl's scheduler calls a URL, so the nightly job needs
 // an address; it is guarded by cron_secret from config.php.

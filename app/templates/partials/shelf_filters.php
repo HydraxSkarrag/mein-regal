@@ -76,22 +76,6 @@ $splits = static function (array $counts, string $active): bool {
     <?php endforeach; ?>
   </ul>
 
-  <?php if (($seriesList ?? []) !== []): ?>
-  <?php /* Alphabetical like every other long list here, and only as many as
-           the rest: ten. A shelf with no series never sees this heading. */ ?>
-  <h2 class="sidebar-head">
-    <span><?= e(t('series.title')) ?></span>
-    <a class="facet-all" href="/series"><?= e(t('facets.all', ['count' => $formatter->number($seriesTotal)])) ?></a>
-  </h2>
-  <ul>
-    <?php foreach ($seriesList as $row): ?>
-    <li><a href="<?= e($urlFor(['series' => ($filters['series'] ?? '') === $row['slug'] ? '' : $row['slug']])) ?>"
-           aria-current="<?= ($filters['series'] ?? '') === $row['slug'] ? 'true' : 'false' ?>">
-      <span><?= e($row['name']) ?></span><span class="n"><?= e($formatter->number((int) $row['owned'])) ?></span></a></li>
-    <?php endforeach; ?>
-  </ul>
-  <?php endif; ?>
-
   <?php /*
      * The sidebar shows the biggest few. Making the heading itself a quiet
      * link hid the other 367 just as thoroughly as having no link at all -
@@ -137,6 +121,50 @@ $splits = static function (array $counts, string $active): bool {
     <?php endforeach; ?>
   </ul>
 
+  <?php if (($seriesList ?? []) !== []): ?>
+  <?php /* Alphabetical like every other long list here, and only as many as
+           the rest: ten. A shelf with no series never sees this heading. */ ?>
+  <h2 class="sidebar-head">
+    <span><?= e(t('series.title')) ?></span>
+    <a class="facet-all" href="/series"><?= e(t('facets.all', ['count' => $formatter->number($seriesTotal)])) ?></a>
+  </h2>
+  <ul>
+    <?php foreach ($seriesList as $row): ?>
+    <li><a href="<?= e($urlFor(['series' => ($filters['series'] ?? '') === $row['slug'] ? '' : $row['slug']])) ?>"
+           aria-current="<?= ($filters['series'] ?? '') === $row['slug'] ? 'true' : 'false' ?>">
+      <span><?= e($row['name']) ?></span><span class="n"><?= e($formatter->number((int) $row['owned'])) ?></span></a></li>
+    <?php endforeach; ?>
+  </ul>
+  <?php endif; ?>
+
+  <?php
+    /* Stars, read as "at least".
+     *
+     * Cumulative on purpose: "ab 4 Sternen" holds the fives and the four and
+     * a halves, because somebody looking for the good ones does not mean
+     * "exactly four". The condition in buildWhere() is >= and the counts are
+     * summed the same way, so the row and the list it leads to agree.
+     *
+     * Shown only while it divides something. On a shelf where two thirds are
+     * unrated the top row can still be the whole rated third, and one row
+     * covering everything rated is a fact rather than a filter - the same
+     * test the yes/no facets use, applied to the ends of this list. */
+    $rated = $ratingCounts ?? [];
+    $ratingSplits = ($rated[1] ?? 0) > ($rated[5] ?? 0) || ($filters['rating'] ?? '') !== '';
+  ?>
+  <?php if ($ratingSplits): ?>
+  <h2><?= e(t('filter.rating')) ?></h2>
+  <ul>
+    <?php for ($stars = 5; $stars >= 1; $stars--): ?>
+    <?php if (($rated[$stars] ?? 0) > 0 || (string) ($filters['rating'] ?? '') === (string) $stars): ?>
+    <li><a href="<?= e($urlFor(['rating' => (string) ($filters['rating'] ?? '') === (string) $stars ? '' : (string) $stars])) ?>"
+           aria-current="<?= (string) ($filters['rating'] ?? '') === (string) $stars ? 'true' : 'false' ?>">
+      <span><?= e($stars === 1 ? t('filter.rating.one') : t('filter.rating.from', ['stars' => $stars])) ?></span><span class="n"><?= e($formatter->number($rated[$stars] ?? 0)) ?></span></a></li>
+    <?php endif; ?>
+    <?php endfor; ?>
+  </ul>
+  <?php endif; ?>
+
   <?php if ($splits($reviewCounts, (string) ($filters['review'] ?? ''))): ?>
   <h2><?= e(t('filter.review')) ?></h2>
   <ul>
@@ -161,24 +189,6 @@ $splits = static function (array $counts, string $active): bool {
   </ul>
   <?php endif; ?>
 
-  <?php if ($splits($isbnCounts, (string) ($filters['isbn'] ?? ''))): ?>
-  <h2><?= e(t('filter.isbn')) ?></h2>
-  <ul>
-    <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
-           aria-current="<?= ($filters['isbn'] ?? '') === 'yes' ? 'true' : 'false' ?>">
-      <span><?= e(t('filter.isbn.yes')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['with'])) ?></span></a></li>
-    <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'no' ? '' : 'no'])) ?>"
-           aria-current="<?= ($filters['isbn'] ?? '') === 'no' ? 'true' : 'false' ?>">
-      <span><?= e(t('filter.isbn.no')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['without'])) ?></span></a></li>
-  </ul>
-  <?php endif; ?>
-
-  <?php /* Binding used to have a facet here. Whether a book arrived as a
-           hardback, a paperback or a file is a fact about the object and not
-           about the reading, and nobody browsing a shelf goes looking for the
-           paperbacks. It is still on the book, still on the edit page and
-           still counted in the statistics - it just is not a way in. */ ?>
-
   <?php
     /* Language, capped like every other list here. The field is empty for
        books nobody has looked up yet, and an "unknown" entry filtering to
@@ -200,6 +210,39 @@ $splits = static function (array $counts, string $active): bool {
     <?php endforeach; ?>
   </ul>
   <?php endif; ?>
+
+  <?php if ($splits($isbnCounts, (string) ($filters['isbn'] ?? ''))): ?>
+  <h2><?= e(t('filter.isbn')) ?></h2>
+  <ul>
+    <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'yes' ? '' : 'yes'])) ?>"
+           aria-current="<?= ($filters['isbn'] ?? '') === 'yes' ? 'true' : 'false' ?>">
+      <span><?= e(t('filter.isbn.yes')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['with'])) ?></span></a></li>
+    <li><a href="<?= e($urlFor(['isbn' => ($filters['isbn'] ?? '') === 'no' ? '' : 'no'])) ?>"
+           aria-current="<?= ($filters['isbn'] ?? '') === 'no' ? 'true' : 'false' ?>">
+      <span><?= e(t('filter.isbn.no')) ?></span><span class="n"><?= e($formatter->number($isbnCounts['without'])) ?></span></a></li>
+  </ul>
+  <?php endif; ?>
+
+  <?php /* The order of what stands above.
+     *
+     * What a book is about first: genre, then the labels, then who wrote it.
+     * Then which series it belongs to, then how good it was. Then the three
+     * that describe the record rather than the book, and the language.
+     *
+     * Rated by how likely somebody is to browse by it, which is not the same
+     * as how easy the facet was to build. The series list stood at the top
+     * because it was written last.
+     *
+     * The review sits with the rating because the two are the same thought:
+     * what somebody made of the book. The ISBN comes last, a working queue
+     * rather than a way in.
+     */ ?>
+
+  <?php /* Binding used to have a facet here. Whether a book arrived as a
+           hardback, a paperback or a file is a fact about the object and not
+           about the reading, and nobody browsing a shelf goes looking for the
+           paperbacks. It is still on the book, still on the edit page and
+           still counted in the statistics - it just is not a way in. */ ?>
 
   <?php if ($hasFilters): ?>
   <p class="mt-s"><a href="/"><?= e(t('filter.reset')) ?></a></p>

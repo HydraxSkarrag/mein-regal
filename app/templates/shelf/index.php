@@ -46,7 +46,7 @@ declare(strict_types=1);
         'filters', 'urlFor', 'hasFilters', 'formatter',
         'tags', 'tagTotal', 'labels', 'labelTotal', 'topAuthors', 'authorTotal',
         'languageCounts', 'languages', 'seriesList', 'seriesTotal', 'datedCount',
-        'coverCounts', 'isbnCounts', 'reviewCounts'
+        'coverCounts', 'isbnCounts', 'reviewCounts', 'ratingCounts'
     );
   ?>
   <aside class="sidebar filters">
@@ -130,9 +130,37 @@ declare(strict_types=1);
             <?php endif; ?><?= e($sortValue) ?></p>
           <?php endif; ?>
         </a>
+        <?php if ($signedIn): ?>
+        <?php /* Outside the link, because a form inside an anchor is not
+                 markup any browser has to make sense of - and because the
+                 press must not also open the book.
+                 
+                 The button says what it will do, not what the book is. That
+                 keeps it honest for a book that is being read now or was
+                 abandoned: it offers "als gelesen" and does that, rather
+                 than pretending the shelf has two states. */ ?>
+        <?php $wantsRead = $book['reading_status'] !== 'read'; ?>
+        <form class="tile-status" method="post" action="/book/<?= e($book['slug']) ?>/status">
+          <?= $csrfField ?>
+          <input type="hidden" name="status" value="<?= $wantsRead ? 'read' : 'unread' ?>">
+          <input type="hidden" name="back" value="<?= e($backQuery) ?>">
+          <button type="submit" title="<?= e($wantsRead ? t('shelf.mark.read') : t('shelf.mark.unread')) ?>">
+            <span class="tile-status-mark" aria-hidden="true"><?= $wantsRead ? '✓' : '↺' ?></span>
+            <span class="visually-hidden"><?= e($wantsRead ? t('shelf.mark.read') : t('shelf.mark.unread')) ?></span>
+          </button>
+        </form>
+        <?php endif; ?>
       </li>
       <?php endforeach; ?>
     </ul>
+
+    <?php if ($signedIn): ?>
+    <script type="application/json" id="shelf-i18n"><?= json_for_script([
+        'unread'     => t('status.unread'),
+        'markRead'   => t('shelf.mark.read'),
+        'markUnread' => t('shelf.mark.unread'),
+    ]) ?></script>
+    <?php endif; ?>
 
     <?php if ($pages > 1): ?>
     <nav class="pager" aria-label="<?= e(t('page.nav')) ?>">

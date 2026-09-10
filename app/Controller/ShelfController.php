@@ -49,6 +49,10 @@ final class ShelfController
                 $request->query('language'),
                 array_keys($this->app->books->countBy($this->app->ownerId, 'language'))
             ),
+            /* Whole stars only, and read as "at least". A half belongs to the
+               step below it: four and a half is a book somebody liked more
+               than four, and it shows under four. */
+            'rating'   => $this->oneOf($request->query('rating'), ['1', '2', '3', '4', '5']),
             'review'   => $this->oneOf($request->query('review'), ['yes', 'no']),
             'cover'    => $this->oneOf($request->query('cover'), ['yes', 'no']),
             'isbn'     => $this->oneOf($request->query('isbn'), ['yes', 'no']),
@@ -78,10 +82,47 @@ final class ShelfController
      */
     private function heading(array $filters): string
     {
-        return self::headingFor(
-            $filters,
-            ($filters['author'] ?? '') !== '' ? $this->authorName((string) $filters['author']) : null
-        );
+        return self::headingFor($filters, $this->filterNames($filters));
+    }
+
+    /**
+     * The names behind the slugs, looked up once and handed to the heading.
+     *
+     * Three of the filters point at a thing that has a name of its own, and
+     * a slug is not it: "die-chronik-der-drachenlanze" is an address, not a
+     * heading. The lookups happen here so the decision itself stays a
+     * function of its arguments and can be checked without a database.
+     *
+     * A slug that names nothing is handed back as it stands, which is what
+     * the author lookup has always done. That is the case of a shared link to
+     * a tag since taken out of use: the address names something, the shelf
+     * has nothing under it, and "gibt-es-nicht-mehr" over "0 Bücher" says so.
+     * Falling through to "Alle Bücher" over an empty page would not.
+     *
+     * @param  array<string,mixed> $filters
+     * @return array<string,?string>
+     */
+    private function filterNames(array $filters): array
+    {
+        $names = ['author' => null, 'series' => null, 'tag' => null];
+
+        if (($filters['author'] ?? '') !== '') {
+            $names['author'] = $this->authorName((string) $filters['author']);
+        }
+        if (($filters['series'] ?? '') !== '') {
+            $series = $this->app->series->bySlug($this->app->ownerId, (string) $filters['series']);
+            $names['series'] = $series === null ? (string) $filters['series'] : (string) $series['name'];
+        }
+        if (($filters['tag'] ?? '') !== '') {
+            $statement = $this->app->pdo->prepare(
+                'SELECT name FROM tags WHERE owner_id = ? AND slug = ? AND dropped_at IS NULL LIMIT 1'
+            );
+            $statement->execute([$this->app->ownerId, (string) $filters['tag']]);
+            $found = $statement->fetchColumn();
+            $names['tag'] = $found === false ? (string) $filters['tag'] : (string) $found;
+        }
+
+        return $names;
     }
 
     /**
@@ -92,7 +133,7 @@ final class ShelfController
      *
      * @param array<string,mixed> $filters
      */
-    private static function headingFor(array $filters, ?string $authorName): string
+    private static function headingFor(array $filters, array $names = []): string
     {
         /* A search outranks everything, because it is the most deliberate
            thing on the page: a status is picked from four chips, an author
@@ -102,21 +143,71 @@ final class ShelfController
         if ($search !== '') {
             return t('shelf.found', ['term' => $search]);
         }
-        if ($authorName !== null) {
-            return $authorName;
-        }
-        $status = (string) ($filters['status'] ?? '');
-        if ($status === '') {
-            /* Not 'shelf.all' - that one is the "Alle" chip in the filter
-               row, and it has to stay a chip's length. Two keys because they
-               are two sentences in the same language: one labels a button,
-               the other names what you are looking at. */
-            return t('shelf.all.books');
+
+        /* Then the rest, from the most particular selection to the broadest.
+         *
+         * Only three of ten filters used to reach this far, so the other
+         * seven all came out as "Alle Bücher" - measured on the running
+         * shelf: that heading stood over one book under a genre, over six of
+         * a series, and over the four without a cover. The same fault the
+         * search had, at seven more addresses.
+         *
+         * Something with a name of its own goes first: an author, a series, a
+         * genre. Then the work lists, then a property a book either has or
+         * has not, then the status, then the language. Any order would need
+         * defending; this one runs from "these particular books" down to
+         * "books with this one broad thing in common", and only one heading
+         * fits on a page.
+         *
+         * The names are resolved before this runs, and a slug that names
+         * nothing arrives as itself rather than as null. See filterNames()
+         * for why. */
+        foreach (['author', 'series', 'tag'] as $named) {
+            if (($filters[$named] ?? '') !== '' && ($names[$named] ?? null) !== null) {
+                return (string) $names[$named];
+            }
         }
 
-        // The pile has a name of its own in the navigation, and it is the
-        // name its readers use. The other three are just their status.
-        return $status === 'unread' ? t('nav.unread') : t('status.' . $status);
+        // Reached from the dashboard's list of what is still to do, and the
+        // heading is the same sentence that linked here.
+        $missing = (string) ($filters['missing'] ?? '');
+        if ($missing !== '') {
+            return t('stats.no.' . $missing);
+        }
+
+        // "Mit Cover", "Ohne ISBN", "Ohne Rezension" - the filter's own
+        // labels, which are already whole phrases rather than words.
+        foreach (['cover', 'isbn', 'review'] as $yesNo) {
+            $value = (string) ($filters[$yesNo] ?? '');
+            if ($value !== '') {
+                return t('filter.' . $yesNo . '.' . $value);
+            }
+        }
+
+        $rating = (string) ($filters['rating'] ?? '');
+        if ($rating !== '') {
+            return $rating === '1'
+                ? t('filter.rating.one')
+                : t('filter.rating.from', ['stars' => $rating]);
+        }
+
+        $status = (string) ($filters['status'] ?? '');
+        if ($status !== '') {
+            // The pile has a name of its own in the navigation, and it is the
+            // name its readers use. The other three are just their status.
+            return $status === 'unread' ? t('nav.unread') : t('status.' . $status);
+        }
+
+        $language = (string) ($filters['language'] ?? '');
+        if ($language !== '') {
+            return t('lang.' . $language);
+        }
+
+        /* Not 'shelf.all' - that one is the "Alle" chip in the filter row,
+           and it has to stay a chip's length. Two keys because they are two
+           sentences in the same language: one labels a button, the other
+           names what you are looking at. */
+        return t('shelf.all.books');
     }
 
     /**
@@ -132,11 +223,13 @@ final class ShelfController
      */
     private static function documentTitle(array $filters, string $heading, string $siteName): string
     {
-        $unfiltered = ($filters['author'] ?? '') === ''
-            && ($filters['status'] ?? '') === ''
-            && trim((string) ($filters['search'] ?? '')) === '';
-
-        return $unfiltered ? $siteName : $heading;
+        /* Read off the heading rather than listed again here. The list was
+           three filters long while the shelf had ten, so a genre page was
+           titled "Mein Regal" in the tab and named its genre on the page -
+           and every filter added since would have had to be remembered in
+           two places. Only the catch-all heading means nothing is filtered,
+           which is exactly the question this asks. */
+        return $heading === t('shelf.all.books') ? $siteName : $heading;
     }
 
     /** Which navigation entry is the one you are on. */
@@ -240,6 +333,11 @@ final class ShelfController
             /* How many books carry a reading date, which decides whether
                "Zuletzt gelesen" is offered at all. */
             'datedCount'    => $this->app->books->countDated($this->app->ownerId),
+            /* The address of this very page, so a tile press comes back to
+               it rather than to an unfiltered shelf. Rebuilt on the way in
+               rather than followed - see BookController::shelfUrl(). */
+            'backQuery'     => http_build_query($query),
+            'ratingCounts'  => $this->app->books->countByRating($this->app->ownerId),
             'reviewCounts'  => $this->app->books->countByReview($this->app->ownerId),
             'coverCounts'   => $this->app->books->countByCover($this->app->ownerId),
             'isbnCounts'    => $this->app->books->countByIsbn($this->app->ownerId),
@@ -260,6 +358,10 @@ final class ShelfController
             'current'   => $current,
             'canonical' => $this->app->url('/'),
             'jsonLd'    => $this->collectionJsonLd($result['total']),
+            /* Only for somebody who can change anything. A visitor gets the
+               shelf without a script on it, which is also what the tiles
+               look like: the switch is not rendered either. */
+            'scripts'   => $signedIn ? ['/js/shelf.js'] : [],
         ]));
     }
 

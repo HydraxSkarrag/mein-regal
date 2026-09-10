@@ -146,6 +146,8 @@ declare(strict_types=1);
     'dropCover'   => t('scan.drop.cover'),
     'cancel'      => t('common.cancel'),
     'again'       => t('scan.again'),
+    'willBeRead'   => t('scan.will.read'),
+    'willBeUnread' => t('scan.will.unread'),
     'markedRead'  => t('scan.read.on'),
     'markedUnread'=> t('scan.read.off'),
     /* The placeholder is handed over rather than filled in, because these

@@ -493,6 +493,91 @@ final class BookController
         return Response::redirect('/book/' . $book['slug'] . '/edit');
     }
 
+    /** Which query parameters may travel back with a status change. */
+    private const SHELF_QUERY = [
+        'q', 'status', 'tag', 'series', 'author', 'language', 'rating',
+        'review', 'cover', 'isbn', 'missing', 'sort', 'dir', 'page',
+    ];
+
+    /**
+     * Read or unread, from the shelf, without opening the book.
+     *
+     * The scanner carries one switch for a whole run, and it lives on the
+     * screen you leave before you start scanning - so a run put away under
+     * the wrong one is not a slip, it is the arrangement. Repairing it meant
+     * opening each book, its edit form, a dropdown and a save: four steps for
+     * one field, twenty times over.
+     *
+     * From a tile it is one press. The shelf can already be narrowed to
+     * exactly the books in question - sorted by when they were catalogued,
+     * filtered by the status they wrongly carry - so the repair is a screen
+     * of tiles and a run of clicks.
+     *
+     * The button names what it will do rather than what the book is, which is
+     * what lets a book that is being read now, or was abandoned, keep an
+     * honest control: it offers "als gelesen" and does exactly that.
+     */
+    public function setStatus(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $book = $this->app->books->findBySlug($this->app->ownerId, $params['slug'] ?? '');
+        if ($book === null) {
+            return $this->app->notFound();
+        }
+
+        $back = self::shelfUrl($request->post('back'));
+
+        if (!$this->app->csrf->isValid($request->allPost())) {
+            return $request->wantsJson()
+                ? Response::json(['error' => t('error.csrf')], 400)
+                : Response::redirect($back);
+        }
+
+        $status = Input::oneOf($request->post('status'), self::STATUSES);
+        if ($status === null) {
+            return $request->wantsJson()
+                ? Response::json(['error' => t('error.404.title')], 422)
+                : Response::redirect($back);
+        }
+
+        $this->app->books->update($this->app->ownerId, (int) $book['id'], ['reading_status' => $status]);
+
+        if ($request->wantsJson()) {
+            return Response::json(['status' => $status]);
+        }
+
+        return Response::redirect($back);
+    }
+
+    /**
+     * Where a tile press returns to, rebuilt rather than followed.
+     *
+     * The address arrives in the form, because only the page knows which
+     * filters and which page number the reader is standing on, and landing
+     * back on an unfiltered shelf after every press would undo the point.
+     * What arrives is a query string and never a path: it is taken apart,
+     * the parameters the shelf actually has are kept, and the rest is
+     * dropped. A return address off a form is otherwise somebody else's
+     * redirect.
+     */
+    private static function shelfUrl(string $back): string
+    {
+        parse_str(ltrim(trim($back), '?'), $given);
+        $kept = [];
+        foreach (self::SHELF_QUERY as $key) {
+            $value = $given[$key] ?? null;
+            if (is_string($value) && $value !== '') {
+                $kept[$key] = $value;
+            }
+        }
+
+        return $kept === [] ? '/' : '/?' . http_build_query($kept);
+    }
+
     /**
      * Go and look for a cover for this one book.
      *

@@ -589,6 +589,39 @@ final class BookRepository
         return $counts;
     }
 
+    /**
+     * How many books reach each whole number of stars, counting upwards.
+     *
+     * Cumulative, because the filter is "ab vier Sternen" and not "genau
+     * vier": four and a half is a book somebody liked more than four, and a
+     * row that left it out would be the one row nobody expects to be missing.
+     * The condition in buildWhere() is >= for the same reason.
+     *
+     * Summed in PHP rather than in SQL. Rounding a decimal down is where the
+     * two dialects part company - SQLite has no FLOOR unless it was compiled
+     * with one, and MySQL's CAST rounds 4.5 up to 5 rather than down to 4 -
+     * so the halves would land in different rows depending on the database.
+     *
+     * @return array<int,int> 1 to 5 => how many books rate at least that
+     */
+    public function countByRating(int $ownerId): array
+    {
+        $exact = $this->countBy($ownerId, 'rating');
+
+        $atLeast = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        foreach ($exact as $rating => $count) {
+            if ($rating === '') {
+                continue;
+            }
+            $step = (int) floor((float) $rating);
+            for ($threshold = 1; $threshold <= min(5, $step); $threshold++) {
+                $atLeast[$threshold] += $count;
+            }
+        }
+
+        return $atLeast;
+    }
+
     /** @return array<string,int|float|null> */
     public function totals(int $ownerId): array
     {

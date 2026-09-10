@@ -511,6 +511,17 @@
               return '<li>' + esc(tag) + '</li>';
             }).join('') + '</ul>'
           : '') +
+        /* As what this book is about to be put away, on the screen where
+           that is decided.
+           
+           The switch itself sits on the first screen of the scanner, the one
+           you leave before the camera starts, and it remembers what it was
+           told weeks ago. So a whole run went in under a setting nobody had
+           seen since. It is the same switch - pressing here moves that one -
+           and it is here because here is where you are looking. */
+        '<button class="result-status" type="button" id="result-status" aria-pressed="' +
+          (readToggle.checked ? 'true' : 'false') + '">' +
+          esc(readToggle.checked ? text.willBeRead : text.willBeUnread) + '</button>' +
         '<div class="scanner-actions">' +
           '<button class="btn btn--primary" type="button" id="save">' + esc(text.save) + '</button>' +
           '<button class="btn" type="button" id="skip">' + esc(text.skip) + '</button>' +
@@ -521,6 +532,14 @@
     step('result');
     document.getElementById('save').addEventListener('click', save);
     document.getElementById('skip').addEventListener('click', dismiss);
+    document.getElementById('result-status').addEventListener('click', function () {
+      readToggle.checked = !readToggle.checked;
+      // Through the switch's own handler, so what it remembers and what the
+      // card shows cannot drift apart.
+      readToggle.dispatchEvent(new Event('change'));
+      this.setAttribute('aria-pressed', readToggle.checked ? 'true' : 'false');
+      this.textContent = readToggle.checked ? text.willBeRead : text.willBeUnread;
+    });
   }
 
   /* Put the card away and start over, wherever we started. */
