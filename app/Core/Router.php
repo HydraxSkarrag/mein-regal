@@ -55,6 +55,22 @@ final class Router
      */
     public function match(string $method, string $path): ?array
     {
+        /* HEAD is GET without the body, and every address that answers a GET
+         * has to answer a HEAD - that is not a nicety, it is what HTTP says.
+         *
+         * Registered were GET and POST, so every address on the shelf,
+         * including the front page and robots.txt, answered a HEAD with 404
+         * while answering a GET with 200. Anything that looks before it
+         * fetches saw a site that was not there: uptime checks, link
+         * checkers, a crawler that asks first, and anybody typing curl -I.
+         *
+         * It hid well, because a 404 is also what a wrong address gets - see
+         * the note above on why 405 is not told apart from it. The body is
+         * dropped in Response::send(), where the answer is written. */
+        if ($method === 'HEAD') {
+            $method = 'GET';
+        }
+
         foreach ($this->routes as $route) {
             if ($route['method'] !== $method) {
                 continue;

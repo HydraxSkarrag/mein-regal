@@ -21,6 +21,34 @@ Assert::true('the right method does', $router->match('POST', '/login') !== null)
 // A slug is one segment: a path with an extra slash must not be swallowed.
 Assert::same('a parameter does not cross a slash', $router->match('GET', '/book/a/b'), null);
 
+/* HEAD is GET without the body, and HTTP requires it wherever GET works.
+ *
+ * Only GET and POST were ever registered, so every address answered a HEAD
+ * with 404 while answering a GET with 200 - measured on the running shelf at
+ * the front page, robots.txt, sitemap.xml and a book page. Everything that
+ * looks before it fetches saw a site that was not there.
+ *
+ * It hid because a 404 is also the answer to a wrong address, which is a
+ * deliberate choice a few lines up in the router.
+ */
+Assert::true('HEAD reaches the GET route', $router->match('HEAD', '/') !== null);
+Assert::true('and does so for a route with a parameter', $router->match('HEAD', '/book/x') !== null);
+Assert::same(
+    'it is the same handler, not a second one',
+    $router->match('HEAD', '/book/x')['params']['slug'],
+    'x'
+);
+Assert::same('a HEAD to a POST-only address still does not match', $router->match('HEAD', '/login'), null);
+Assert::same('and an unknown address is still unknown', $router->match('HEAD', '/nope'), null);
+
+/* The body is dropped where the answer is written, not here. Left to the web
+   server it would depend on the web server. */
+$send = (string) file_get_contents(PROJECT_ROOT . '/app/Core/Response.php');
+Assert::true(
+    'a HEAD answer sends headers and no body',
+    str_contains($send, "(\$_SERVER['REQUEST_METHOD'] ?? '') === 'HEAD'")
+);
+
 $response = $router->dispatch(new Request('GET', '/book/test-slug'));
 Assert::same('dispatch runs the handler', $response?->body(), 'book:test-slug');
 

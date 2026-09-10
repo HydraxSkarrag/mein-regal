@@ -88,6 +88,16 @@ final class Response
         foreach ($this->headers as $name => $value) {
             header($name . ': ' . $value);
         }
+
+        /* A HEAD answer is the headers and nothing else. The router sends it
+           through the GET handler, so the body exists by the time it gets
+           here and has to be dropped on the way out. Left to the web server
+           it would depend on the web server: mod_php discards it, php-fpm
+           behind a proxy may not. */
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'HEAD') {
+            return;
+        }
+
         echo $this->body;
     }
 }
