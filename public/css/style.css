@@ -996,6 +996,17 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 
 .detail-actions { display: flex; gap: 20px; flex-wrap: wrap; }
 
+/* The same row at the foot of a page instead of its head.
+   Where it stands above the content it needs no separating: it is the first
+   thing there and the heading under it draws the line. Below the book it
+   would otherwise run on from the last row of the table as if it belonged to
+   it, so it gets the hairline the cover search uses for the same job. */
+.detail-actions--foot {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
 .edit-grid { display: grid; gap: 20px; }
 @media (min-width: 860px) {
   .edit-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }

@@ -12,28 +12,6 @@
  */
 declare(strict_types=1);
 ?>
-<p class="detail-actions">
-  <a href="/">&larr; <?= e(t('book.back')) ?></a>
-  <?php if ($signedIn): ?>
-  <a href="/book/<?= e($book['slug']) ?>/edit"><?= e(t('book.edit')) ?></a>
-  <?php /* A missing cover is noticed here, on the page that shows it, and
-           going into a form to fix something that is not typed was the odd
-           part. Only when there is none: replacing a cover that is already
-           there is an edit, and the edit page has the whole set of ways to
-           do it. */ ?>
-  <?php if ($cover === null && ($book['isbn13'] ?? null) !== null): ?>
-  <button class="link-button" type="submit" form="cover-find"><?= e(t('cover.search')) ?></button>
-  <?php endif; ?>
-  <?php endif; ?>
-</p>
-
-<?php if ($signedIn && $cover === null && ($book['isbn13'] ?? null) !== null): ?>
-<form id="cover-find" method="post" action="/book/<?= e($book['slug']) ?>/cover-find" hidden>
-  <?= $csrfField ?>
-  <input type="hidden" name="from" value="book">
-</form>
-<?php endif; ?>
-
 <?php /* The title where every other page puts its heading, above both
          columns rather than beside the cover. It is the same piece of page
          furniture as "Alle Bücher" or "Reihen", and this was the one heading
@@ -273,3 +251,30 @@ declare(strict_types=1);
     <?php endif; ?>
   </div>
 </div>
+
+<?php /* Back, edit, find a cover: at the foot of the page rather than the
+         head of it. Above the title they were the first thing on a page
+         about one book - three ways out, read before the book itself. Below
+         it they are what they are: where to go once this book has been
+         looked at. */ ?>
+<p class="detail-actions detail-actions--foot">
+  <a href="/">&larr; <?= e(t('book.back')) ?></a>
+  <?php if ($signedIn): ?>
+  <a href="/book/<?= e($book['slug']) ?>/edit"><?= e(t('book.edit')) ?></a>
+  <?php /* A missing cover is noticed here, on the page that shows it, and
+           going into a form to fix something that is not typed was the odd
+           part. Only when there is none: replacing a cover that is already
+           there is an edit, and the edit page has the whole set of ways to
+           do it. */ ?>
+  <?php if ($cover === null && ($book['isbn13'] ?? null) !== null): ?>
+  <button class="link-button" type="submit" form="cover-find"><?= e(t('cover.search')) ?></button>
+  <?php endif; ?>
+  <?php endif; ?>
+</p>
+
+<?php if ($signedIn && $cover === null && ($book['isbn13'] ?? null) !== null): ?>
+<form id="cover-find" method="post" action="/book/<?= e($book['slug']) ?>/cover-find" hidden>
+  <?= $csrfField ?>
+  <input type="hidden" name="from" value="book">
+</form>
+<?php endif; ?>
