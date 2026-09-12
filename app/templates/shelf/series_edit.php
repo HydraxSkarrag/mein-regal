@@ -13,10 +13,6 @@
  */
 declare(strict_types=1);
 ?>
-<p class="detail-actions">
-  <a href="/reihe/<?= e($series['slug']) ?>">&larr; <?= e($series['name']) ?></a>
-</p>
-
 <h1><?= e(t('series.edit')) ?></h1>
 
 <form method="post" action="/reihe/<?= e($series['slug']) ?>/edit">

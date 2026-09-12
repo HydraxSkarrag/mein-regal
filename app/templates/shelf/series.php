@@ -15,17 +15,6 @@ declare(strict_types=1);
 use App\Core\Formatter;
 use App\Repository\SeriesRepository;
 ?>
-<?php /* The same bar the book page has, and for the same reason: a thing is
-         changed from a button on the thing, not from a fold. Folding away is
-         what this shelf does for deleting a book and for the filters on a
-         phone - neither of which is "edit this". */ ?>
-<p class="detail-actions">
-  <a href="/series">&larr; <?= e(t('series.title')) ?></a>
-  <?php if ($signedIn): ?>
-  <a href="/reihe/<?= e($series['slug']) ?>/edit"><?= e(t('series.edit')) ?></a>
-  <?php endif; ?>
-</p>
-
 <div class="page-head">
   <h1><?= e($series['name']) ?></h1>
   <?php /* Volumes, not books: a Sammelband is one of the second and several
@@ -88,4 +77,22 @@ use App\Repository\SeriesRepository;
 </ul>
 <?php endif; ?>
 
-<p class="mt-l"><a class="btn" href="/series"><?= e(t('series.all')) ?></a></p>
+<?php /* Back and edit at the foot, the same as the book page: above the
+         heading they were the first thing read on a page about one series -
+         two ways out, before the series itself.
+         
+         A button saying "Alle Reihen" used to stand here as well. While the
+         bar was at the head of the page the two were at opposite ends and
+         each had its moment; moved down, they became the same link twice in
+         eleven pixels. The bar stays, because it is the shape the book page
+         has and it carries the way to the edit page with it.
+         
+         Editing stays a link in this row rather than a fold. Folding away is
+         what this shelf does for deleting a book and for the filters on a
+         phone, and neither of those is "edit this". */ ?>
+<p class="detail-actions">
+  <a href="/series">&larr; <?= e(t('series.title')) ?></a>
+  <?php if ($signedIn): ?>
+  <a href="/reihe/<?= e($series['slug']) ?>/edit"><?= e(t('series.edit')) ?></a>
+  <?php endif; ?>
+</p>

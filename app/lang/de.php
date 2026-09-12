@@ -68,7 +68,6 @@ return [
 
     'filter.status'      => 'Status',
     'series.title'         => 'Reihen',
-    'series.all'           => 'Alle Reihen',
     'series.owned'         => '{owned} Bände im Regal',
     'series.owned.of'      => '{owned} von {total} im Regal',
     'series.count.of'      => '{owned} von {total}',

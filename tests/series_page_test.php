@@ -112,6 +112,11 @@ Assert::group('Changed from a button, on a page of its own');
 $page = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/series.php');
 Assert::true('the series page has the same action bar', str_contains($page, 'class="detail-actions"'));
 Assert::true('with a way to the edit page', str_contains($page, '/edit"><?= e(t(\'series.edit\'))'));
+// At the foot, like the book page: see the group below.
+Assert::true(
+    'and it stands after the volumes, not before them',
+    strpos($page, 'class="detail-actions"') > strpos($page, '<ul class="shelf">')
+);
 Assert::true('only when signed in', str_contains($page, 'if ($signedIn)'));
 Assert::true('and no form folded into it', !str_contains($page, '<details'));
 
@@ -225,4 +230,46 @@ Assert::true(
     'the facet list is a grid that collapses what it does not need',
     str_contains($stylesheet, 'grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));')
         && !str_contains($stylesheet, 'columns: 260px;')
+);
+
+Assert::group('Nothing stands between the reader and the heading');
+
+/* A row of ways out above the title was the first thing read on a page about
+ * one book: three links, before the book they are about. That is right where
+ * a page is a list and the controls act on it, and wrong where the page is
+ * one object - the object comes first.
+ *
+ * So it is a rule and not one page's arrangement: no template puts a back
+ * link above its own heading. Where a form already carries a cancel button in
+ * its action row, the row above the title was not moved but dropped: it led
+ * to the same address the button leads to, and two ways back to one place is
+ * one too many.
+ */
+$templates = [];
+foreach (['admin', 'auth', 'errors', 'pages', 'scan', 'shelf', 'stats'] as $area) {
+    foreach (glob(PROJECT_ROOT . '/app/templates/' . $area . '/*.php') ?: [] as $file) {
+        $templates[] = $file;
+    }
+}
+Assert::true('there are templates to check', count($templates) > 10);
+
+$early = [];
+foreach ($templates as $file) {
+    $markup = (string) file_get_contents($file);
+    $heading = strpos($markup, '<h1');
+    $back = strpos($markup, '&larr;');
+    if ($heading !== false && $back !== false && $back < $heading) {
+        $early[] = basename(dirname($file)) . '/' . basename($file);
+    }
+}
+sort($early);
+Assert::same('no page leads away before it says what it is', $early, []);
+
+/* And the row that does lead away has one look, because it now stands in one
+ * place. It carried a --foot modifier while there were two, and a modifier
+ * that is always set is a word that has stopped meaning anything. */
+$stylesheet = (string) file_get_contents(PROJECT_ROOT . '/public/css/style.css');
+Assert::true(
+    'the foot treatment is the rule rather than a variant',
+    str_contains($stylesheet, '.detail-actions {') && !str_contains($stylesheet, '.detail-actions--foot')
 );

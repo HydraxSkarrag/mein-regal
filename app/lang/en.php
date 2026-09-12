@@ -43,7 +43,6 @@ return [
 
     'filter.status'      => 'Status',
     'series.title'         => 'Series',
-    'series.all'           => 'All series',
     'series.owned'         => '{owned} volumes on the shelf',
     'series.owned.of'      => '{owned} of {total} on the shelf',
     'series.count.of'      => '{owned} of {total}',

@@ -257,7 +257,7 @@ declare(strict_types=1);
          about one book - three ways out, read before the book itself. Below
          it they are what they are: where to go once this book has been
          looked at. */ ?>
-<p class="detail-actions detail-actions--foot">
+<p class="detail-actions">
   <a href="/">&larr; <?= e(t('book.back')) ?></a>
   <?php if ($signedIn): ?>
   <a href="/book/<?= e($book['slug']) ?>/edit"><?= e(t('book.edit')) ?></a>

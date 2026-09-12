@@ -14,8 +14,6 @@
  */
 declare(strict_types=1);
 ?>
-<p class="detail-actions"><a href="/<?= e($slug) ?>">&larr; <?= e($heading) ?></a></p>
-
 <h1><?= e(t('page.edit', ['page' => $heading])) ?></h1>
 
 <div class="chips mb-m">

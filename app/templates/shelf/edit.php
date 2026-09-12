@@ -11,10 +11,6 @@ declare(strict_types=1);
 
 $value = static fn (?string $v): string => $v ?? '';
 ?>
-<p class="detail-actions">
-  <a href="/book/<?= e($book['slug']) ?>">&larr; <?= e($book['title']) ?></a>
-</p>
-
 <h1><?= e(t('book.edit')) ?></h1>
 
 <?php if (($error ?? '') !== ''): ?>
