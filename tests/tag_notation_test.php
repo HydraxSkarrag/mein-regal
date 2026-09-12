@@ -223,34 +223,60 @@ Assert::true('and comes before the numbered ones', (int) $tidy < (int) $byId);
 Assert::group('The catalogue talking to itself');
 
 /* Open Library files a book under "nyt:series_books=2011-03-26" to record
- * that it stood on that week's bestseller list. It is not a subject, it is a
- * note between machines - and it came through untouched, because the notation
- * rule looks for digits or a capital at the front and this begins with "nyt".
- * Two books on a real shelf carried it, and it had its own page in the tag
- * list.
+ * that it stood on that week's bestseller list, and under
+ * "collection:Forgotten Realms" to say which shared world a novel belongs
+ * to. Neither is a subject, both are notes between machines - and both came
+ * through untouched, because the notation rule looks for digits or a capital
+ * at the front and these begin with a word. Books on two real shelves
+ * carried them, with their own pages in the tag list.
  *
- * Matched on the shape and not on "nyt": a namespace, a colon, a key, an
- * equals sign, no whitespace anywhere. The next one will be called something
- * else.
+ * The first rule here asked for an equals sign, which "collection:Forgotten
+ * Realms" does not have. The whitespace is the better tell: a namespace with
+ * no space in it, a colon, and the value starting immediately after.
+ *
+ * Every one of these was read off the wire, not invented. The value carrying
+ * a space of its own is the case the equals-sign rule missed.
  */
 foreach ([
     'nyt:series_books=2011-03-26',
     'nyt:combined-print-and-e-book-fiction=2011-05-01',
     'nyt:hardcover-graphic-books=2015-05-31',
+    'collection:Forgotten Realms',
+    'collectionID:bannedbooks',
+    'series:Harry_Potter',
+    'Serie:The_Hunger_Games',
+    'award:Newbery_award',
+    'lexile_range:601-700',
+    'age:min:8',
 ] as $machine) {
     Assert::same('"' . $machine . '" is not a subject', Text::withoutClassification($machine), null);
 }
 
-/* And the shapes it must not eat. Measured against 957 distinct subjects off
- * 39 Open Library records from this shelf: three machine tags dropped, two
- * bare classification codes that the older rule already dropped, and nothing
- * else touched. */
+/* And the shapes it must not eat. Measured against 2,790 distinct subjects
+ * off 225 Open Library records, drawn from the English ISBNs of the export:
+ * 63 machine tags dropped, all 22 genuine subjects carrying a colon kept,
+ * nothing else touched. The German side cannot be hit at all - not one DNB
+ * subject in a sample of 80 books carried a colon. */
 foreach ([
     'New York Times bestseller' => 'New York Times bestseller',
     'Fiction: general'          => 'Fiction: general',
+    'Literature: Classics'      => 'Literature: Classics',
+    'Children: Grades 3-4'      => 'Children: Grades 3-4',
+    'Revolution (France : 1789-1799)' => 'Revolution (France : 1789-1799)',
     'Paris (france), fiction'   => 'Paris (france), fiction',
     'Flamel, Nicholas, 1418'    => 'Flamel, Nicholas, 1418',
     '20. Jahrhundert'           => '20. Jahrhundert',
 ] as $subject => $want) {
     Assert::same('"' . $subject . '" survives', Text::withoutClassification($subject), $want);
 }
+
+/* The gap, written down rather than pretended away: a machine tag typed with
+ * a space after the colon reads exactly like a real subject with one. One
+ * case in the sample, and telling it from "Literature: Classics" would take
+ * a list of namespace words - a table to keep in step with a crowd-sourced
+ * catalogue, which is the kind of thing this rule exists to avoid. */
+Assert::same(
+    'a machine tag with a space after the colon still gets through',
+    Text::withoutClassification('series: Twilight'),
+    'series: Twilight'
+);

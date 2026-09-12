@@ -485,15 +485,29 @@ final class Text
      *
      * The other thing that is the catalogue talking to itself is the machine
      * tag: "nyt:series_books=2011-03-26", which Open Library files a book
-     * under to record that it was on that week's bestseller list. It came
-     * through untouched - the notation rule looks for digits or a capital at
-     * the front, and this starts with "nyt" - and stood in the shelf's own
-     * tag list as nyt-series-books-2011-03-26, on two books.
+     * under to record that it stood on that week's bestseller list, or
+     * "collection:Forgotten Realms", which ten of the eleven editions of
+     * those novels carry. Both come through the notation rule untouched,
+     * because it looks for digits or a capital at the front and these begin
+     * with a word, and both stood in the shelf's own tag list.
      *
-     * The shape gives it away and no real subject has it: a namespace, a
-     * colon, a key, an equals sign, and not a space anywhere in it. Matched
-     * on that rather than on "nyt", because the next one will be called
-     * something else.
+     * What gives them away is the whitespace rather than the equals sign:
+     * a namespace with no space in it, a colon, and the value starting
+     * immediately after. A real subject always has a space on one side of
+     * its colon or the other - "Literature: Classics", "Children: Grades
+     * 3-4", "Revolution (France : 1789-1799)".
+     *
+     * Measured over 2,790 distinct subjects from 225 Open Library records:
+     * 63 machine tags dropped, every one of the 22 genuine subjects with a
+     * colon kept, no false positive. On the German side the question does
+     * not arise - not one DNB subject in the sample carried a colon at all.
+     *
+     * Matched on the shape and not on "nyt" or "collection", because the
+     * next one will be called something else. What still gets through is a
+     * machine tag typed with a space after the colon, "series: Twilight",
+     * one case in the sample: telling that from "Literature: Classics"
+     * would take a list of namespace words, which is the kind of table this
+     * rule exists to avoid.
      */
     public static function withoutClassification(string $subject): ?string
     {
@@ -503,9 +517,10 @@ final class Text
 
         $clean = trim($subject);
 
-        // A machine tag: namespace:key=value, no whitespace. Written by a
-        // catalogue for a catalogue, and never a subject anybody reads.
-        if (preg_match('/^[^\s:=]+:[^\s=]*=\S*$/u', $clean) === 1) {
+        // A machine tag: a namespace with no space in it, a colon, and the
+        // value beginning right after it. Written by a catalogue for a
+        // catalogue, and never a subject anybody reads.
+        if (preg_match('/^[^\s:]+:\S/u', $clean) === 1) {
             return null;
         }
 
