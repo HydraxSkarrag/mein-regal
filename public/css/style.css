@@ -1593,18 +1593,27 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
  *
  * The track grows by exactly the width of the picture, so the name keeps the
  * room it had in the plain list rather than paying for the cover out of its
- * own width. 48 pixels is three quarters of a centimetre of spine: enough to
- * recognise a cover already seen, not enough to turn the list into a grid -
- * at which point it would be the shelf, and the shelf already exists.
+ * own width.
  *
- * The count moves under the name for the same reason. Beside a 72 pixel
- * picture there is one line of text and two lines of air, and a number
- * stranded at the far right sits at the height of a cover it says nothing
- * about. Under the name it belongs to the name. */
+ * 132 pixels tall, chosen against the smaller sizes tried first. A thumbnail
+ * the height of a line of text is enough to recognise a cover already seen;
+ * this is enough to read one that has not been, and the index is where a
+ * shelf is browsed rather than searched. The cost is real and was accepted:
+ * at this size an entry is nearer a card than a line, and on a phone the
+ * picture takes a third of the width.
+ *
+ * One number, not two: .cover keeps its 2:3, so the width follows from the
+ * height that was decided.
+ *
+ * The count sits under the name rather than at the far right. Beside a
+ * picture this tall a number stranded at the end of the row would be at the
+ * height of a cover it says nothing about; under the name it belongs to the
+ * name. */
 .facet-list--covers {
-  --cover-w: 48px;
+  /* 88 = 132 * 2/3 */
+  --cover-w: 88px;
   grid-template-columns: repeat(auto-fit, minmax(calc(300px + var(--cover-w)), 1fr));
-  gap: 10px 28px;
+  gap: 16px 28px;
 }
 .facet-list--covers a {
   justify-content: flex-start;
@@ -1614,11 +1623,6 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 /* The picture keeps its 2:3 from .cover, so a width is the whole instruction. */
 .facet-list--covers .cover { flex: 0 0 var(--cover-w); width: var(--cover-w); }
-/* The stand-in writes the name across the tile, which at this size is four
-   illegible characters over a name that is already spelled out beside it.
-   The coloured spine on its own says what it needs to: no picture, still a
-   book. */
-.facet-list--covers .cover--placeholder > * { display: none; }
 .facet-list--covers .series-text {
   display: flex;
   flex-direction: column;
