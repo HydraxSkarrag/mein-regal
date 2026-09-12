@@ -56,7 +56,8 @@ foreach ($groups as $entries) {
           'cover'      => $entry['cover'] ?? null,
           'authorLine' => '',
           'small'      => true,
-          'sizes'      => '48px',
+          // The width the CSS draws it at; 88 is the 132 the rule decided on.
+          'sizes'      => '88px',
       ]) ?>
       <span class="series-text">
         <span class="series-name"><?= e($entry['label']) ?></span>
