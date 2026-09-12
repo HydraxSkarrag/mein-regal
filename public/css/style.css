@@ -1573,6 +1573,52 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .facet-list a:hover span:first-child { text-decoration: underline; }
 .facet-list .n { color: var(--muted); font-variant-numeric: tabular-nums; }
 
+/* The series index, which is the one facet page whose entries have a face.
+ *
+ * A genre is a word and a person is a name, but a series is a stack of books,
+ * and a column of names does not look like one. So the cover of the lowest
+ * volume on the shelf stands in front of the name - the same picture the
+ * series page opens with.
+ *
+ * The track grows by exactly the width of the picture, so the name keeps the
+ * room it had in the plain list rather than paying for the cover out of its
+ * own width. 48 pixels is three quarters of a centimetre of spine: enough to
+ * recognise a cover already seen, not enough to turn the list into a grid -
+ * at which point it would be the shelf, and the shelf already exists.
+ *
+ * The count moves under the name for the same reason. Beside a 72 pixel
+ * picture there is one line of text and two lines of air, and a number
+ * stranded at the far right sits at the height of a cover it says nothing
+ * about. Under the name it belongs to the name. */
+.facet-list--covers {
+  --cover-w: 48px;
+  grid-template-columns: repeat(auto-fit, minmax(calc(300px + var(--cover-w)), 1fr));
+  gap: 10px 28px;
+}
+.facet-list--covers a {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 0;
+}
+/* The picture keeps its 2:3 from .cover, so a width is the whole instruction. */
+.facet-list--covers .cover { flex: 0 0 var(--cover-w); width: var(--cover-w); }
+/* The stand-in writes the name across the tile, which at this size is four
+   illegible characters over a name that is already spelled out beside it.
+   The coloured spine on its own says what it needs to: no picture, still a
+   book. */
+.facet-list--covers .cover--placeholder > * { display: none; }
+.facet-list--covers .series-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.facet-list--covers .n { font-size: 0.85rem; }
+/* .facet-list a:hover span:first-child no longer reaches the name, because
+   the first child is the picture and it is not a span. */
+.facet-list--covers a:hover .series-name { text-decoration: underline; }
+
 /* ---- Page controls --------------------------------------------------- */
 
 /* Was a "load more" button that replaced the page instead of adding to it -

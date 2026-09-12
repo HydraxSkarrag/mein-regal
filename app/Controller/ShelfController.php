@@ -395,16 +395,49 @@ final class ShelfController
     {
         $rows = $this->app->series->listForOwner($this->app->ownerId);
 
+        /* A series is a stack of books, and a list of names does not look
+           like one. The cover of the lowest volume on the shelf stands in
+           front of the name - the same picture the series page opens with,
+           so the two pages agree about which book comes first. */
+        $firsts = $this->app->series->firstVolumes($this->app->ownerId);
+        $covers = $this->app->covers->bestForMany(
+            array_map(static fn (array $book): int => (int) $book['id'], $firsts),
+            $this->app->auth->isSignedIn()
+        );
+
         /* Filed without the leading article, the way every library files a
            title: "Die Chronik der Drachenlanze" under C, not under D with
            every other series that happens to begin with "Die". The name
            shown is untouched - only where it lands changes. */
-        $entries = array_map(static fn (array $series): array => [
-            'label' => $series['name'],
-            'sort'  => Text::filingName($series['name']),
-            'count' => (int) $series['owned'],
-            'url'   => '/reihe/' . rawurlencode($series['slug']),
-        ], $rows);
+        $entries = array_map(static function (array $series) use ($firsts, $covers): array {
+            $owned = (int) $series['owned'];
+            $total = $series['total'] === null ? null : (int) $series['total'];
+            $first = $firsts[(int) $series['id']] ?? null;
+
+            return [
+                'label' => $series['name'],
+                'sort'  => Text::filingName($series['name']),
+                'count' => $owned,
+                /* "6 von 6", not "6". The number on its own is how many books
+                   are here; the reason to open this page at all is whether
+                   any are missing, and that question needs both halves of the
+                   fraction. Where the total is unknown there is no fraction
+                   to write and the plain count is the whole truth. */
+                'countLabel' => $total !== null
+                    ? t('series.count.of', ['owned' => $owned, 'total' => $total])
+                    : null,
+                'url'   => '/reihe/' . rawurlencode($series['slug']),
+                /* The stand-in carries the series name rather than the title
+                   of whichever book happens to be first: on this page the
+                   tile is the series, and a book title beside a series name
+                   reads as a mislabelled picture. */
+                'coverBook' => $first === null ? null : [
+                    'title' => $series['name'],
+                    'slug'  => $series['slug'],
+                ],
+                'cover' => $first === null ? null : ($covers[(int) $first['id']] ?? null),
+            ];
+        }, $rows);
 
         // And ordered by the same key, or C would be right and the order
         // inside it would still be the one the database chose.
@@ -601,6 +634,8 @@ final class ShelfController
             'heading' => $heading,
             'groups'  => $groups,
             'total'   => count($entries),
+            // For the cover partial, on the one of these pages that has covers.
+            'view'    => $this->app->view,
         ]);
 
         return Response::html($this->app->view->render('layout.base', [

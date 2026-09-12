@@ -171,6 +171,40 @@ final class SeriesRepository
     }
 
     /** Rename, or set the total and the note. Only what is given is written. */
+    /**
+     * The lowest volume of every series, in one query.
+     *
+     * For the cover on the series index. "The first book" is the wrong name
+     * for it: a shelf can start a series at volume two - one here does - and
+     * asking for series_index = 1 would leave that row without a picture for
+     * a reason the reader cannot see. The lowest volume actually on the shelf
+     * always exists, and it is the one whose spine is furthest left.
+     *
+     * The ordering is the one volumes() uses, so the cover on the index is
+     * the first tile on the series page rather than a second opinion about
+     * what comes first.
+     *
+     * @return array<int, array<string, mixed>> series id => the book
+     */
+    public function firstVolumes(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT * FROM books
+              WHERE owner_id = ? AND series_id IS NOT NULL
+           ORDER BY series_id ASC, series_index IS NULL, series_index ASC, title ASC'
+        );
+        $statement->execute([$ownerId]);
+
+        $first = [];
+        foreach ($statement->fetchAll() as $book) {
+            // Ordered, so the first row of each group is the one wanted and
+            // every row after it belongs to a volume further along.
+            $first[(int) $book['series_id']] ??= $book;
+        }
+
+        return $first;
+    }
+
     public function update(int $ownerId, int $id, array $data): bool
     {
         $assignments = [];

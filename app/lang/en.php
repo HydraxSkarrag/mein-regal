@@ -46,6 +46,7 @@ return [
     'series.all'           => 'All series',
     'series.owned'         => '{owned} volumes on the shelf',
     'series.owned.of'      => '{owned} of {total} on the shelf',
+    'series.count.of'      => '{owned} of {total}',
     'series.gap.one'       => 'Volume {number} is missing.',
     'series.gap.many'      => 'Volumes {numbers} are missing.',
     'series.unnumbered'    => 'no volume',
