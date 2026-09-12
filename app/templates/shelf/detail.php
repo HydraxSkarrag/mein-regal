@@ -34,6 +34,20 @@ declare(strict_types=1);
 </form>
 <?php endif; ?>
 
+<?php /* The title where every other page puts its heading, above both
+         columns rather than beside the cover. It is the same piece of page
+         furniture as "Alle Bücher" or "Reihen", and this was the one heading
+         in the shelf that sat somewhere else - which a reader meets as an
+         inconsistency long before they meet it as a distinction between the
+         book and the page about it.
+
+         On a phone it earns its place twice over: the columns stack there,
+         so the title now stands above the picture, which is the order a book
+         is recognised in. */ ?>
+<div class="page-head">
+  <h1><?= e($book['title']) ?></h1>
+</div>
+
 <div class="book-detail">
   <div>
     <?= $view->render('partials.cover', [
@@ -54,7 +68,6 @@ declare(strict_types=1);
   </div>
 
   <div>
-    <h1><?= e($book['title']) ?></h1>
     <?php /* Not the series name a second time. Catalogues put the series in
              the subtitle because a record has to say it somewhere, and with
              the series on its own line below that is the same words twice in
