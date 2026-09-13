@@ -125,6 +125,22 @@ usort($rows, $alphabetical);
   </form>
 </div>
 
+<?php /* Its own row, below the two tools, because it is not a tool for one
+         tag but a file for the whole shelf - and the way back has to be read
+         before the button, which is why the export is linked right here. */ ?>
+<form class="panel mb-l" method="post" action="/admin/tags/assign/preview" enctype="multipart/form-data">
+  <?= $csrfField ?>
+  <h2><?= e(t('tags.assign.heading')) ?></h2>
+  <p class="note mt-0"><?= e(t('tags.assign.hint')) ?></p>
+  <p class="note"><?= e(t('tags.assign.backup')) ?>
+    <a href="/admin/export/full"><?= e(t('maintenance.export.full')) ?></a></p>
+  <div class="field">
+    <label for="assign-file"><?= e(t('maintenance.import.file')) ?></label>
+    <input id="assign-file" type="file" name="csv" accept=".csv,text/csv" required>
+  </div>
+  <button class="btn" type="submit"><?= e(t('tags.assign.preview')) ?> &hellip;</button>
+</form>
+
 <form method="post" action="/admin/tags">
   <?= $csrfField ?>
 

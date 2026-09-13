@@ -1769,6 +1769,23 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .tag-undo { color: var(--muted); }
 .tag-undo > span:first-child { flex: 1; min-width: 0; }
 
+/* Reading a file of genres and labels: the preview. */
+.assign-summary { margin: 0; padding-left: 1.2em; }
+.assign-summary li { padding: 2px 0; }
+.assign-list { list-style: none; margin: 12px 0 24px; padding: 0; }
+.assign-list li { padding: 3px 0; break-inside: avoid; }
+.assign-list .n { color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.assign-list--columns { columns: 2; column-gap: 28px; }
+@media (min-width: 900px) { .assign-list--columns { columns: 3; } }
+.table-scroll { overflow-x: auto; }
+.assign-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.assign-table th,
+.assign-table td { text-align: left; vertical-align: top; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--border); }
+.assign-table th { font-weight: 600; white-space: nowrap; }
+/* Before and after in one cell, the old struck through above the new. */
+.assign-table del { display: block; color: var(--muted); }
+.assign-table ins { display: block; text-decoration: none; }
+
 /* One column, unlike the list above it.
  *
  * .tag-sort lays out in two or three columns, which is right for its rows: a

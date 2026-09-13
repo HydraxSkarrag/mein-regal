@@ -166,6 +166,8 @@ $app->router->get('/admin/tags/tidy', $tags->confirmTidy(...));
 $app->router->post('/admin/tags/tidy', $tags->tidy(...));
 $app->router->get('/admin/tags/merge', $tags->confirmMerge(...));
 $app->router->post('/admin/tags/merge', $tags->merge(...));
+$app->router->post('/admin/tags/assign/preview', $tags->previewAssignment(...));
+$app->router->post('/admin/tags/assign', $tags->applyAssignment(...));
 $app->router->post('/admin/tags/{id}/remove', $tags->remove(...));
 $app->router->post('/admin/tags/{id}/restore', $tags->restore(...));
 $app->router->get('/admin/tags/{id}/purge', $tags->confirmPurge(...));

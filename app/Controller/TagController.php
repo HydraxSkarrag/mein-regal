@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Content\TagAssignment;
 use App\Content\TagNotation;
 use App\Core\Request;
 use App\Core\Response;
@@ -248,6 +249,94 @@ final class TagController
         $this->app->tags->restore($this->app->ownerId, (int) $tag['id']);
 
         return $this->answerWithRow($request, (int) $tag['id']);
+    }
+
+    /**
+     * POST - a file of genres and labels per book, read and planned, with
+     * nothing written yet.
+     *
+     * The preview is the point. The file replaces what a whole shelf carries,
+     * and the only honest way to hand that over is to show every book whose
+     * tags change, every name that is new, and every tag that goes, before a
+     * button does it.
+     */
+    public function previewAssignment(Request $request): Response
+    {
+        $guard = $this->guardWrite($request);
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $upload = $request->file('csv');
+        $temporary = (string) ($upload['tmp_name'] ?? '');
+        if ($upload === null || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+            || $temporary === '' || !is_uploaded_file($temporary)) {
+            return $this->render(t('tags.assign.nofile'));
+        }
+
+        return $this->assignmentPage((string) file_get_contents($temporary));
+    }
+
+    /**
+     * POST - carry out the plan the preview showed, if it is still that plan.
+     *
+     * The file comes back with the form rather than being kept on the server:
+     * there is nowhere on this host a stray upload would be cleaned up from,
+     * and planning again is cheap. What is compared is the plan, not the
+     * file - a book edited in another tab since the preview changes what the
+     * button would do, and then the preview is shown again instead.
+     */
+    public function applyAssignment(Request $request): Response
+    {
+        $guard = $this->guardWrite($request);
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $contents = (string) ($request->allPost()['csv'] ?? '');
+        $read = TagAssignment::read($contents);
+        if ($read['error'] !== null) {
+            return $this->render(t($read['error']));
+        }
+        $plan = TagAssignment::plan($this->app->pdo, $this->app->ownerId, $read['rows']);
+        if (!hash_equals(TagAssignment::fingerprint($plan), $request->post('fingerprint'))) {
+            return $this->assignmentPage($contents, t('tags.assign.moved'));
+        }
+
+        @set_time_limit(300);
+        $result = TagAssignment::apply($this->app->pdo, $this->app->tags, $this->app->ownerId, $plan);
+        $this->app->session->flash(t('tags.assign.done', [
+            'books'   => $this->app->formatter->number($result['books']),
+            'created' => $this->app->formatter->number($result['created']),
+            'dropped' => $this->app->formatter->number($result['dropped']),
+        ]), 'ok');
+
+        return Response::redirect('/admin/tags');
+    }
+
+    private function assignmentPage(string $contents, string $notice = ''): Response
+    {
+        $read = TagAssignment::read($contents);
+        if ($read['error'] !== null) {
+            return $this->render(t($read['error']));
+        }
+        $plan = TagAssignment::plan($this->app->pdo, $this->app->ownerId, $read['rows']);
+
+        $body = $this->app->view->render('admin.tag_assign', [
+            'plan'        => $plan,
+            'canApply'    => TagAssignment::canApply($plan),
+            'fingerprint' => TagAssignment::fingerprint($plan),
+            'contents'    => $contents,
+            'notice'      => $notice,
+            'csrfField'   => $this->app->csrf->field(),
+        ]);
+
+        return Response::html($this->app->view->render('layout.base', [
+            'content' => $body,
+            'title'   => t('tags.assign.title'),
+            'current' => 'admin',
+            'noIndex' => true,
+        ]))->noIndex();
     }
 
     /**
