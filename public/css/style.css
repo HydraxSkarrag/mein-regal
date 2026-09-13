@@ -1566,13 +1566,19 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
    pixels available - seven of thirteen names wrapping onto a second line with
    three quarters of the row empty beside them.
    
-   auto-fit collapses the tracks nothing is in, so a group of one takes the
-   whole width and a group of two hundred still gets its columns. Same 260px
-   as before on purpose: the dense pages are unchanged, and only the groups
-   that were leaving room empty use it. */
+   auto-fill rather than auto-fit, so every letter group has the same
+   columns. auto-fit collapsed the tracks a small group left empty, which gave
+   a group of one the whole row: on the labels page at 1400px an entry was 269,
+   368, 566 or 1160 pixels wide depending on how many names shared its letter,
+   and the columns jumped from one heading to the next. A fixed track is
+   narrower for the small groups, and that turned out to cost almost nothing -
+   measured at 1400px on both shelves, labels, genres, series and authors:
+   two names more wrapping onto a second line, of 2,421. The 269 pixels that
+   once squeezed a lone series were a CSS-columns problem, and the series page
+   has its own wider track now. */
 .facet-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 0 28px;
   list-style: none;
   margin: 0;
@@ -1616,7 +1622,7 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .facet-list--covers {
   /* 88 = 132 * 2/3 */
   --cover-w: 88px;
-  grid-template-columns: repeat(auto-fit, minmax(calc(300px + var(--cover-w)), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(calc(300px + var(--cover-w)), 1fr));
   gap: 16px 28px;
 }
 .facet-list--covers a {

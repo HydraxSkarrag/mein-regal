@@ -122,8 +122,9 @@ $splits = static function (array $counts, string $active): bool {
   </ul>
 
   <?php if (($seriesList ?? []) !== []): ?>
-  <?php /* Alphabetical like every other long list here, and only as many as
-           the rest: ten. A shelf with no series never sees this heading. */ ?>
+  <?php /* Biggest first, like the genres, labels and people above, and only
+           as many as the rest: ten. A shelf with no series never sees this
+           heading. */ ?>
   <h2 class="sidebar-head">
     <span><?= e(t('series.title')) ?></span>
     <a class="facet-all" href="/series"><?= e(t('facets.all', ['count' => $formatter->number($seriesTotal)])) ?></a>

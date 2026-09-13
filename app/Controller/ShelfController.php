@@ -310,17 +310,7 @@ final class ShelfController
             'offset'        => $offset,
             'covers'        => $this->app->covers->bestForMany($ids, $signedIn),
             'authorLines'   => $this->authorLines($ids),
-            /* Only where there is something to filter by. A shelf with no
-               series should not carry a heading for one, and the sidebar is
-               already at the ten values that were agreed. */
-            'seriesList'    => array_slice(
-                array_values(array_filter(
-                    $this->app->series->listForOwner($this->app->ownerId),
-                    static fn (array $row): bool => (int) $row['owned'] > 0
-                )),
-                0,
-                self::FACET_ROWS
-            ),
+            'seriesList'    => $this->sidebarSeries(),
             'seriesTotal'   => count($this->app->series->listForOwner($this->app->ownerId)),
             'tags'          => $this->app->tags->listWithCounts($this->app->ownerId, self::FACET_ROWS, TagRepository::KIND_GENRE),
             'tagTotal'      => $this->app->tags->count($this->app->ownerId, TagRepository::KIND_GENRE),
@@ -580,6 +570,33 @@ final class ShelfController
                 'url'   => '/?tag=' . rawurlencode($tag['slug']),
             ], $rows)
         );
+    }
+
+    /**
+     * The series in the sidebar: the ten with the most books, biggest first.
+     *
+     * Like genres, labels and people beside them. The list used to be the
+     * first ten by name, which on a shelf of seventeen series showed "Der Herr
+     * der Ringe" with three books and hid "Harry Potter" with seven - a
+     * sidebar of ten is where the big ones belong, and the whole alphabet is
+     * one click away on /series. Ties by name, so two series of the same size
+     * keep their order.
+     *
+     * Only series with a book on the shelf: one whose last book went is still
+     * a series, but not something to filter by.
+     *
+     * @return list<array{id: int, name: string, slug: string, total: ?int, owned: int}>
+     */
+    private function sidebarSeries(): array
+    {
+        $rows = array_values(array_filter(
+            $this->app->series->listForOwner($this->app->ownerId),
+            static fn (array $row): bool => (float) $row['owned'] > 0
+        ));
+        usort($rows, static fn (array $a, array $b): int => [(float) $b['owned'], Text::fold((string) $a['name'])]
+            <=> [(float) $a['owned'], Text::fold((string) $b['name'])]);
+
+        return array_slice($rows, 0, self::FACET_ROWS);
     }
 
     /** Everyone, sorted by surname the way a shelf is. */

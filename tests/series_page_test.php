@@ -221,15 +221,24 @@ Assert::true(
     )
 );
 
-/* The A-Z lists, for the same reason on a different page: CSS columns give an
- * entry the column width and never more, so twelve letter groups holding one
- * series each sat in 269 of 1160 pixels with the name wrapped onto a second
- * line. A grid whose empty tracks collapse gives a group of one the whole row
- * and leaves a group of 226 exactly as it was - both measured. */
+/* The A-Z lists are a grid, not CSS columns - and a grid whose columns stay
+ * put from one letter to the next.
+ *
+ * They were auto-fit for a while, which collapses the tracks a small group
+ * leaves empty: a group of one took the whole row, a group of two half of it,
+ * and on the labels page at 1400px the same list drew its entries at 269,
+ * 368, 566 and 1160 pixels, jumping at every heading. auto-fill keeps the
+ * empty tracks, so every group lines up. Measured on both shelves before the
+ * change: two names more wrapping, of 2,421. */
 Assert::true(
-    'the facet list is a grid that collapses what it does not need',
-    str_contains($stylesheet, 'grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));')
+    'the facet list is a grid with the same columns in every letter group',
+    str_contains($stylesheet, 'grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));')
         && !str_contains($stylesheet, 'columns: 260px;')
+);
+Assert::true(
+    'and so is the series list with its covers',
+    str_contains($stylesheet, 'grid-template-columns: repeat(auto-fill, minmax(calc(300px + var(--cover-w)), 1fr));')
+        && !str_contains($stylesheet, 'repeat(auto-fit, minmax(260px')
 );
 
 Assert::group('Nothing stands between the reader and the heading');
@@ -273,3 +282,35 @@ Assert::true(
     'the foot treatment is the rule rather than a variant',
     str_contains($stylesheet, '.detail-actions {') && !str_contains($stylesheet, '.detail-actions--foot')
 );
+
+Assert::group('The series in the sidebar are the biggest ones');
+
+/* Genres, labels and people in the sidebar are the ten with the most books.
+ * The series were the first ten by name, which on regal.hydrax.org showed
+ * "Der Herr der Ringe" with three books and left out "Harry Potter" with
+ * seven. */
+$method = (string) file_get_contents(PROJECT_ROOT . '/app/Controller/ShelfController.php');
+Assert::true('the page takes its series from the sorted list', str_contains($method, "'seriesList'    => \$this->sidebarSeries(),"));
+
+$sortRows = static function (array $rows): array {
+    usort($rows, static fn (array $a, array $b): int => [(float) $b['owned'], App\Core\Text::fold((string) $a['name'])]
+        <=> [(float) $a['owned'], App\Core\Text::fold((string) $b['name'])]);
+
+    return array_column($rows, 'name');
+};
+Assert::true(
+    'sorted by books, then by name',
+    str_contains($method, "usort(\$rows, static fn (array \$a, array \$b): int => [(float) \$b['owned'], Text::fold((string) \$a['name'])]")
+);
+Assert::same(
+    'which puts the seven before the three, and a tie in the alphabet',
+    $sortRows([
+        ['name' => 'Der Herr der Ringe', 'owned' => '3'],
+        ['name' => 'Harry Potter', 'owned' => '7'],
+        ['name' => 'Die Erben der Drachenlanze', 'owned' => '7'],
+        ['name' => 'Der Bund der Drachenlanze', 'owned' => '12'],
+        ['name' => 'Sammelband-Reihe', 'owned' => '6.0'],
+    ]),
+    ['Der Bund der Drachenlanze', 'Die Erben der Drachenlanze', 'Harry Potter', 'Sammelband-Reihe', 'Der Herr der Ringe']
+);
+Assert::true('and still only ten', str_contains($method, 'return array_slice($rows, 0, self::FACET_ROWS);'));
