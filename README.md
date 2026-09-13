@@ -287,7 +287,7 @@ have left the endpoint guessing what was meant and answering 200 either way.
 ```bash
 php bin/export.php --format=bookstats     # the original format, reads back in
 php bin/export.php --format=full          # every column, UTF-8
-php bin/export.php --format=json          # everything, contributors and tags too
+php bin/export.php --format=json          # the same fields as full, as lists
 php bin/backup.php --keep=30              # database, catalogue and covers
 php bin/enrich.php --limit=100            # fill in missing covers and details
 php bin/covers.php                        # what the covers look like, and why some are missing

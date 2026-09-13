@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Export;
 
 use App\Core\Isbn;
+use App\Repository\TagRepository;
 use DateTimeImmutable;
 use PDO;
 
@@ -21,8 +22,17 @@ use PDO;
  *              all. Lossy, since it predates half these fields, but it reads
  *              back in through this application's own importer - which is
  *              what makes it a way out rather than a claim.
- *   full       every column, UTF-8. The everyday backup.
- *   json       everything, including contributors, tags and cover sources.
+ *   full       every column, UTF-8, one row per book. Where a book has
+ *              several of something - people, genres, labels - they share
+ *              a cell, separated by semicolons.
+ *   json       the same fields, with those as lists and the series as one
+ *              object. For programs rather than spreadsheets.
+ *
+ * The two fuller ones carry the same information on purpose. They drifted
+ * apart once: the CSV had a column list of its own, the series arrived after
+ * it was written, and only the JSON - which writes whatever the table has -
+ * picked it up. And even there as a bare series_id, a number that means
+ * nothing once this database is gone.
  */
 final class Exporter
 {
@@ -63,12 +73,15 @@ final class Exporter
         $people = $this->contributorsByBook($ownerId);
         $tags = $this->tagsByBook($ownerId);
         $covers = $this->coversByBook($ownerId);
+        $series = $this->seriesNames($ownerId);
 
         while (($book = $statement->fetch()) !== false) {
             $id = (int) $book['id'];
             $book['contributors'] = $people[$id] ?? [];
-            $book['tags'] = $tags[$id] ?? [];
+            $book['genres'] = $tags[$id]['genres'] ?? [];
+            $book['labels'] = $tags[$id]['labels'] ?? [];
             $book['covers'] = $covers[$id] ?? [];
+            $book['series_name'] = $series[(int) ($book['series_id'] ?? 0)] ?? null;
 
             yield $book;
         }
@@ -103,7 +116,9 @@ final class Exporter
                 // The original wrote 0 for a missing value, and reading it
                 // back relies on that: 0 means "not set", not zero.
                 (string) ($book['published_year'] ?? 0),
-                $book['tags'][0] ?? '',
+                // One column for what is now two kinds. A genre if there is
+                // one, since that is what the column is called.
+                $book['genres'][0] ?? $book['labels'][0] ?? '',
                 (string) ($book['page_count'] ?? 0),
                 (string) intdiv($audio, 60),
                 (string) ($audio % 60),
@@ -133,11 +148,13 @@ final class Exporter
     public function fullCsv(int $ownerId, $handle): int
     {
         $columns = [
-            'id', 'isbn13', 'isbn10', 'title', 'subtitle', 'authors', 'contributors',
+            'id', 'isbn13', 'isbn10', 'title', 'subtitle',
+            'series', 'series_index', 'series_index_end',
+            'authors', 'contributors',
             'publisher', 'published_year', 'page_count', 'language', 'binding',
             'price', 'price_currency', 'acquisition_type', 'acquired_at',
             'acquired_at_is_bulk', 'reading_status', 'started_at', 'finished_at',
-            'rating', 'tags', 'notes', 'review_url', 'audio_minutes',
+            'rating', 'genres', 'labels', 'notes', 'review_url', 'audio_minutes',
             'cover_sources', 'slug', 'created_at', 'updated_at',
         ];
 
@@ -157,8 +174,12 @@ final class Exporter
                         static fn (array $p): string => $p['name'] . ' (' . $p['role'] . ')',
                         $others
                     )),
-                    'tags'          => implode('; ', $book['tags']),
-                    'cover_sources' => implode('; ', $book['covers']),
+                    'series'           => (string) ($book['series_name'] ?? ''),
+                    'series_index'     => self::volume($book['series_index'] ?? null),
+                    'series_index_end' => self::volume($book['series_index_end'] ?? null),
+                    'genres'           => implode('; ', $book['genres']),
+                    'labels'           => implode('; ', $book['labels']),
+                    'cover_sources'    => implode('; ', $book['covers']),
                     default         => (string) ($book[$column] ?? ''),
                 };
             }
@@ -174,7 +195,15 @@ final class Exporter
     {
         $books = [];
         foreach ($this->books($ownerId) as $book) {
-            unset($book['owner_id']);
+            /* The series as one thing with a name, in place of the three
+               columns it is stored in. The id is this database's business,
+               like the owner's. */
+            $book['series'] = $book['series_name'] === null ? null : [
+                'name'      => $book['series_name'],
+                'index'     => self::volumeNumber($book['series_index'] ?? null),
+                'index_end' => self::volumeNumber($book['series_index_end'] ?? null),
+            ];
+            unset($book['owner_id'], $book['series_id'], $book['series_index'], $book['series_index_end'], $book['series_name']);
             $book['isbn_formatted'] = $book['isbn13'] !== null
                 ? Isbn::format((string) $book['isbn13'])
                 : null;
@@ -214,25 +243,74 @@ final class Exporter
         return $byBook;
     }
 
-    /** @return array<int, list<string>> */
+    /**
+     * Genres and labels per book, and only the ones in use.
+     *
+     * A removed tag keeps its links - that is what makes removing it
+     * reversible - so asking book_tags alone hands them all back. They came
+     * out in every export: "collection:Forgotten Realms", taken off the shelf
+     * by hand, stood at its book again in the backup, and after a merge a book
+     * carried the old name beside the new one, because merging copies the
+     * links and drops the source.
+     *
+     * @return array<int, array{genres: list<string>, labels: list<string>}>
+     */
     private function tagsByBook(int $ownerId): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT bt.book_id, t.name
+            'SELECT bt.book_id, t.name, t.kind
                FROM book_tags bt
                JOIN tags t ON t.id = bt.tag_id
                JOIN books b ON b.id = bt.book_id
-              WHERE b.owner_id = ?
+              WHERE b.owner_id = ? AND t.dropped_at IS NULL
               ORDER BY bt.book_id ASC, t.name ASC'
         );
         $statement->execute([$ownerId]);
 
         $byBook = [];
         foreach ($statement->fetchAll() as $row) {
-            $byBook[(int) $row['book_id']][] = (string) $row['name'];
+            $kind = $row['kind'] === TagRepository::KIND_GENRE ? 'genres' : 'labels';
+            $byBook[(int) $row['book_id']][$kind][] = (string) $row['name'];
         }
 
         return $byBook;
+    }
+
+    /** @return array<int, string> series name by id */
+    private function seriesNames(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare('SELECT id, name FROM series WHERE owner_id = ?');
+        $statement->execute([$ownerId]);
+
+        $names = [];
+        foreach ($statement->fetchAll() as $row) {
+            $names[(int) $row['id']] = (string) $row['name'];
+        }
+
+        return $names;
+    }
+
+    /**
+     * A volume as a spreadsheet should read it: "5", "5.5", never "5.0".
+     *
+     * DECIMAL comes back from MySQL as a string with its scale attached, so
+     * every whole volume would otherwise carry a ".0" nobody wrote.
+     */
+    private static function volume(mixed $value): string
+    {
+        $number = self::volumeNumber($value);
+
+        return $number === null ? '' : (string) $number;
+    }
+
+    private static function volumeNumber(mixed $value): int|float|null
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+        $number = (float) $value;
+
+        return floor($number) === $number ? (int) $number : $number;
     }
 
     /** @return array<int, list<string>> */

@@ -91,3 +91,70 @@ Assert::same('the json export counts the same books', $json['count'], 6);
 Assert::true('it records when it was made', $json['exported_at'] !== '');
 Assert::true('and carries the contributors', isset($json['books'][0]['contributors']));
 Assert::same('but not the owner id, which means nothing outside', isset($json['books'][0]['owner_id']), false);
+
+Assert::group('Exporter: the two fuller formats say the same thing');
+
+/* They drifted apart once. The CSV had a column list of its own and the
+ * series arrived after it was written; the JSON writes whatever the table
+ * has, so it picked the series up - as a bare series_id, a number that means
+ * nothing once this database is gone. Neither said which tags are genres. */
+$pdo = $makeDb();
+$tagRepository = new TagRepository($pdo);
+$bookId = (new BookRepository($pdo))->insert(1, ['title' => 'Drachenzwielicht', 'isbn13' => '9783442244584']);
+$pdo->exec("INSERT INTO series (owner_id, name, slug) VALUES (1, 'Die Chronik der Drachenlanze', 'die-chronik-der-drachenlanze')");
+$pdo->exec('UPDATE books SET series_id = ' . (int) $pdo->lastInsertId() . ', series_index = 5.0, series_index_end = 6.0 WHERE id = ' . $bookId);
+
+$fantasy = $tagRepository->findOrCreate(1, 'Fantasy');
+$dragons = $tagRepository->findOrCreate(1, 'Drachen');
+$junk = $tagRepository->findOrCreate(1, 'collection:Forgotten Realms');
+$misspelt = $tagRepository->findOrCreate(1, 'Fantasie');
+foreach ([$fantasy, $dragons, $junk, $misspelt] as $tagId) {
+    $tagRepository->link($bookId, $tagId);
+}
+$tagRepository->setKinds(1, [$fantasy => true, $misspelt => true]);
+$tagRepository->drop(1, $junk);
+$tagRepository->merge(1, $misspelt, $fantasy);
+
+$exporter = new Exporter($pdo);
+$json = $exporter->json(1)['books'][0];
+
+$full = fopen('php://memory', 'r+');
+$exporter->fullCsv(1, $full);
+rewind($full);
+$header = str_getcsv(substr((string) fgets($full), 3), ',', '"', '');
+$row = array_combine($header, str_getcsv((string) fgets($full), ',', '"', ''));
+fclose($full);
+
+Assert::same('the CSV names the series', $row['series'], 'Die Chronik der Drachenlanze');
+Assert::same('with the volume as written, not "5.0"', [$row['series_index'], $row['series_index_end']], ['5', '6']);
+Assert::same(
+    'the JSON names it too, as one thing',
+    $json['series'],
+    ['name' => 'Die Chronik der Drachenlanze', 'index' => 5, 'index_end' => 6]
+);
+Assert::true(
+    'and not by an id that means nothing outside',
+    !array_key_exists('series_id', $json) && !array_key_exists('series_index', $json)
+);
+
+Assert::same('genres and labels apart, in the CSV', [$row['genres'], $row['labels']], ['Fantasy', 'Drachen']);
+Assert::same('and in the JSON', [$json['genres'], $json['labels']], [['Fantasy'], ['Drachen']]);
+
+/* Removing a tag keeps its links, which is what makes it reversible - and
+ * what brought it back in every export. After a merge the book carried the
+ * old name beside the new one, because a merge copies the links. */
+Assert::true('a removed tag stays removed in the CSV', !str_contains(implode(';', $row), 'collection:'));
+Assert::true('and in the JSON', !str_contains((string) json_encode($json), 'collection:'));
+Assert::true('a merged-away spelling does not reappear', !str_contains(implode(';', $row), 'Fantasie'));
+
+Assert::same(
+    'the old format fills its one Genre column with a genre',
+    str_getcsv((string) iconv('ISO-8859-1', 'UTF-8', (static function () use ($exporter): string {
+        $out = fopen('php://memory', 'r+');
+        $exporter->bookstatsCsv(1, $out);
+        rewind($out);
+        fgets($out);
+        return (string) fgets($out);
+    })()), ';', '"', '')[5],
+    'Fantasy'
+);
