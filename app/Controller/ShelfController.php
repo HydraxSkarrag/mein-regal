@@ -794,7 +794,7 @@ final class ShelfController
             'authors'       => $authors,
             'otherRoles'    => $others,
             'authorLine'    => $authorLine,
-            'tags'          => $this->tagsFor($bookId),
+            'tags'          => $this->app->tags->forBook($this->app->ownerId, $bookId),
             'isbnFormatted' => $book['isbn13'] !== null ? Isbn::format((string) $book['isbn13']) : '',
             'coverLink'     => \App\Core\CoverImage::attributionLink($cover, $book['isbn13'] ?? null),
             'duration'      => $this->duration($book['audio_minutes'] ?? null),
@@ -900,21 +900,6 @@ final class ShelfController
         }
 
         return $groups;
-    }
-
-    private function tagsFor(int $bookId): array
-    {
-        // Genres before labels, and each group alphabetical inside itself:
-        // the page shows them under their own headings when a book carries
-        // both, so the order has to arrive already grouped.
-        $statement = $this->app->pdo->prepare(
-            "SELECT t.name, t.slug, t.kind FROM tags t JOIN book_tags bt ON bt.tag_id = t.id
-              WHERE bt.book_id = ?
-              ORDER BY CASE WHEN t.kind = 'genre' THEN 0 ELSE 1 END, t.name"
-        );
-        $statement->execute([$bookId]);
-
-        return $statement->fetchAll();
     }
 
     private function duration(mixed $minutes): string

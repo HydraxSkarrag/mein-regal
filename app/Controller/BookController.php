@@ -762,11 +762,6 @@ final class BookController
         $statement->execute([$bookId]);
         $contributors = $statement->fetchAll();
 
-        $tagStatement = $this->app->pdo->prepare(
-            'SELECT t.name FROM tags t JOIN book_tags bt ON bt.tag_id = t.id
-              WHERE bt.book_id = ? ORDER BY t.name'
-        );
-        $tagStatement->execute([$bookId]);
 
         /* The name rather than the id, because that is what the field shows
            and what the form posts back. A book whose series was deleted while
@@ -788,7 +783,7 @@ final class BookController
                 $book['series_index'],
                 $book['series_index_end'] ?? null
             ),
-            'tagList'      => implode(', ', array_column($tagStatement->fetchAll(), 'name')),
+            'tagList'      => implode(', ', array_column($this->app->tags->forBook($this->app->ownerId, $bookId), 'name')),
             'knownTags'    => $this->app->tags->allForOwner($this->app->ownerId),
             'cover'        => $this->app->covers->bestFor($bookId, true),
             'statuses'     => self::STATUSES,

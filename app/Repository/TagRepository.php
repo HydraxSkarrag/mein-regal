@@ -465,6 +465,33 @@ final class TagRepository
         return true;
     }
 
+    /**
+     * The tags a book shows: in use only, genres first, each kind by name.
+     *
+     * One query for the book page and the edit form, because both had their
+     * own and neither asked whether a tag had been removed. A removed tag
+     * keeps its links - that is what makes restoring it real - so a query
+     * that reads book_tags alone hands it back: "Kinder- und
+     * Jugendliteratur", removed from the whole shelf, stood on a book page
+     * under the genres that replaced it.
+     *
+     * @return list<array{name: string, slug: string, kind: string}>
+     */
+    public function forBook(int $ownerId, int $bookId): array
+    {
+        $statement = $this->pdo->prepare(
+            "SELECT t.name, t.slug, t.kind
+               FROM tags t
+               JOIN book_tags bt ON bt.tag_id = t.id
+              WHERE bt.book_id = ? AND t.owner_id = ? AND t.dropped_at IS NULL
+              ORDER BY CASE WHEN t.kind = 'genre' THEN 0 ELSE 1 END, t.name"
+        );
+        $statement->execute([$bookId, $ownerId]);
+
+        /** @var list<array{name: string, slug: string, kind: string}> */
+        return $statement->fetchAll();
+    }
+
     /** The books carrying a tag, for a preview before anything is written. */
     public function bookIdsFor(int $ownerId, int $tagId): array
     {

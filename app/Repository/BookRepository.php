@@ -173,8 +173,13 @@ final class BookRepository
                 'DELETE FROM authors WHERE owner_id = ?
                   AND NOT EXISTS (SELECT 1 FROM book_authors ba WHERE ba.author_id = authors.id)'
             )->execute([$ownerId]);
+            /* Not a removed tag, even with nothing left on it. It is the
+               record of a decision - "this name is not wanted", "this name
+               means that one" - and an import that finds no record makes the
+               name again. Deleting the last book carrying one would otherwise
+               quietly undo the decision. */
             $this->pdo->prepare(
-                'DELETE FROM tags WHERE owner_id = ?
+                'DELETE FROM tags WHERE owner_id = ? AND dropped_at IS NULL
                   AND NOT EXISTS (SELECT 1 FROM book_tags bt WHERE bt.tag_id = tags.id)'
             )->execute([$ownerId]);
         }
@@ -223,7 +228,15 @@ final class BookRepository
             $genres[Text::slug($name, 190)] = true;
         }
 
-        $this->pdo->prepare('DELETE FROM book_tags WHERE book_id = ?')->execute([$bookId]);
+        /* Only the links of tags in use. The form shows those and nothing
+           else, so those are what it can speak about. A removed tag's link
+           stays where it is: taking it away on every save would mean that
+           editing a book's price quietly makes "restore" bring the tag back
+           on one book fewer. */
+        $this->pdo->prepare(
+            'DELETE FROM book_tags WHERE book_id = ?
+                AND tag_id NOT IN (SELECT id FROM tags WHERE dropped_at IS NOT NULL)'
+        )->execute([$bookId]);
         foreach ($names as $name) {
             $created = null;
             $tagId = $tags->findOrCreate(
