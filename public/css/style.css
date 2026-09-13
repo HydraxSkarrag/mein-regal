@@ -1748,14 +1748,26 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 .tag-tools .panel h2 { margin-top: 0; }
 .tag-tools select { width: 100%; }
 
+/* A button now, not a link: it removes at once. Dressed down to the
+   character it was, so the list does not grow a column of buttons. */
 .tag-remove {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
   color: var(--muted);
-  text-decoration: none;
   font-size: 1.1rem;
   line-height: 1;
   padding: 0 2px;
 }
-.tag-remove:hover { color: var(--accent); }
+.tag-remove:hover,
+.tag-remove:focus-visible { color: var(--accent); }
+
+/* The row a removed tag leaves behind, with the button that takes it back.
+   Muted like the removed list further down, and with the name taking the
+   width so the button stays at the end where the × was. */
+.tag-undo { color: var(--muted); }
+.tag-undo > span:first-child { flex: 1; min-width: 0; }
 
 /* One column, unlike the list above it.
  *

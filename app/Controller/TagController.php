@@ -29,14 +29,14 @@ final class TagController
     {
     }
 
-    public function page(): Response
+    public function page(Request $request): Response
     {
         $guard = $this->app->requireSignIn();
         if ($guard !== null) {
             return $guard;
         }
 
-        return $this->render();
+        return $this->render('', $request->queryInt('removed'));
     }
 
     public function save(Request $request): Response
@@ -71,19 +71,14 @@ final class TagController
         return Response::redirect('/admin/tags');
     }
 
-    private function render(string $error = ''): Response
+    private function render(string $error = '', int $removedId = 0): Response
     {
         $tags = $this->app->tags->listForSorting($this->app->ownerId);
-        $genres = 0;
-        foreach ($tags as $tag) {
-            if ($tag['kind'] === TagRepository::KIND_GENRE) {
-                $genres++;
-            }
-        }
 
         $body = $this->app->view->render('admin.tags', [
             'tags'        => $tags,
-            'genreCount'  => $genres,
+            'countLine'   => $this->countLine($tags),
+            'removedId'   => $removedId,
             'fieldValues' => $this->fieldValuePairs(),
             /* Only counted here, and only shown when it is not zero: on a
                tidy shelf this section should not exist. */
@@ -99,7 +94,39 @@ final class TagController
             'title'   => t('tags.title'),
             'current' => 'admin',
             'noIndex' => true,
+            'scripts' => ['/js/tag-admin.js'],
         ]))->noIndex();
+    }
+
+    /**
+     * "12 of 380 are genres", counting only the tags in use.
+     *
+     * The genres used to be counted over every tag, removed ones included,
+     * and the total over the ones in use - so removing a genre left the first
+     * number where it was and took one off the second. Both halves come from
+     * the same list now, and from one place, because the page and a script
+     * that has just removed a tag both need the line.
+     *
+     * @param list<array{kind: string, dropped_at: ?string}> $tags
+     */
+    private function countLine(array $tags): string
+    {
+        $genres = 0;
+        $total = 0;
+        foreach ($tags as $tag) {
+            if ($tag['dropped_at'] !== null) {
+                continue;
+            }
+            $total++;
+            if ($tag['kind'] === TagRepository::KIND_GENRE) {
+                $genres++;
+            }
+        }
+
+        return t('tags.count', [
+            'genres' => $this->app->formatter->number($genres),
+            'total'  => $this->app->formatter->number($total),
+        ]);
     }
 
     /**
@@ -177,28 +204,20 @@ final class TagController
     }
 
     /** GET - what removing this tag would do, before it does it. */
-    public function confirmRemove(Request $request, array $params): Response
-    {
-        $guard = $this->app->requireSignIn();
-        if ($guard !== null) {
-            return $guard;
-        }
-        $tag = $this->app->tags->find($this->app->ownerId, (int) ($params['id'] ?? 0));
-        if ($tag === null) {
-            return $this->app->notFound();
-        }
-
-        return $this->confirm(
-            t('tags.remove.title', ['name' => $tag['name']]),
-            t('tags.remove.warning', ['count' => (int) $tag['book_count']]),
-            [t('tags.remove.reversible'), t('tags.remove.imports')],
-            '/admin/tags/' . (int) $tag['id'] . '/remove',
-            t('tags.remove.do'),
-            [],
-            (string) $tag['slug']
-        );
-    }
-
+    /**
+     * Remove a tag at once, with no page asking first.
+     *
+     * There was one, and it guarded nothing. Removing only hides a tag -
+     * every link is kept and it can be put back - and the one thing the page
+     * said, how many books carry it, stands beside the × already. What it
+     * cost was two page loads per tag and a landing at the top of a list of
+     * three hundred and eighty, on a screen whose job is clearing out a run
+     * of entries an import left behind.
+     *
+     * The safety moved from before to after: the row turns into "removed"
+     * with a button that takes it back, where the × was. Deleting for good
+     * still asks, because that one cannot be taken back.
+     */
     public function remove(Request $request, array $params): Response
     {
         $guard = $this->guardWrite($request);
@@ -211,9 +230,8 @@ final class TagController
         }
 
         $this->app->tags->drop($this->app->ownerId, (int) $tag['id']);
-        $this->app->session->flash(t('tags.removed', ['name' => $tag['name']]), 'ok');
 
-        return Response::redirect('/admin/tags');
+        return $this->answerWithRow($request, (int) $tag['id'], '?removed=' . (int) $tag['id']);
     }
 
     public function restore(Request $request, array $params): Response
@@ -228,9 +246,32 @@ final class TagController
         }
 
         $this->app->tags->restore($this->app->ownerId, (int) $tag['id']);
-        $this->app->session->flash(t('tags.restored', ['name' => $tag['name']]), 'ok');
 
-        return Response::redirect('/admin/tags');
+        return $this->answerWithRow($request, (int) $tag['id']);
+    }
+
+    /**
+     * What removing and restoring answer: the row in its new state and the
+     * new count line for a script, or the list for a browser, scrolled to
+     * that row.
+     *
+     * A browser used to land at the top with a message there, which is the
+     * one place on this screen nobody working down the list is looking. The
+     * row is the message now. Without a script the address says which tag was
+     * just removed, so the list can draw the row that takes it back.
+     */
+    private function answerWithRow(Request $request, int $tagId, string $query = ''): Response
+    {
+        if ($request->wantsJson()) {
+            $tag = $this->app->tags->find($this->app->ownerId, $tagId);
+
+            return Response::json([
+                'row'   => $tag === null ? '' : $this->app->view->render('partials.tag_row', ['tag' => $tag]),
+                'count' => $this->countLine($this->app->tags->listForSorting($this->app->ownerId)),
+            ]);
+        }
+
+        return Response::redirect('/admin/tags' . $query . '#tag-row-' . $tagId);
     }
 
     /** GET - the one action here that cannot be taken back. */
@@ -492,8 +533,6 @@ final class TagController
      *
      * @param list<string>          $notes
      * @param array<string, string> $hidden
-     * @param ?string                $listSlug the tag whose books this is about,
-     *                                         so they can be looked at first
      */
     private function confirm(
         string $heading,
@@ -501,8 +540,7 @@ final class TagController
         array $notes,
         string $action,
         string $button,
-        array $hidden = [],
-        ?string $listSlug = null
+        array $hidden = []
     ): Response {
         $body = $this->app->view->render('admin.tag_confirm', [
             'heading'   => $heading,
@@ -511,7 +549,6 @@ final class TagController
             'action'    => $action,
             'button'    => $button,
             'hidden'    => $hidden,
-            'listUrl'   => $listSlug === null ? null : '/?tag=' . rawurlencode($listSlug),
             'csrfField' => $this->app->csrf->field(),
         ]);
 

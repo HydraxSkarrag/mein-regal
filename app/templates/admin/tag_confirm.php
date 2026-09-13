@@ -3,16 +3,15 @@
  * The page between meaning to do something and doing it.
  *
  * Always the same shape: what will happen in numbers, what will not happen,
- * and one button. Shared by removing, merging and folding a tag into a field,
- * because three different confirmation screens would be three chances to
- * word a warning badly.
+ * and one button. Shared by tidying, merging, folding a tag into a field and
+ * deleting for good, because four different confirmation screens would be
+ * four chances to word a warning badly. Removing a tag has none: it is
+ * taken back where it happened, see partials/tag_row.php.
  *
  * @var string              $heading
  * @var string              $warning
  * @var list<string>        $notes
  * @var array<string,string> $hidden
- * @var ?string $listUrl the books this is about, opened in a second tab so
- *                       the confirmation is still there afterwards
  */
 declare(strict_types=1);
 ?>
@@ -28,10 +27,6 @@ declare(strict_types=1);
     <li><?= e($note) ?></li>
     <?php endforeach; ?>
   </ul>
-  <?php endif; ?>
-
-  <?php if (($listUrl ?? null) !== null): ?>
-  <p><a href="<?= e($listUrl) ?>" target="_blank" rel="noopener"><?= e(t('tags.show.books')) ?></a></p>
   <?php endif; ?>
 
   <form method="post" action="<?= e($action) ?>" class="confirm-actions">

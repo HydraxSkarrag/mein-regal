@@ -9,11 +9,13 @@
  *
  * The three tidying actions are forms of their own rather than controls
  * inside the big one: a form cannot be nested in another, and each of them
- * leads to a confirmation page anyway.
+ * leads to a confirmation page anyway. Removing a tag does not - see
+ * partials/tag_row.php for where its button lives instead.
  *
  * @var list<array{id: int, name: string, kind: string, dropped_at: ?string, book_count: int}> $tags
- * @var int $genreCount
+ * @var string $countLine how many genres of how many tags, counted by the controller
  * @var int $notation how many names still carry a catalogue number
+ * @var int $removedId the tag removed a moment ago without a script, or 0
  */
 declare(strict_types=1);
 
@@ -27,20 +29,31 @@ $dropped = array_values(array_filter($tags, static fn (array $t): bool => $t['dr
  * hundred and eighty entries in three columns, the question is always "where
  * is this one", and only the alphabet answers that. Folded, so that Ärzte
  * sits with A rather than after Z. */
+$alphabetical = static fn (array $a, array $b): int
+    => App\Core\Text::fold($a['name']) <=> App\Core\Text::fold($b['name']);
+
+/* The tag removed a moment ago, when that happened without a script: the
+ * browser came back here scrolled to it. It stands in the list where it was,
+ * as the row that takes it back, and is left out of the removed ones below
+ * so it is not on the page twice. The select boxes do not offer it. */
+$rows = $live;
+foreach ($dropped as $index => $tag) {
+    if ((int) $tag['id'] === $removedId) {
+        $rows[] = $tag;
+        unset($dropped[$index]);
+    }
+}
+$dropped = array_values($dropped);
+
 $byName = $live;
-usort(
-    $byName,
-    static fn (array $a, array $b): int => App\Core\Text::fold($a['name']) <=> App\Core\Text::fold($b['name'])
-);
+usort($byName, $alphabetical);
+usort($rows, $alphabetical);
 ?>
 <?= $view->render('partials.admin_nav', ['adminCurrent' => 'tags']) ?>
 
 <div class="page-head">
   <h1><?= e(t('tags.title')) ?></h1>
-  <span class="count"><?= e(t('tags.count', [
-      'genres' => $formatter->number($genreCount),
-      'total'  => $formatter->number(count($live)),
-  ])) ?></span>
+  <span class="count"><?= e($countLine) ?></span>
 </div>
 
 <?php if ($error !== ''): ?>
@@ -119,19 +132,8 @@ usort(
   <p class="note"><?= e(t('tags.hint')) ?></p>
 
   <ul class="tag-sort">
-    <?php foreach ($byName as $tag): ?>
-    <li>
-      <input type="hidden" name="genre[<?= e((string) $tag['id']) ?>]" value="0">
-      <input type="checkbox" id="tag-<?= e((string) $tag['id']) ?>"
-             name="genre[<?= e((string) $tag['id']) ?>]" value="1"
-             <?= $tag['kind'] === 'genre' ? 'checked' : '' ?>>
-      <label for="tag-<?= e((string) $tag['id']) ?>">
-        <span><?= e($tag['name']) ?></span>
-        <span class="n"><?= e($formatter->number((int) $tag['book_count'])) ?></span>
-      </label>
-      <a class="tag-remove" href="/admin/tags/<?= e((string) $tag['id']) ?>/remove"
-         title="<?= e(t('tags.remove')) ?>" aria-label="<?= e(t('tags.remove')) ?>">&times;</a>
-    </li>
+    <?php foreach ($rows as $tag): ?>
+    <?= $view->render('partials.tag_row', ['tag' => $tag]) ?>
     <?php endforeach; ?>
   </ul>
 
@@ -139,6 +141,11 @@ usort(
     <button class="btn btn--primary" type="submit"><?= e(t('common.save')) ?></button>
   </div>
 </form>
+
+<?php /* What every × and every undo in the list above submits. Empty but for
+         the token, so a removal carries nothing else along - in particular
+         not the genre ticks, which stay on the page unsaved and untouched. */ ?>
+<form id="tag-actions" method="post" action="/admin/tags"><?= $csrfField ?></form>
 
 <?php if ($dropped !== []): ?>
 <h2><?= e(t('tags.dropped.heading')) ?></h2>
