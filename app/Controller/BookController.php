@@ -352,6 +352,12 @@ final class BookController
                 $this->app->authors
             );
 
+            /* Said after the save rather than refused before it: the rest of
+               the form is fine, and a removed name is the one thing in it the
+               shelf will not take. Without a script this is the only place it
+               is said; with one, the field has said it already. */
+            $refusedTags = $this->app->tags->refusedAmong($this->app->ownerId, $this->parseTags($request->post('tags')));
+
             $this->app->books->replaceTags(
                 $this->app->ownerId,
                 $bookId,
@@ -393,6 +399,11 @@ final class BookController
         }
 
         $this->app->session->flash(t('edit.saved'), 'ok');
+        if ($refusedTags !== []) {
+            $this->app->session->flash(t('edit.tags.refused', [
+                'names' => implode(', ', array_map(static fn (string $n): string => t('edit.tags.quoted', ['name' => $n]), $refusedTags)),
+            ]), 'hint');
+        }
 
         /* Read back rather than reused: $book is the row as it was before the
            save, and correcting a title now moves the book to a new address.
@@ -785,6 +796,10 @@ final class BookController
             ),
             'tagList'      => implode(', ', array_column($this->app->tags->forBook($this->app->ownerId, $bookId), 'name')),
             'knownTags'    => $this->app->tags->allForOwner($this->app->ownerId),
+            'removedTags'  => array_map(
+                static fn (array $tag): array => ['name' => $tag['name'], 'into' => $tag['into']],
+                $this->app->tags->removedNames($this->app->ownerId)
+            ),
             'cover'        => $this->app->covers->bestFor($bookId, true),
             'statuses'     => self::STATUSES,
             'bindings'     => self::BINDINGS,

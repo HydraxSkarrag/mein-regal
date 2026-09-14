@@ -20,6 +20,10 @@
 
   var known = JSON.parse(knownNode.textContent);
   var text = JSON.parse(i18nNode.textContent);
+  // Removed names, and where a merged one leads. Optional, so a page that
+  // does not send the list still gets the picker.
+  var removedNode = document.getElementById('removed-tags');
+  var removed = removedNode ? JSON.parse(removedNode.textContent) : [];
 
   /* Comparison form: accents folded, case and punctuation dropped. Two
      spellings of the same genre have to collide here or the warning is
@@ -34,6 +38,8 @@
 
   var byFold = {};
   known.forEach(function (tag) { byFold[fold(tag.name)] = tag; });
+  var removedByFold = {};
+  removed.forEach(function (tag) { removedByFold[fold(tag.name)] = tag; });
 
   /* Levenshtein, capped: only used to ask "is this within one or two
      keystrokes of something that already exists". */
@@ -206,7 +212,8 @@
        two fields either, which would ask the question for every tag whether
        or not there is one to answer. Here it is asked only about something
        being made, and per name. */
-    if (query !== '' && !byFold[fold(query)]) {
+    // Not for a removed name: it cannot be made again, only restored.
+    if (query !== '' && !byFold[fold(query)] && !removedByFold[fold(query)]) {
       [
         { kind: 'label', text: text.newLabel },
         { kind: 'genre', text: text.newGenre }
@@ -228,6 +235,14 @@
   }
 
   function showWarning(query) {
+    var gone = query === '' ? null : removedByFold[fold(query)];
+    if (gone) {
+      warning.textContent = gone.into
+        ? text.merged.split('{tag}').join(gone.name).split('{into}').join(gone.into)
+        : text.removed.split('{tag}').join(gone.name);
+      warning.hidden = false;
+      return;
+    }
     var near = query === '' ? null : nearMiss(query);
     if (near === null) { warning.hidden = true; return; }
     warning.textContent = text.similar.replace('{tag}', near.name);
@@ -238,6 +253,12 @@
     name = name.trim();
     if (name === '') { return; }
     var f = fold(name);
+    /* A removed name is not added: saving would take it off again. A merged
+       one is added as what it became, which is what saving does anyway. The
+       typed text stays in the box with the warning under it. */
+    var gone = removedByFold[f];
+    if (gone && !gone.into) { showWarning(name); return; }
+    if (gone) { name = gone.into; f = fold(name); }
     if (chosen.some(function (c) { return fold(c) === f; })) { entry.value = ''; renderList(); return; }
     // Only for a name that is not on the shelf yet. Typing the name of an
     // existing label and choosing "new genre" must not quietly reclassify it.

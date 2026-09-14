@@ -314,6 +314,10 @@ return [
     'edit.tags.kind.label'     => 'Label',
     'edit.tags.kind.genre'     => 'Genre',
     'edit.tags.similar'        => 'Similar already exists: "{tag}" - did you mean that?',
+    'edit.tags.removed'        => '"{tag}" was removed and will not be kept. It can be restored under Genres and labels.',
+    'edit.tags.merged'         => '"{tag}" was merged into "{into}" and will be saved as "{into}".',
+    'edit.tags.refused'        => 'Not kept, because removed: {names}. They can be restored under Genres and labels.',
+    'edit.tags.quoted'         => '"{name}"',
     'edit.tags.remove'         => 'Remove:',
     'edit.tags.books'          => 'books',
 

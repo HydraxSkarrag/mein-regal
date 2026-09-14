@@ -534,6 +534,72 @@ final class TagRepository
     }
 
     /**
+     * The names that were removed, and for a merged one the tag it leads to.
+     *
+     * For the tag field of the edit form. A removed name typed there looked
+     * like a new label, and saving took it off again without a word - link()
+     * refuses a removed tag, which is right, and the form said nothing, which
+     * was not. A merged name is not refused but followed, so the form can say
+     * where it will land.
+     *
+     * @return list<array{name: string, slug: string, into: ?string}>
+     */
+    public function removedNames(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT id, name, slug, dropped_at, merged_into FROM tags WHERE owner_id = ? ORDER BY name'
+        );
+        $statement->execute([$ownerId]);
+        $all = [];
+        foreach ($statement->fetchAll() as $tag) {
+            $all[(int) $tag['id']] = $tag;
+        }
+
+        $removed = [];
+        foreach ($all as $tag) {
+            if ($tag['dropped_at'] === null) {
+                continue;
+            }
+            // The same trail resolve() follows, read from what is loaded.
+            $into = null;
+            $next = $tag['merged_into'];
+            for ($hops = 0; $hops < 10 && $next !== null && isset($all[(int) $next]); $hops++) {
+                $target = $all[(int) $next];
+                if ($target['dropped_at'] === null) {
+                    $into = (string) $target['name'];
+                    break;
+                }
+                $next = $target['merged_into'];
+            }
+            $removed[] = ['name' => (string) $tag['name'], 'slug' => (string) $tag['slug'], 'into' => $into];
+        }
+
+        return $removed;
+    }
+
+    /**
+     * Which of these names a book cannot be given, because they were removed
+     * and lead nowhere.
+     *
+     * @param list<string> $names
+     * @return list<string> the names as they were typed
+     */
+    public function refusedAmong(int $ownerId, array $names): array
+    {
+        $refused = [];
+        foreach ($this->removedNames($ownerId) as $tag) {
+            if ($tag['into'] === null) {
+                $refused[$tag['slug']] = true;
+            }
+        }
+
+        return array_values(array_filter(
+            $names,
+            static fn (string $name): bool => isset($refused[Text::slug($name, 190)])
+        ));
+    }
+
+    /**
      * One book's links as they stand right now, and whether each tag is removed.
      *
      * @return list<array{tag_id: int, dropped: bool}>

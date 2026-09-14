@@ -147,6 +147,9 @@ $value = static fn (?string $v): string => $v ?? '';
       </div>
 
       <script type="application/json" id="known-tags"><?= json_for_script($knownTags) ?></script>
+      <?php /* Names that were removed, so typing one says so instead of
+               looking like a new label and vanishing on save. */ ?>
+      <script type="application/json" id="removed-tags"><?= json_for_script($removedTags) ?></script>
       <script type="application/json" id="tag-i18n"><?= json_for_script([
           'placeholder' => t('edit.tags.placeholder'),
           'newLabel'    => t('edit.tags.new.label'),
@@ -154,6 +157,8 @@ $value = static fn (?string $v): string => $v ?? '';
           'kindLabel'   => t('edit.tags.kind.label'),
           'kindGenre'   => t('edit.tags.kind.genre'),
           'similar'     => t('edit.tags.similar'),
+          'removed'     => t('edit.tags.removed'),
+          'merged'      => t('edit.tags.merged'),
           'remove'      => t('edit.tags.remove'),
           'books'       => t('edit.tags.books'),
       ]) ?></script>

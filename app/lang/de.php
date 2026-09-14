@@ -339,6 +339,10 @@ return [
     'edit.tags.kind.label'     => 'Schlagwort',
     'edit.tags.kind.genre'     => 'Genre',
     'edit.tags.similar'        => 'Ähnlich vorhanden: „{tag}“ – vielleicht ist das gemeint?',
+    'edit.tags.removed'        => '„{tag}“ ist entfernt und wird nicht übernommen. Zurückholen lässt es sich unter Genres und Schlagwörter.',
+    'edit.tags.merged'         => '„{tag}“ ist in „{into}“ aufgegangen und wird als „{into}“ gespeichert.',
+    'edit.tags.refused'        => 'Nicht übernommen, weil entfernt: {names}. Zurückholen lässt es sich unter Genres und Schlagwörter.',
+    'edit.tags.quoted'         => '„{name}“',
     'edit.tags.remove'         => 'Entfernen:',
     'edit.tags.books'          => 'Bücher',
 
