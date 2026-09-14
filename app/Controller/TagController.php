@@ -316,6 +316,7 @@ final class TagController
 
     private function assignmentPage(string $contents, string $notice = ''): Response
     {
+        $contents = TagAssignment::normalize($contents);
         $read = TagAssignment::read($contents);
         if ($read['error'] !== null) {
             return $this->render(t($read['error']));

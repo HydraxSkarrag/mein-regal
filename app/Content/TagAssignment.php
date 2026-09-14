@@ -55,11 +55,7 @@ final class TagAssignment
      */
     public static function read(string $contents): array
     {
-        if (!mb_check_encoding($contents, 'UTF-8')) {
-            $converted = mb_convert_encoding($contents, 'UTF-8', 'Windows-1252');
-            $contents = is_string($converted) ? $converted : $contents;
-        }
-        $contents = preg_replace('/^\x{FEFF}/u', '', $contents) ?? $contents;
+        $contents = self::normalize($contents);
 
         $firstLine = strtok($contents, "\n");
         $delimiter = substr_count((string) $firstLine, ';') > substr_count((string) $firstLine, ',') ? ';' : ',';
@@ -101,6 +97,25 @@ final class TagAssignment
         fclose($handle);
 
         return ['rows' => $rows, 'error' => $rows === [] ? 'tags.assign.empty' : null];
+    }
+
+    /**
+     * The file as UTF-8 without a byte order mark.
+     *
+     * Public because the preview sends the file back with its button, and it
+     * has to send this rather than the upload. A spreadsheet saving in
+     * Windows-1252 hands over "F\xFChrung": read here it is "Führung", but
+     * escaped into the page as it came it turned into "F\u{FFFD}hrung", and a
+     * second press would have written that name onto the shelf.
+     */
+    public static function normalize(string $contents): string
+    {
+        if (!mb_check_encoding($contents, 'UTF-8')) {
+            $converted = mb_convert_encoding($contents, 'UTF-8', 'Windows-1252');
+            $contents = is_string($converted) ? $converted : $contents;
+        }
+
+        return preg_replace('/^\x{FEFF}/u', '', $contents) ?? $contents;
     }
 
     /**
