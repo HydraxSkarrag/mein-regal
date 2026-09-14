@@ -33,8 +33,12 @@ $sizes = $sizes ?? '(max-width: 600px) 33vw, 150px';
  * The dimensions are recorded when a cover is stored, so this is read rather
  * than guessed. A row from before they were kept has neither, and then
  * nothing here applies and the tile behaves as it always did. */
-const TILE_RATIO = 2 / 3;
-const KEEP_AT_LEAST = 0.80;
+/* Variables, not constants. A partial is included once per tile, and a
+ * const at the top of an included file is defined again every time: 118
+ * warnings for a shelf page of sixty covers, silent only because errors are
+ * not displayed, and an error outright in PHP 9. */
+$tileRatio = 2 / 3;
+$keepAtLeast = 0.80;
 
 $coverWidth = (int) ($cover['width'] ?? 0);
 $coverHeight = (int) ($cover['height'] ?? 0);
@@ -43,9 +47,9 @@ $known = $coverWidth > 0 && $coverHeight > 0;
 $visible = 1.0;
 if ($known) {
     $ratio = $coverWidth / $coverHeight;
-    $visible = min($ratio, TILE_RATIO) / max($ratio, TILE_RATIO);
+    $visible = min($ratio, $tileRatio) / max($ratio, $tileRatio);
 }
-$offShape = $known && $visible < KEEP_AT_LEAST;
+$offShape = $known && $visible < $keepAtLeast;
 ?>
 <?php if ($url !== null): ?>
 <div class="cover<?= $offShape ? ' cover--contain' : '' ?>">

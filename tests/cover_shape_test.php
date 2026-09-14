@@ -193,3 +193,34 @@ foreach (['portal.dnb.de', 'books.google.com', 'covers.openlibrary.org', 'archiv
 // itself may reach, and it is the reason a cover can be downloaded at all.
 $storage = (string) file_get_contents(PROJECT_ROOT . '/app/Core/CoverStorage.php');
 Assert::true('the server may still fetch from the catalogue', str_contains($storage, 'portal.dnb.de'));
+
+Assert::group('A tile drawn sixty times says nothing to the log');
+
+/* The partial is included once per tile. It began with two constants, and a
+ * const at the top of an included file is defined again on every include:
+ * 118 warnings for one shelf page of sixty covers, silent only because errors
+ * are not displayed, and an error outright in PHP 9. */
+$redefined = 0;
+set_error_handler(static function (int $level, string $message) use (&$redefined): bool {
+    if (str_contains($message, 'already defined')) {
+        $redefined++;
+    }
+
+    return true;
+});
+for ($tile = 0; $tile < 60; $tile++) {
+    $render(['source' => 'own', 'path' => 'x.webp', 'external_url' => null, 'width' => 600, 'height' => 600]);
+}
+restore_error_handler();
+Assert::same('sixty tiles, no redefinition', $redefined, 0);
+
+// And the same for every template, since any of them may be drawn in a loop.
+foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(PROJECT_ROOT . '/app/templates')) as $templateFile) {
+    if ($templateFile->isFile() && str_ends_with($templateFile->getFilename(), '.php')) {
+        $templateCode = (string) preg_replace('~/\*.*?\*/~s', '', (string) file_get_contents($templateFile->getPathname()));
+        Assert::true(
+            'no constant defined in ' . substr($templateFile->getPathname(), strlen(PROJECT_ROOT) + 1),
+            !preg_match('/^\s*const\s+[A-Z_]+\s*=/m', $templateCode) && !str_contains($templateCode, 'define(')
+        );
+    }
+}
