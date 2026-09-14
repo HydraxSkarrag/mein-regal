@@ -493,6 +493,24 @@ final class BookRepository
 
     /** @return array{with: int, without: int} */
     /** How many books there are at all, filters aside. */
+    /**
+     * Every book of this owner by id, with just what identifies it.
+     *
+     * @return array<int, array{id: int, isbn13: ?string, title: string}>
+     */
+    public function identities(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare('SELECT id, isbn13, title FROM books WHERE owner_id = ?');
+        $statement->execute([$ownerId]);
+
+        $books = [];
+        foreach ($statement->fetchAll() as $book) {
+            $books[(int) $book['id']] = $book;
+        }
+
+        return $books;
+    }
+
     public function countAll(int $ownerId): int
     {
         $statement = $this->pdo->prepare('SELECT COUNT(*) FROM books WHERE owner_id = ?');

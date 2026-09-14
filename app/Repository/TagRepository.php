@@ -492,6 +492,112 @@ final class TagRepository
         return $statement->fetchAll();
     }
 
+    /**
+     * Every tag this owner has, removed ones included, with what state each
+     * is in. For a change to the whole list, which has to know about a
+     * removed name before it tries to create it again.
+     *
+     * @return array<int, array{id: int, name: string, slug: string, kind: string, dropped_at: ?string}> by id
+     */
+    public function allWithState(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare('SELECT id, name, slug, kind, dropped_at FROM tags WHERE owner_id = ?');
+        $statement->execute([$ownerId]);
+
+        $tags = [];
+        foreach ($statement->fetchAll() as $tag) {
+            $tags[(int) $tag['id']] = $tag;
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Every link of every book, the links of removed tags included - a tag
+     * that comes back brings them back with it.
+     *
+     * @return array<int, list<int>> tag ids by book id
+     */
+    public function linksByBook(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT bt.book_id, bt.tag_id FROM book_tags bt JOIN books b ON b.id = bt.book_id WHERE b.owner_id = ?'
+        );
+        $statement->execute([$ownerId]);
+
+        $links = [];
+        foreach ($statement->fetchAll() as $link) {
+            $links[(int) $link['book_id']][] = (int) $link['tag_id'];
+        }
+
+        return $links;
+    }
+
+    /**
+     * One book's links as they stand right now, and whether each tag is removed.
+     *
+     * @return list<array{tag_id: int, dropped: bool}>
+     */
+    public function linksOf(int $ownerId, int $bookId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT bt.tag_id, t.dropped_at FROM book_tags bt JOIN tags t ON t.id = bt.tag_id
+              WHERE bt.book_id = ? AND t.owner_id = ?'
+        );
+        $statement->execute([$bookId, $ownerId]);
+
+        return array_map(
+            static fn (array $row): array => ['tag_id' => (int) $row['tag_id'], 'dropped' => $row['dropped_at'] !== null],
+            $statement->fetchAll()
+        );
+    }
+
+    /** Take one tag off one book. */
+    public function unlink(int $ownerId, int $bookId, int $tagId): void
+    {
+        $this->pdo->prepare(
+            'DELETE FROM book_tags WHERE book_id = ? AND tag_id IN (SELECT id FROM tags WHERE id = ? AND owner_id = ?)'
+        )->execute([$bookId, $tagId, $ownerId]);
+    }
+
+    /**
+     * Make one tag a genre or a label.
+     *
+     * setKinds() does the same for many at once inside a transaction of its
+     * own, which cannot be used from inside another.
+     */
+    public function setKind(int $ownerId, int $tagId, string $kind): void
+    {
+        $this->pdo->prepare('UPDATE tags SET kind = ? WHERE owner_id = ? AND id = ?')->execute([
+            $kind === self::KIND_GENRE ? self::KIND_GENRE : self::KIND_LABEL,
+            $ownerId,
+            $tagId,
+        ]);
+    }
+
+    /**
+     * Run a piece of work all at once or not at all.
+     *
+     * @template T
+     * @param callable(): T $work
+     * @return T
+     */
+    public function atomically(callable $work): mixed
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $result = $work();
+            $this->pdo->commit();
+
+            return $result;
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     /** The books carrying a tag, for a preview before anything is written. */
     public function bookIdsFor(int $ownerId, int $tagId): array
     {

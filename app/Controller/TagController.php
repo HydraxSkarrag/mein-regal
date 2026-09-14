@@ -298,13 +298,13 @@ final class TagController
         if ($read['error'] !== null) {
             return $this->render(t($read['error']));
         }
-        $plan = TagAssignment::plan($this->app->pdo, $this->app->ownerId, $read['rows']);
+        $plan = TagAssignment::plan($this->app->books, $this->app->tags, $this->app->ownerId, $read['rows']);
         if (!hash_equals(TagAssignment::fingerprint($plan), $request->post('fingerprint'))) {
             return $this->assignmentPage($contents, t('tags.assign.moved'));
         }
 
         @set_time_limit(300);
-        $result = TagAssignment::apply($this->app->pdo, $this->app->tags, $this->app->ownerId, $plan);
+        $result = TagAssignment::apply($this->app->tags, $this->app->ownerId, $plan);
         $this->app->session->flash(t('tags.assign.done', [
             'books'   => $this->app->formatter->number($result['books']),
             'created' => $this->app->formatter->number($result['created']),
@@ -320,7 +320,7 @@ final class TagController
         if ($read['error'] !== null) {
             return $this->render(t($read['error']));
         }
-        $plan = TagAssignment::plan($this->app->pdo, $this->app->ownerId, $read['rows']);
+        $plan = TagAssignment::plan($this->app->books, $this->app->tags, $this->app->ownerId, $read['rows']);
 
         $body = $this->app->view->render('admin.tag_assign', [
             'plan'        => $plan,

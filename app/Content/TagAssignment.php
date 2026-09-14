@@ -4,9 +4,8 @@ declare(strict_types=1);
 namespace App\Content;
 
 use App\Core\Text;
+use App\Repository\BookRepository;
 use App\Repository\TagRepository;
-use PDO;
-use Throwable;
 
 /**
  * Genres and labels for a whole shelf at once, from a file.
@@ -118,34 +117,15 @@ final class TagAssignment
      *     outside: int
      * }
      */
-    public static function plan(PDO $pdo, int $ownerId, array $rows): array
+    public static function plan(BookRepository $books, TagRepository $tagRepository, int $ownerId, array $rows): array
     {
-        $shelf = [];
-        $statement = $pdo->prepare('SELECT id, isbn13, title FROM books WHERE owner_id = ?');
-        $statement->execute([$ownerId]);
-        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $book) {
-            $shelf[(int) $book['id']] = $book;
-        }
-
-        $tags = [];
+        $shelf = $books->identities($ownerId);
+        $tags = $tagRepository->allWithState($ownerId);
         $bySlug = [];
-        $statement = $pdo->prepare('SELECT id, name, slug, kind, dropped_at FROM tags WHERE owner_id = ?');
-        $statement->execute([$ownerId]);
-        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $tag) {
-            $tags[(int) $tag['id']] = $tag;
-            $bySlug[(string) $tag['slug']] = (int) $tag['id'];
+        foreach ($tags as $id => $tag) {
+            $bySlug[(string) $tag['slug']] = $id;
         }
-
-        // Every link of every book, the hidden ones included: a tag the file
-        // brings back brings its old links back with it.
-        $links = [];
-        $statement = $pdo->prepare(
-            'SELECT bt.book_id, bt.tag_id FROM book_tags bt JOIN books b ON b.id = bt.book_id WHERE b.owner_id = ?'
-        );
-        $statement->execute([$ownerId]);
-        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $link) {
-            $links[(int) $link['book_id']][] = (int) $link['tag_id'];
-        }
+        $links = $tagRepository->linksByBook($ownerId);
 
         $rejected = [];
         $accepted = [];
@@ -305,16 +285,15 @@ final class TagAssignment
      *
      * @return array{books: int, created: int, dropped: int}
      */
-    public static function apply(PDO $pdo, TagRepository $tags, int $ownerId, array $plan): array
+    public static function apply(TagRepository $tags, int $ownerId, array $plan): array
     {
         if (!self::canApply($plan)) {
             return ['books' => 0, 'created' => 0, 'dropped' => 0];
         }
 
-        $created = 0;
-        $booksChanged = 0;
-        $pdo->beginTransaction();
-        try {
+        return $tags->atomically(static function () use ($tags, $ownerId, $plan): array {
+            $created = 0;
+            $booksChanged = 0;
             // The names first, so every tag the books need is in use.
             foreach ($plan['names'] as $slug => $name) {
                 if ($name['id'] === null) {
@@ -327,9 +306,7 @@ final class TagAssignment
                     $tags->restore($ownerId, $name['id']);
                 }
                 if ($name['was']['kind'] !== $name['kind']) {
-                    // Not TagRepository::setKinds, which opens a transaction of its own.
-                    $pdo->prepare('UPDATE tags SET kind = ? WHERE owner_id = ? AND id = ?')
-                        ->execute([$name['kind'], $ownerId, $name['id']]);
+                    $tags->setKind($ownerId, $name['id'], $name['kind']);
                 }
                 if ($name['was']['name'] !== $name['name']) {
                     $tags->rename($ownerId, $name['id'], $name['name']);
@@ -337,8 +314,6 @@ final class TagAssignment
             }
 
             $dropIds = array_column($plan['drop'], 'id');
-            $current = $pdo->prepare('SELECT bt.tag_id, t.dropped_at FROM book_tags bt JOIN tags t ON t.id = bt.tag_id WHERE bt.book_id = ?');
-            $unlink = $pdo->prepare('DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?');
 
             foreach ($plan['books'] as $book) {
                 if (!$book['changed']) {
@@ -352,14 +327,13 @@ final class TagAssignment
                 /* Off the book: every tag in use that it should not have.
                    Left alone: the tags being removed, whose links are what
                    makes restoring them possible, and tags that were already
-                   removed before and are not coming back. */
-                $current->execute([$book['id']]);
-                foreach ($current->fetchAll(PDO::FETCH_ASSOC) as $link) {
-                    $tagId = (int) $link['tag_id'];
-                    if (in_array($tagId, $wanted, true) || in_array($tagId, $dropIds, true) || $link['dropped_at'] !== null) {
+                   removed before and are not coming back. Read after the
+                   names above, so a tag brought back counts as in use. */
+                foreach ($tags->linksOf($ownerId, $book['id']) as $link) {
+                    if (in_array($link['tag_id'], $wanted, true) || in_array($link['tag_id'], $dropIds, true) || $link['dropped']) {
                         continue;
                     }
-                    $unlink->execute([$book['id'], $tagId]);
+                    $tags->unlink($ownerId, $book['id'], $link['tag_id']);
                 }
                 foreach ($wanted as $tagId) {
                     $tags->link($book['id'], $tagId);
@@ -371,15 +345,8 @@ final class TagAssignment
                 $tags->drop($ownerId, $tagId);
             }
 
-            $pdo->commit();
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $e;
-        }
-
-        return ['books' => $booksChanged, 'created' => $created, 'dropped' => count($dropIds)];
+            return ['books' => $booksChanged, 'created' => $created, 'dropped' => count($dropIds)];
+        });
     }
 
     /** @return list<string> */

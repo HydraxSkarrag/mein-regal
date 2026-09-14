@@ -98,7 +98,7 @@ $file = implode("\n", [
 Assert::group('The plan, with nothing written');
 
 $linksBefore = $linkCount();
-$plan = TagAssignment::plan($pdo, 1, TagAssignment::read($file)['rows']);
+$plan = TagAssignment::plan($books, $tags, 1, TagAssignment::read($file)['rows']);
 Assert::same('planning writes nothing', $linkCount(), $linksBefore);
 
 Assert::same(
@@ -122,7 +122,7 @@ Assert::true('there is something to apply', TagAssignment::canApply($plan));
 
 Assert::group('Applying it');
 
-$result = TagAssignment::apply($pdo, $tags, 1, $plan);
+$result = TagAssignment::apply($tags, 1, $plan);
 Assert::same('what it reports', $result, ['books' => 4, 'created' => 2, 'dropped' => 1]);
 
 Assert::same('every book has exactly its row', [$visible($b1), $visible($b2), $visible($b3), $visible($b4)], [
@@ -144,7 +144,7 @@ Assert::true('the old tag is removed, not deleted', $tags->find(1, $belletristik
 Assert::same('and keeps its links, so restoring it is real', count($tags->bookIdsFor(1, $belletristik)), 3);
 Assert::same('a tag removed long before stays as it was, links and all', [$tags->find(1, $alt)['dropped_at'] !== null, $tags->bookIdsFor(1, $alt)], [true, [$b1]]);
 
-$again = TagAssignment::plan($pdo, 1, TagAssignment::read($file)['rows']);
+$again = TagAssignment::plan($books, $tags, 1, TagAssignment::read($file)['rows']);
 Assert::true('the same file a second time has nothing left to do', !TagAssignment::canApply($again));
 
 Assert::group('The way back is an export from before');
@@ -166,28 +166,28 @@ $state = static fn (): array => array_map($visible, [$b1, $b2, $b3, $b4, $b5]);
 $stateThen = $state();
 
 $other = "id,genres,labels\n{$b1},Roman,Klassiker\n{$b4},Roman,\n";
-TagAssignment::apply($pdo, $tags, 1, TagAssignment::plan($pdo, 1, TagAssignment::read($other)['rows']));
+TagAssignment::apply($tags, 1, TagAssignment::plan($books, $tags, 1, TagAssignment::read($other)['rows']));
 Assert::true('the other file did change the shelf', $state() !== $stateThen);
 
-$back = TagAssignment::plan($pdo, 1, TagAssignment::read($snapshot)['rows']);
+$back = TagAssignment::plan($books, $tags, 1, TagAssignment::read($snapshot)['rows']);
 Assert::same('the export is accepted as it is, every book found', [$back['rejected'], $back['outside']], [[], 0]);
-TagAssignment::apply($pdo, $tags, 1, $back);
+TagAssignment::apply($tags, 1, $back);
 Assert::same('and reading it back restores what was', $state(), $stateThen);
 
 Assert::group('What stops it');
 
-$clash = TagAssignment::plan($pdo, 1, TagAssignment::read("id,genres,labels\n{$b1},Humor,\n{$b2},,Humor\n")['rows']);
+$clash = TagAssignment::plan($books, $tags, 1, TagAssignment::read("id,genres,labels\n{$b1},Humor,\n{$b2},,Humor\n")['rows']);
 Assert::same('a name that is a genre in one row and a label in another', $clash['conflicts'], ['Humor']);
 Assert::true('cannot be applied, because which was meant is a guess', !TagAssignment::canApply($clash));
 $linksNow = $linkCount();
-TagAssignment::apply($pdo, $tags, 1, $clash);
+TagAssignment::apply($tags, 1, $clash);
 Assert::same('and applying it anyway writes nothing', $linkCount(), $linksNow);
 
 /* Between the preview and the button somebody edits a book in another tab.
  * The plan is not the one that was shown any more, and the button refuses. */
-$shown = TagAssignment::plan($pdo, 1, TagAssignment::read($other)['rows']);
+$shown = TagAssignment::plan($books, $tags, 1, TagAssignment::read($other)['rows']);
 $books->replaceTags(1, $b4, ['Irgendwas'], $tags);
-$now = TagAssignment::plan($pdo, 1, TagAssignment::read($other)['rows']);
+$now = TagAssignment::plan($books, $tags, 1, TagAssignment::read($other)['rows']);
 Assert::true('an edit in between changes the fingerprint', TagAssignment::fingerprint($shown) !== TagAssignment::fingerprint($now));
 
 $controller = (string) file_get_contents(PROJECT_ROOT . '/app/Controller/TagController.php');
@@ -195,3 +195,11 @@ Assert::true('and the button compares it before writing', str_contains($controll
 
 $routes = (string) file_get_contents(PROJECT_ROOT . '/public/index.php');
 Assert::true('both steps are posts', str_contains($routes, "post('/admin/tags/assign/preview'") && str_contains($routes, "post('/admin/tags/assign'"));
+
+Assert::group('No SQL of its own');
+
+/* The rule the project writes down: database access belongs in the
+ * repositories. This file broke it the day it was written, with six queries of
+ * its own. */
+$assignmentSource = (string) file_get_contents(PROJECT_ROOT . '/app/Content/TagAssignment.php');
+Assert::true('it asks the repositories', !preg_match('/->(prepare|query|exec)\(|\bPDO\b/', $assignmentSource));
