@@ -28,7 +28,11 @@ installation puts on the screen.
 - **Genres and labels.** An import brings hundreds of "genres" that are not
   genres - a binding, an age range, a shop category. Each one is filed as a
   genre or as a label by hand, and the ones that are really a field of the book
-  are folded into that field. Removals and merges survive the next import.
+  are folded into that field. Removing one hides it and keeps its links, so it
+  can be restored; removals and merges survive the next import. A whole shelf
+  can also be given its genres and labels from a file in the full export's
+  format, with a preview of every book before anything is written - and the
+  export taken just before is the way back.
 - **Statistics** in public — `'public_stats' => false` keeps them to yourself —
   and a **dashboard** with data quality and a to-do list in private.
 - **Review links.** Point it at a WordPress blog and it matches the blog's posts
@@ -327,6 +331,7 @@ site therefore works through the browser as well:
 |---|---|---|
 | Create an account | `/setup` | once, immediate |
 | Import a collection | Admin → Data | once, seconds |
+| Give the shelf its genres and labels from a file | Admin → Genres and labels | preview first, seconds |
 | Download an export | Admin → Data | a handful of queries |
 | Backup | nightly cron job | seconds |
 | Fill in covers | **cron job only** | waits between books, takes hours |
@@ -363,7 +368,11 @@ files in.
   More hangs on this than taste: the strict Content-Security-Policy and the fact
   that the site needs no cookie banner. The first external resource costs both.
 - **All database access belongs in `app/Repository/`.** Templates hold no logic
-  beyond loops and conditionals.
+  beyond loops and conditionals. A handful of controllers still query directly;
+  ARCHITECTURE.md lists them, and new code does not add to the list.
+- **A removed tag is hidden, not gone.** Its links stay so it can be restored.
+  A query that shows or counts tags asks `dropped_at IS NULL`, and nothing but
+  *delete for good* takes a removed tag's links away.
 - **`owner_id` is always part of the filter**, even while there is one collection.
 - **Source and comments in English.** German belongs in the interface translations
   and in the legal texts, which are content rather than code.

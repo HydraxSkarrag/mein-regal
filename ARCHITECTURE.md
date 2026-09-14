@@ -21,7 +21,7 @@ the first: forget a rule or disable a module and no source is served anyway.
 
 Everything else follows from the hosting. There is no shell on the server, so
 there is no Composer, no build step and no `bin/console`. What remains is small
-enough not to need a framework: routing is about fifty addresses, the database
+enough not to need a framework: routing is about seventy addresses, the database
 is PDO, HTTP is curl, templates are PHP with an escaping helper. The one
 JavaScript library that genuinely earns its place — the barcode decoder — ships
 in `public/js/`.
@@ -32,18 +32,18 @@ in `public/js/`.
 
 | | | |
 |---|---|---|
-| **`app/Core/`** | Router, request, response, session, CSRF, CSP, translation, escaping, ISBN, text. Everything every route needs, once, in one place. | 29 files · 3,980 lines |
-| **`app/Controller/`** | Ten of them, one per area: shelf, book, scanning, tags, statistics, pages, sign-in, setup, data, cron. | 10 · 3,869 |
-| **`app/Repository/`** | All database access. No SQL exists outside this directory — the hardest rule in the project. | 7 · 2,149 |
-| **`app/Lookup/`** | The outside world: DNB, MVB, Google Books, Open Library, the cover finder, and the chain that asks them in turn. | 15 · 2,674 |
-| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 30 · 2,934 |
-| **`app/Import/` `app/Export/`** | The one-off move in from Bookstats, and the backups back out. | 5 · 967 |
-| **`app/Content/`** | Rules about content with no HTML attached: matching reviews, recognising classification notations, the default pages. | 3 · 739 |
+| **`app/Core/`** | Router, request, response, session, CSRF, CSP, translation, escaping, ISBN, text. Everything every route needs, once, in one place. | 29 files · 4,091 lines |
+| **`app/Controller/`** | Ten of them, one per area: shelf, book, scanning, tags, statistics, pages, sign-in, setup, data, cron. | 10 · 4,311 |
+| **`app/Repository/`** | Database access. The rule is that no SQL lives anywhere else; where it still does is listed under *The layers*. | 7 · 2,516 |
+| **`app/Lookup/`** | The outside world: DNB, MVB, Google Books, Open Library, the cover finder, and the chain that asks them in turn. | 15 · 2,704 |
+| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 32 · 3,326 |
+| **`app/Import/` `app/Export/`** | The one-off move in from Bookstats, and the backups back out. | 5 · 1,045 |
+| **`app/Content/`** | Rules about content with no HTML attached: matching reviews, recognising classification notations, reading genres and labels from a file, the default pages. | 4 · 1,133 |
 | **`app/Http/`** | One file. `Application.php` builds everything and holds it. | 1 · 306 |
-| **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,110 |
-| **`public/index.php`** | The only entry point: error display off, bootstrap, every address, `$app->run()`. | 198 |
-| **`public/css/` `public/js/`** | One stylesheet plus themes, five own scripts plus the decoder. | 11 · 3,722 |
-| **`tests/`** | 66 files, 1,400+ assertions, no PHPUnit. | 66 · 7,575 |
+| **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,208 |
+| **`public/index.php`** | The only entry point: error display off, bootstrap, every address, `$app->run()`. | 203 |
+| **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,208 |
+| **`tests/`** | 64 files, 1,600+ assertions, no PHPUnit. | 64 · 9,284 |
 | **`bin/`** | Nine command-line scripts: set up, import, enrich, back up, check. | 9 · 2,118 |
 | **`schema.sql` `migrations/`** | Fourteen tables. A new installation takes the schema, an existing one the dated files — by hand in phpMyAdmin, because there is no shell. | |
 
@@ -68,8 +68,9 @@ installation's covers or logo into another's web space.
                                           MySQL               DNB · MVB · …      templates/
 ```
 
-Those three are the only doors out: **only `Repository` talks to the database,
-only `Lookup` talks to anybody else's server, only `View` touches templates.**
+Those three are the doors out: **`Repository` talks to the database, only
+`Lookup` talks to anybody else's server, only `View` touches templates.** The
+first is the rule rather than yet the whole truth; see below.
 
 1. **`public/index.php`** switches `display_errors` off before anything can go
    wrong — a PHP warning printed into the page leaks file paths and, at the
@@ -122,6 +123,16 @@ ones that shape the structure itself.
 while there is only one collection. Retrofitting that would mean touching every
 query in the application and missing exactly one.
 
+That is the rule, and the code does not keep it everywhere yet. Counted on
+14 September 2026, 22 queries in seven files still talk to the database
+themselves: `StatsController` (7), `Exporter` (5), `ScanController` (4),
+`ShelfController` (3), and one each in `BookController`, `PageController` and
+`Importer`. Beyond those, `Core/Auth`, `Core/Database` and `Http/Application`
+query the tables they exist for - the account, the connection, the first user -
+and are left there on purpose. New code goes through a repository; the file
+import was moved there on the day it was written. Moving the seven is open
+work, not an exception anybody decided on.
+
 **Only `app/Lookup/` reaches out.** Four sources behind one interface, asked in
 an order that depends on the ISBN's language area. A source that *cannot*
 answer is not a source that says *no*: the difference is carried all the way to
@@ -151,7 +162,7 @@ interface — never the reverse.
 |---|---|
 | `books` | The core: title, ISBN, publisher, binding, price, reading status, rating, and `series_id` with `series_index`. |
 | `authors`, `book_authors` | Normalised, with a role. A translator is not an author, and the import disagreed. |
-| `tags`, `book_tags` | Genre and label in one table, told apart by `kind`. Deleted ones stay as tombstones. |
+| `tags`, `book_tags` | Genre and label in one table, told apart by `kind`. A removed tag stays, with its links: that is what makes restoring it real and what stops an import making the name again. Every query that shows or counts tags asks `dropped_at IS NULL`. |
 | `series` | Name, slug, total and a note — because the catalogues do not agree on how to count. |
 | `covers` | Path or source, with attribution and a rejection date. |
 | `users`, `auth_tokens`, `login_attempts` | The account, "stay signed in" (stored only as a hash), and the lockout after failed attempts. |
@@ -184,16 +195,16 @@ appends to `storage/cron.log`; the last forty are shown under
 
 Seven files, each of which explains the next.
 
-1. **`public/index.php`** (198 lines) — every address in the application, one
+1. **`public/index.php`** (203 lines) — every address in the application, one
    under the other. Read it top to bottom and you know what exists.
 2. **`app/Http/Application.php`** (306) — what the pieces are, with the
    comments on why there is no container.
-3. **`app/Controller/ShelfController.php`** (847) — shelf, filters, facets,
+3. **`app/Controller/ShelfController.php`** (988) — shelf, filters, facets,
    book page, series. The longest read path there is, and the best place to see
    the parts working together.
-4. **`app/Repository/BookRepository.php`** (789) — especially `buildWhere()`
+4. **`app/Repository/BookRepository.php`** (853) — especially `buildWhere()`
    and `SORTS`, where filtering and ordering are data rather than branches.
-5. **`app/Lookup/LookupChain.php`, then `DnbLookup.php`** (864) — first the
+5. **`app/Lookup/LookupChain.php`, then `DnbLookup.php`** (184, 894) — first the
    chain: the order, the gap filling, the difference between "does not have it"
    and "could not answer". Then the largest adapter.
 6. **`app/Core/View.php` and `app/templates/layout/base.php`** — `render()` for
