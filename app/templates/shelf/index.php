@@ -123,6 +123,20 @@ declare(strict_types=1);
                     break;
             }
           ?>
+          <?php
+            /* The stars as well when the shelf is filtered by them.
+               "Ab 3 Sternen" holds the threes, the four and a halves and the
+               fives, and a grid of covers that does not say which is which
+               leaves the filter to be taken on trust - the same reason the
+               sort value is shown. Not when sorting by rating, which draws
+               them already. */
+            $filterStars = ($filters['rating'] ?? '') !== '' && ($filters['sort'] ?? 'recent') !== 'rating'
+                ? App\Core\Formatter::stars($book['rating'])
+                : null;
+          ?>
+          <?php if ($filterStars !== null): ?>
+          <p class="book-sortvalue book-sortvalue--stars"><?= $view->render('partials.stars', ['rating' => $book['rating'], 'withEmpty' => false]) ?><?= e($filterStars['text']) ?></p>
+          <?php endif; ?>
           <?php if ($sortValue !== null && $sortValue !== ''): ?>
           <p class="book-sortvalue<?= ($filters['sort'] ?? '') === 'rating' ? ' book-sortvalue--stars' : '' ?>">
             <?php if (($filters['sort'] ?? '') === 'rating'): ?>

@@ -225,3 +225,18 @@ Assert::same(
         'filter.isbn',
     ]
 );
+
+Assert::group('Filtered by stars, the tiles show them');
+
+/* "Ab 3 Sternen" holds threes, four and a halves and fives. Without the stars
+ * on the tiles the filter had to be taken on trust - measured locally, 60 of
+ * 60 tiles on /?rating=3 showed a date and nothing else. */
+$shelfPage = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/index.php');
+Assert::true(
+    'a rating filter draws the stars on every tile',
+    str_contains($shelfPage, "\$filterStars = (\$filters['rating'] ?? '') !== '' && (\$filters['sort'] ?? 'recent') !== 'rating'")
+);
+Assert::true(
+    'with the number beside them, as the rating sort does',
+    str_contains($shelfPage, "<?= e(\$filterStars['text']) ?></p>")
+);
