@@ -315,10 +315,8 @@ final class ScanController
         }
 
         $bookId = (int) $request->post('book_id');
-        $statement = $this->app->pdo->prepare('SELECT id, isbn13, slug FROM books WHERE id = ? AND owner_id = ?');
-        $statement->execute([$bookId, $this->app->ownerId]);
-        $book = $statement->fetch();
-        if ($book === false) {
+        $book = $this->app->books->findById($this->app->ownerId, $bookId);
+        if ($book === null) {
             return Response::json(['error' => t('error.404.title')], 404);
         }
 
@@ -397,9 +395,7 @@ final class ScanController
         }
 
         $bookId = (int) $request->post('book_id');
-        $statement = $this->app->pdo->prepare('SELECT id FROM books WHERE id = ? AND owner_id = ?');
-        $statement->execute([$bookId, $this->app->ownerId]);
-        if ($statement->fetch() === false) {
+        if ($this->app->books->findById($this->app->ownerId, $bookId) === null) {
             return Response::json(['error' => t('error.404.title')], 404);
         }
 
@@ -436,16 +432,7 @@ final class ScanController
             return true;
         }
 
-        $since = (new \DateTimeImmutable('-1 minute'))->format('Y-m-d H:i:s');
-        $count = $this->app->pdo->prepare('SELECT COUNT(*) FROM lookup_hits WHERE ip = ? AND hit_at > ?');
-        $count->execute([$packed, $since]);
-        if ((int) $count->fetchColumn() >= self::LOOKUPS_PER_MINUTE) {
-            return false;
-        }
-
-        $this->app->pdo->prepare('INSERT INTO lookup_hits (ip) VALUES (?)')->execute([$packed]);
-
-        return true;
+        return $this->app->lookupHits->allow($packed, self::LOOKUPS_PER_MINUTE, new \DateTimeImmutable());
     }
 
     private function sourceLabel(string $source): string

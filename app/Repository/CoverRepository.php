@@ -257,4 +257,26 @@ final class CoverRepository
 
         return array_column($statement->fetchAll(), 'n', 'source');
     }
+
+    /**
+     * Where each book's covers came from, the rejected ones left out.
+     *
+     * @return array<int, list<string>>
+     */
+    public function sourcesByBook(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT c.book_id, c.source FROM covers c
+               JOIN books b ON b.id = c.book_id
+              WHERE b.owner_id = ? AND c.rejected_at IS NULL'
+        );
+        $statement->execute([$ownerId]);
+
+        $byBook = [];
+        foreach ($statement->fetchAll() as $row) {
+            $byBook[(int) $row['book_id']][] = (string) $row['source'];
+        }
+
+        return $byBook;
+    }
 }

@@ -344,10 +344,7 @@ final class PageController
      */
     public function sitemap(): Response
     {
-        $statement = $this->app->pdo->prepare(
-            'SELECT slug, updated_at FROM books WHERE owner_id = ? ORDER BY id ASC LIMIT 20000'
-        );
-        $statement->execute([$this->app->ownerId]);
+        $entries = $this->app->books->sitemapEntries($this->app->ownerId, 20000);
 
         $xml = ['<?xml version="1.0" encoding="UTF-8"?>'];
         $xml[] = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
@@ -371,7 +368,7 @@ final class PageController
             $xml[] = '  <url><loc>' . e($this->app->url($path)) . '</loc>'
                 . '<changefreq>weekly</changefreq><priority>' . $priority . '</priority></url>';
         }
-        foreach ($statement->fetchAll() as $row) {
+        foreach ($entries as $row) {
             $xml[] = '  <url><loc>' . e($this->app->url('/book/' . $row['slug'])) . '</loc>'
                 . '<lastmod>' . e(substr((string) $row['updated_at'], 0, 10)) . '</lastmod>'
                 . '<changefreq>yearly</changefreq><priority>0.5</priority></url>';

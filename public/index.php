@@ -176,6 +176,7 @@ $app->router->get('/admin/tags/field', $tags->confirmField(...));
 $app->router->post('/admin/tags/{id}/field', $tags->fillField(...));
 $app->router->post('/admin/import', $data->import(...));
 $app->router->get('/admin/export/{format}', $data->export(...));
+$app->router->get('/admin/backup/{name}', $data->backup(...));
 $app->router->post('/api/preview', $pages->preview(...));
 $app->router->get('/book/{slug}/edit', $books->form(...));
 /* On the series page, because that is where somebody is standing when they

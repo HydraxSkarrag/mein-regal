@@ -38,6 +38,27 @@ declare(strict_types=1);
   </ul>
 </div>
 
+<?php /* The nightly copies, to take home. Grouped by night, newest first,
+         because that is the question: is last night's there, and how big is
+         it. A backup that only ever lives on the server it protects is not
+         one. */ ?>
+<div class="panel mt-l">
+  <h2><?= e(t('maintenance.backups')) ?></h2>
+  <p class="note mt-0"><?= e(t('maintenance.backups.hint')) ?></p>
+  <?php if ($backups === []): ?>
+  <p class="note"><?= e(t('maintenance.backups.none')) ?></p>
+  <?php else: ?>
+  <ul class="download-list">
+    <?php foreach ($backups as $backup): ?>
+    <li>
+      <a href="/admin/backup/<?= e(rawurlencode($backup['name'])) ?>"><?= e($formatter->date($backup['date'])) ?> · <?= e(t('maintenance.backups.kind.' . $backup['kind'])) ?></a>
+      <span class="note"><?= e($formatter->number($backup['bytes'] / 1048576, 1)) ?> MB</span>
+    </li>
+    <?php endforeach; ?>
+  </ul>
+  <?php endif; ?>
+</div>
+
 <div class="panel mt-l">
   <h2><?= e(t('maintenance.import')) ?></h2>
   <p class="note mt-0"><?= e(t('maintenance.import.hint')) ?></p>

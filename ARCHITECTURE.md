@@ -32,18 +32,18 @@ in `public/js/`.
 
 | | | |
 |---|---|---|
-| **`app/Core/`** | Router, request, response, session, CSRF, CSP, translation, escaping, ISBN, text. Everything every route needs, once, in one place. | 29 files · 4,091 lines |
-| **`app/Controller/`** | Ten of them, one per area: shelf, book, scanning, tags, statistics, pages, sign-in, setup, data, cron. | 10 · 4,311 |
-| **`app/Repository/`** | Database access. The rule is that no SQL lives anywhere else; where it still does is listed under *The layers*. | 7 · 2,516 |
+| **`app/Core/`** | Router, request, response, session, CSRF, CSP, translation, escaping, ISBN, text. Everything every route needs, once, in one place. | 30 files · 4,283 lines |
+| **`app/Controller/`** | Ten of them, one per area: shelf, book, scanning, tags, statistics, pages, sign-in, setup, data, cron. | 10 · 4,232 |
+| **`app/Repository/`** | Database access. No SQL lives anywhere else, apart from three files named under *The layers*, and `layers_test` keeps it that way. | 9 · 2,837 |
 | **`app/Lookup/`** | The outside world: DNB, MVB, Google Books, Open Library, the cover finder, and the chain that asks them in turn. | 15 · 2,704 |
-| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 32 · 3,326 |
-| **`app/Import/` `app/Export/`** | The one-off move in from Bookstats, and the backups back out. | 5 · 1,045 |
-| **`app/Content/`** | Rules about content with no HTML attached: matching reviews, recognising classification notations, reading genres and labels from a file, the default pages. | 4 · 1,133 |
-| **`app/Http/`** | One file. `Application.php` builds everything and holds it. | 1 · 306 |
-| **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,208 |
-| **`public/index.php`** | The only entry point: error display off, bootstrap, every address, `$app->run()`. | 203 |
+| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 32 · 3,365 |
+| **`app/Import/` `app/Export/`** | The one-off move in from Bookstats, and the backups back out. | 5 · 987 |
+| **`app/Content/`** | Rules about content with no HTML attached: matching reviews, recognising classification notations, reading genres and labels from a file, the default pages. | 4 · 1,135 |
+| **`app/Http/`** | One file. `Application.php` builds everything and holds it. | 1 · 310 |
+| **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,220 |
+| **`public/index.php`** | The only entry point: error display off, bootstrap, every address, `$app->run()`. | 204 |
 | **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,408 |
-| **`tests/`** | 65 files, 1,700+ assertions, no PHPUnit. | 65 · 9,505 |
+| **`tests/`** | 69 files, 1,800+ assertions, no PHPUnit. The same suite runs against SQLite, MySQL and MariaDB. | 69 · 9,865 |
 | **`bin/`** | Nine command-line scripts: set up, import, enrich, back up, check. | 9 · 2,118 |
 | **`schema.sql` `migrations/`** | Fourteen tables. A new installation takes the schema, an existing one the dated files — by hand in phpMyAdmin, because there is no shell. | |
 
@@ -123,15 +123,30 @@ ones that shape the structure itself.
 while there is only one collection. Retrofitting that would mean touching every
 query in the application and missing exactly one.
 
-That is the rule, and the code does not keep it everywhere yet. Counted on
-14 September 2026, 22 queries in seven files still talk to the database
-themselves: `StatsController` (7), `Exporter` (5), `ScanController` (4),
-`ShelfController` (3), and one each in `BookController`, `PageController` and
-`Importer`. Beyond those, `Core/Auth`, `Core/Database` and `Http/Application`
-query the tables they exist for - the account, the connection, the first user -
-and are left there on purpose. New code goes through a repository; the file
-import was moved there on the day it was written. Moving the seven is open
-work, not an exception anybody decided on.
+That is the rule, and since 23 September 2026 the code keeps it. The 22
+queries that had been counted in seven files a week earlier are in the
+repositories now, and moving them was worth more than tidiness: the list of
+series counted a Sammelband differently from its own page, and the
+dashboard's gap counts were queries of their own, kept in step with the
+filters they link to by a comment - they now go through the filter itself.
+Three files still talk to the database, on purpose: `Core/Auth`, `Core/Database`
+and `Http/Application`, for the account's own tables, the connection and the
+first user an anonymous visit shows. `layers_test` fails on any fourth.
+
+**Tested against the database production runs on.** Every test gets its
+database from `tests/support/TestDatabase.php`: SQLite in memory by default,
+or, with `REGAL_TEST_MYSQL_HOST` set, a real MySQL or MariaDB loaded from
+`schema.sql` as it stands. The CI runs the suite all three ways. The first run
+against MySQL found two faults SQLite had hidden for months: the Bookstats
+export wrote ratings as MySQL hands a DECIMAL over, "4.0", which the importer
+did not read - so the way out lost every rating on the live servers - and a
+series sum came back as the string "4.0".
+
+**Time comes from PHP.** A row that is compared against a moment in PHP -
+a login attempt, a lookup counted for the throttle - is written with PHP's
+time, not the column's `CURRENT_TIMESTAMP`. The two clocks agree only while the
+host has put both in the same time zone, and where it has not, the lockout
+never triggered.
 
 **Only `app/Lookup/` reaches out.** Four sources behind one interface, asked in
 an order that depends on the ISBN's language area. A source that *cannot*

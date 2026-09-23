@@ -235,10 +235,21 @@ final class Auth
 
     private function recordAttempt(string $email, ?string $ip, bool $succeeded): void
     {
+        /* The time from PHP, not the column's CURRENT_TIMESTAMP. The lockout
+           window is measured on PHP's clock, and the database's agrees with
+           it only while both sit in the same time zone: with the database on
+           UTC and PHP on Europe/Berlin every attempt was two hours old the
+           moment it was made, and the lockout could never trigger. Which of
+           the two a host sets is not the code's to know. */
         $statement = $this->pdo->prepare(
-            'INSERT INTO login_attempts (identifier, ip, succeeded) VALUES (?, ?, ?)'
+            'INSERT INTO login_attempts (identifier, ip, succeeded, attempted_at) VALUES (?, ?, ?, ?)'
         );
-        $statement->execute([$email, $ip === null ? null : self::packIp($ip), $succeeded ? 1 : 0]);
+        $statement->execute([
+            $email,
+            $ip === null ? null : self::packIp($ip),
+            $succeeded ? 1 : 0,
+            (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+        ]);
 
         if ($succeeded) {
             $clear = $this->pdo->prepare('DELETE FROM login_attempts WHERE identifier = ? AND succeeded = 0');

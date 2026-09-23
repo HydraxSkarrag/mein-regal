@@ -77,10 +77,8 @@ Assert::group('Theme: reading a stylesheet');
 
 $parse = static function (string $css): array {
     $method = new ReflectionMethod(Theme::class, 'split');
-    $method->setAccessible(true);
     [$plain, $night] = $method->invoke(null, $css);
     $colour = new ReflectionMethod(Theme::class, 'colourIn');
-    $colour->setAccessible(true);
 
     return [$colour->invoke(null, $plain), $colour->invoke(null, $night)];
 };

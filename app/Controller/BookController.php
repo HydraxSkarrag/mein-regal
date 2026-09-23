@@ -766,12 +766,7 @@ final class BookController
     {
         $bookId = (int) $book['id'];
 
-        $statement = $this->app->pdo->prepare(
-            'SELECT a.name, ba.role FROM book_authors ba JOIN authors a ON a.id = ba.author_id
-              WHERE ba.book_id = ? ORDER BY ba.position ASC'
-        );
-        $statement->execute([$bookId]);
-        $contributors = $statement->fetchAll();
+        $contributors = $this->app->authors->contributorsOf($this->app->ownerId, [$bookId])[$bookId] ?? [];
 
 
         /* The name rather than the id, because that is what the field shows

@@ -3,7 +3,12 @@ declare(strict_types=1);
 
 namespace App\Export;
 
+use App\Core\Formatter;
 use App\Core\Isbn;
+use App\Repository\AuthorRepository;
+use App\Repository\BookRepository;
+use App\Repository\CoverRepository;
+use App\Repository\SeriesRepository;
 use App\Repository\TagRepository;
 use DateTimeImmutable;
 use PDO;
@@ -60,22 +65,34 @@ final class Exporter
         'loan' => 'Leihe', 'swap' => 'Tausch',
     ];
 
-    public function __construct(private readonly PDO $pdo)
+    private readonly BookRepository $books;
+    private readonly AuthorRepository $authors;
+    private readonly TagRepository $tags;
+    private readonly CoverRepository $covers;
+    private readonly SeriesRepository $series;
+
+    /* Handed the connection rather than five repositories, because every
+       caller - the data page, bin/export.php, the nightly backup, the
+       tests - has exactly that to hand. What it asks goes through the
+       repositories all the same. */
+    public function __construct(PDO $pdo)
     {
+        $this->books = new BookRepository($pdo);
+        $this->authors = new AuthorRepository($pdo);
+        $this->tags = new TagRepository($pdo);
+        $this->covers = new CoverRepository($pdo);
+        $this->series = new SeriesRepository($pdo);
     }
 
     /** @return iterable<array<string,mixed>> one row per book, with people and tags */
     public function books(int $ownerId): iterable
     {
-        $statement = $this->pdo->prepare('SELECT * FROM books WHERE owner_id = ? ORDER BY id ASC');
-        $statement->execute([$ownerId]);
+        $people = $this->authors->contributorsByBook($ownerId);
+        $tags = $this->tags->namesByBook($ownerId);
+        $covers = $this->covers->sourcesByBook($ownerId);
+        $series = $this->series->namesById($ownerId);
 
-        $people = $this->contributorsByBook($ownerId);
-        $tags = $this->tagsByBook($ownerId);
-        $covers = $this->coversByBook($ownerId);
-        $series = $this->seriesNames($ownerId);
-
-        while (($book = $statement->fetch()) !== false) {
+        foreach ($this->books->eachForOwner($ownerId) as $book) {
             $id = (int) $book['id'];
             $book['contributors'] = $people[$id] ?? [];
             $book['genres'] = $tags[$id]['genres'] ?? [];
@@ -128,7 +145,12 @@ final class Exporter
                 self::STATUS_OUT[$book['reading_status'] ?? ''] ?? '',
                 $this->germanDate($book['started_at'] ?? null),
                 $this->germanDate($book['finished_at'] ?? null),
-                (string) ($book['rating'] ?? 0),
+                // "4" and "3,5", with the comma the price column uses. Not the
+                // value as the database hands it over: MySQL gives a DECIMAL
+                // back as "4.0", and the importer took only whole numbers, so
+                // on the live servers this file lost every rating on the way
+                // back in. SQLite said 4, which is why no test ever noticed.
+                Formatter::stars($book['rating'] ?? null)['text'] ?? '0',
                 '',
                 (string) ($book['notes'] ?? ''),
                 $this->germanDate($book['acquired_at'] ?? null),
@@ -219,77 +241,6 @@ final class Exporter
 
     // ------------------------------------------------------------- helpers
 
-    /** @return array<int, list<array{name: string, role: string}>> */
-    private function contributorsByBook(int $ownerId): array
-    {
-        $statement = $this->pdo->prepare(
-            'SELECT ba.book_id, a.name, ba.role
-               FROM book_authors ba
-               JOIN authors a ON a.id = ba.author_id
-               JOIN books b ON b.id = ba.book_id
-              WHERE b.owner_id = ?
-              ORDER BY ba.book_id ASC, ba.position ASC'
-        );
-        $statement->execute([$ownerId]);
-
-        $byBook = [];
-        foreach ($statement->fetchAll() as $row) {
-            $byBook[(int) $row['book_id']][] = [
-                'name' => (string) $row['name'],
-                'role' => (string) $row['role'],
-            ];
-        }
-
-        return $byBook;
-    }
-
-    /**
-     * Genres and labels per book, and only the ones in use.
-     *
-     * A removed tag keeps its links - that is what makes removing it
-     * reversible - so asking book_tags alone hands them all back. They came
-     * out in every export: "collection:Forgotten Realms", taken off the shelf
-     * by hand, stood at its book again in the backup, and after a merge a book
-     * carried the old name beside the new one, because merging copies the
-     * links and drops the source.
-     *
-     * @return array<int, array{genres: list<string>, labels: list<string>}>
-     */
-    private function tagsByBook(int $ownerId): array
-    {
-        $statement = $this->pdo->prepare(
-            'SELECT bt.book_id, t.name, t.kind
-               FROM book_tags bt
-               JOIN tags t ON t.id = bt.tag_id
-               JOIN books b ON b.id = bt.book_id
-              WHERE b.owner_id = ? AND t.dropped_at IS NULL
-              ORDER BY bt.book_id ASC, t.name ASC'
-        );
-        $statement->execute([$ownerId]);
-
-        $byBook = [];
-        foreach ($statement->fetchAll() as $row) {
-            $kind = $row['kind'] === TagRepository::KIND_GENRE ? 'genres' : 'labels';
-            $byBook[(int) $row['book_id']][$kind][] = (string) $row['name'];
-        }
-
-        return $byBook;
-    }
-
-    /** @return array<int, string> series name by id */
-    private function seriesNames(int $ownerId): array
-    {
-        $statement = $this->pdo->prepare('SELECT id, name FROM series WHERE owner_id = ?');
-        $statement->execute([$ownerId]);
-
-        $names = [];
-        foreach ($statement->fetchAll() as $row) {
-            $names[(int) $row['id']] = (string) $row['name'];
-        }
-
-        return $names;
-    }
-
     /**
      * A volume as a spreadsheet should read it: "5", "5.5", never "5.0".
      *
@@ -311,24 +262,6 @@ final class Exporter
         $number = (float) $value;
 
         return floor($number) === $number ? (int) $number : $number;
-    }
-
-    /** @return array<int, list<string>> */
-    private function coversByBook(int $ownerId): array
-    {
-        $statement = $this->pdo->prepare(
-            'SELECT c.book_id, c.source FROM covers c
-               JOIN books b ON b.id = c.book_id
-              WHERE b.owner_id = ? AND c.rejected_at IS NULL'
-        );
-        $statement->execute([$ownerId]);
-
-        $byBook = [];
-        foreach ($statement->fetchAll() as $row) {
-            $byBook[(int) $row['book_id']][] = (string) $row['source'];
-        }
-
-        return $byBook;
     }
 
     /** @param list<string> $values */

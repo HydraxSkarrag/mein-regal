@@ -391,6 +391,55 @@ final class BookRepository
     }
 
     /**
+     * How many books a filter finds, without fetching them.
+     *
+     * The dashboard's gap counts go through here, each with the filter its
+     * number links to. They used to be queries of their own, written to
+     * mean the same as the filters and kept in step by a comment - a number
+     * that leads to a list saying something else is worse than no number.
+     *
+     * @param array<string,mixed> $filters
+     */
+    public function countMatching(int $ownerId, array $filters): int
+    {
+        [$where, $parameters] = $this->buildWhere($ownerId, $filters);
+        $statement = $this->pdo->prepare("SELECT COUNT(DISTINCT b.id) FROM books b {$where['join']} WHERE {$where['sql']}");
+        $statement->execute($parameters);
+
+        return (int) $statement->fetchColumn();
+    }
+
+    /**
+     * How many acquisition dates are a bulk cataloguing day.
+     *
+     * Not "how many came from Bookstats". The flag is set by a pattern - a
+     * date carried by more books than a day of buying could hold - so it says
+     * the same true thing about a shelf typed in over one evening as it does
+     * about an export from somewhere else.
+     */
+    public function countBulkDated(int $ownerId): int
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM books WHERE owner_id = ? AND acquired_at_is_bulk = 1'
+        );
+        $statement->execute([$ownerId]);
+
+        return (int) $statement->fetchColumn();
+    }
+
+    /** @return list<array{id: int, title: string, slug: string, isbn13: ?string, created_at: string}> */
+    public function recentlyAdded(int $ownerId, int $limit = 8): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT id, title, slug, isbn13, created_at FROM books
+              WHERE owner_id = ? ORDER BY id DESC LIMIT ' . max(1, $limit)
+        );
+        $statement->execute([$ownerId]);
+
+        return $statement->fetchAll();
+    }
+
+    /**
      * @param array<string,mixed> $filters
      * @return array{0: array{sql: string, join: string}, 1: list<mixed>}
      */
@@ -849,5 +898,36 @@ final class BookRepository
         $statement->execute([$isbn13, $isbn10, date('Y-m-d H:i:s'), $bookId, $ownerId, '']);
 
         return $statement->rowCount();
+    }
+
+    /**
+     * Every book, one at a time, oldest first - for an export, which must
+     * not hold three thousand rows and their covers in memory at once.
+     *
+     * @return iterable<array<string, mixed>>
+     */
+    public function eachForOwner(int $ownerId): iterable
+    {
+        $statement = $this->pdo->prepare('SELECT * FROM books WHERE owner_id = ? ORDER BY id ASC');
+        $statement->execute([$ownerId]);
+
+        while (($book = $statement->fetch()) !== false) {
+            yield $book;
+        }
+    }
+
+    /**
+     * What a sitemap lists: every book's address and when it last changed.
+     *
+     * @return list<array{slug: string, updated_at: ?string}>
+     */
+    public function sitemapEntries(int $ownerId, int $limit): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT slug, updated_at FROM books WHERE owner_id = ? ORDER BY id ASC LIMIT ' . max(1, $limit)
+        );
+        $statement->execute([$ownerId]);
+
+        return $statement->fetchAll();
     }
 }

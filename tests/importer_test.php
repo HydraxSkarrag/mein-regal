@@ -6,9 +6,9 @@ use App\Import\Importer;
 use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use App\Repository\TagRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('CsvReader');
 
@@ -22,10 +22,7 @@ Assert::same('umlauts survive the encoding conversion', $rows[2]['Titel'], 'Der 
 
 Assert::group('Importer end to end');
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, dirname(__DIR__) . '/schema.sql');
+$pdo = TestDatabase::fresh();
 
 $books = new BookRepository($pdo);
 $importer = new Importer($pdo, $books, new AuthorRepository($pdo), new TagRepository($pdo));

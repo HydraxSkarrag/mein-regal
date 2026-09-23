@@ -39,7 +39,8 @@ installation puts on the screen.
   against the shelf - on the ISBN in the post first, on title and author second -
   and links each book to the review of it. Undecided matches are listed rather
   than guessed at.
-- **Export** in three formats and a **backup** of database, catalogue and covers.
+- **Export** in three formats and a nightly **backup** of database, catalogue and
+  covers, downloadable from the data page so a copy can leave the server.
 - Interface in German and English — `'language_switcher' => false` drops the
   switch for a shelf that is only read in one — and about, imprint and privacy
   policy are written in the browser, one text per language.
@@ -254,6 +255,12 @@ which does both, the copy first — so a night that runs out of time has at leas
 left a backup. That guarantee is the one thing you give up by splitting them:
 with two entries the order is whatever you scheduled.
 
+The backup lands in `storage/backup/` on the same server, which is no help when
+the server is the problem. **Admin → Data → Backups on the server** lists every
+copy and hands it out behind the sign-in; download one now and then and keep it
+elsewhere. The database dump and the cover archive are the two things no export
+contains.
+
 Expired sign-in tokens are cleared out at the end of whichever job ran. It takes
 milliseconds and has no address of its own, because nobody would ever want it on
 a rhythm of its own.
@@ -311,6 +318,17 @@ php bin/check.php                         # are the data sources reachable?
 php tests/run.php                         # the tests
 ```
 
+The tests run against SQLite unless told otherwise. Against a MySQL or MariaDB
+server - which is what production runs on, and what the CI checks every push
+against - they take a user allowed to create and drop databases:
+
+```
+REGAL_TEST_MYSQL_HOST=127.0.0.1 REGAL_TEST_MYSQL_USER=root REGAL_TEST_MYSQL_PASS=secret php tests/run.php
+```
+
+Each test gets a database of its own, `regal_test_<pid>_<n>`, dropped again at
+the end of the run.
+
 `bin/covers.php`, `bin/reviews.php` and `bin/tags.php` write nothing until
 `--commit`, and say first what they would do and to which book.
 
@@ -342,6 +360,7 @@ site therefore works through the browser as well:
 | Give the shelf its genres and labels from a file | Admin → Genres and labels | preview first, seconds |
 | Download an export | Admin → Data | a handful of queries |
 | Backup | nightly cron job | seconds |
+| Take a backup off the server | Admin → Data → Backups on the server | one click per file, streamed |
 | Fill in covers | **cron job only** | waits between books, takes hours |
 
 The lookup is deliberately not reachable from the browser. It is the one task
@@ -376,8 +395,15 @@ files in.
   More hangs on this than taste: the strict Content-Security-Policy and the fact
   that the site needs no cookie banner. The first external resource costs both.
 - **All database access belongs in `app/Repository/`.** Templates hold no logic
-  beyond loops and conditionals. A handful of controllers still query directly;
-  ARCHITECTURE.md lists them, and new code does not add to the list.
+  beyond loops and conditionals. Three files in `app/Core` and `app/Http` query
+  their own tables on purpose; `layers_test` fails on anything else.
+- **A time compared in PHP is written from PHP.** Not from a column's
+  `CURRENT_TIMESTAMP`: the database's clock and PHP's agree only while the host
+  has put them in the same time zone.
+- **A session only for somebody who needs one.** It begins the first time
+  something is written into it - a form's token, a message, the signed-in owner -
+  so a visitor who only reads gets no cookie. Print `$csrfField` where there is a
+  form; do not make a token for a page that has none.
 - **A removed tag is hidden, not gone.** Its links stay so it can be restored.
   A query that shows or counts tags asks `dropped_at IS NULL`, and nothing but
   *delete for good* takes a removed tag's links away.

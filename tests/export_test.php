@@ -8,17 +8,14 @@ use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('Exporter: the way out');
 
 $makeDb = static function (): PDO {
-    $pdo = new PDO('sqlite::memory:');
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    SqliteSchema::apply($pdo, dirname(__DIR__) . '/schema.sql');
+    $pdo = TestDatabase::fresh();
     (new UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 
     return $pdo;
@@ -71,6 +68,36 @@ $reExported = stream_get_contents($again);
 fclose($again);
 
 Assert::same('exporting the round trip gives the identical file', $reExported, $exported);
+
+/* Half a star goes out and comes back. Bookstats had no halves, this shelf
+ * does, and the column used to carry whatever the database handed over:
+ * 3.5 on SQLite and "3.5" or "4.0" on MySQL, of which the importer read
+ * none. So the way out lost every rating on the live servers while every
+ * test here passed. */
+$half = $makeDb();
+$halfBooks = new BookRepository($half);
+$halfBooks->insert(1, ['title' => 'Halb', 'rating' => 3.5]);
+$halfBooks->insert(1, ['title' => 'Ganz', 'rating' => 4]);
+$halfOut = fopen('php://memory', 'r+');
+(new Exporter($half))->bookstatsCsv(1, $halfOut);
+rewind($halfOut);
+$halfCsv = (string) stream_get_contents($halfOut);
+fclose($halfOut);
+Assert::true('half a star is written as the price is, with a comma', str_contains($halfCsv, '"3,5"'));
+Assert::true('a whole one without a decimal', str_contains($halfCsv, '"4";""') && !str_contains($halfCsv, '4.0') && !str_contains($halfCsv, '4,0'));
+
+$halfPath = tempnam(sys_get_temp_dir(), 'regal') . '.csv';
+file_put_contents($halfPath, $halfCsv);
+$halfBack = $makeDb();
+(new Importer($halfBack, new BookRepository($halfBack), new AuthorRepository($halfBack), new TagRepository($halfBack)))
+    ->run(new CsvReader($halfPath), 1, false);
+$ratingsBack = $halfBack->query('SELECT title, rating FROM books ORDER BY title')->fetchAll(PDO::FETCH_KEY_PAIR);
+Assert::same(
+    'and both come back as they went out',
+    array_map(static fn ($r): float => (float) $r, $ratingsBack),
+    ['Ganz' => 4.0, 'Halb' => 3.5]
+);
+@unlink($halfPath);
 unlink($path);
 
 Assert::group('Exporter: the fuller formats');

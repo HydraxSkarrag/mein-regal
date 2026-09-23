@@ -235,16 +235,18 @@ final class DefaultPages
            has run and the renderer turns a newline inside a paragraph into a
            line break. List items keep their own lines, which is the point of
            holding this back until then. */
-        /* Set on every visit, not on signing in: the session starts in the
-           application's constructor, because the login form itself needs a
-           CSRF token and there is nowhere else to keep one. Checked against
-           a live installation rather than assumed - an anonymous request
-           comes back with regal_session on it. The text said otherwise,
-           which is a privacy policy describing a different program. */
-        $items = ['- **Sitzungs-Cookie** – wird bei jedem Besuch gesetzt. Es enthält'
-            . ' ausschließlich eine zufällige Kennung und trägt den Schutz vor'
-            . ' Formularmissbrauch, kurze Statusmeldungen und die gewählte Sprache.'
-            . ' Es wird beim Schließen des Browsers gelöscht.'];
+        /* Set when it is needed, not on every visit. The session used to be
+           started for every request, and this line said so because it was
+           true - a privacy policy describing a different program is worse
+           than an unflattering one. Since Session begins only when something
+           is written into it, a visitor who reads gets no cookie at all, and
+           the line says that instead. What still begins one: the sign-in
+           form and every other form, whose token has to live somewhere, and
+           the owner being signed in. The language is a cookie of its own. */
+        $items = ['- **Sitzungs-Cookie** – nur, wenn die Anmeldeseite oder ein anderes'
+            . ' Formular aufgerufen wird, nicht beim bloßen Lesen des Regals. Es enthält ausschließlich'
+            . ' eine zufällige Kennung und trägt den Schutz vor Formularmissbrauch und'
+            . ' kurze Statusmeldungen. Es wird beim Schließen des Browsers gelöscht.'];
         if ($multilingual) {
             $items[] = '- **Sprach-Cookie** – merkt sich, ob die Oberfläche auf Deutsch'
                 . ' oder Englisch angezeigt werden soll. Es enthält ausschließlich diese'

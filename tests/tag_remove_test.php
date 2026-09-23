@@ -17,9 +17,9 @@ use App\Core\Formatter;
 use App\Core\View;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 $view = new View(PROJECT_ROOT . '/app/templates');
 $view->share('formatter', new Formatter('de'));
@@ -129,10 +129,7 @@ Assert::group('Asking twice does no harm');
 /* The script hands a request to the form when the answer goes missing, so a
  * removal that did arrive may arrive again. It must change nothing the second
  * time - in particular not the moment it was removed. */
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, dirname(__DIR__) . '/schema.sql');
+$pdo = TestDatabase::fresh();
 (new UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 $tags = new TagRepository($pdo);
 

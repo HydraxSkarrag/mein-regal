@@ -21,9 +21,9 @@ use App\Core\View;
 use App\Repository\BookRepository;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('Everything the preview reads is handed to it');
 
@@ -55,10 +55,7 @@ Assert::same('the controller hands over every variable the template reads', $ass
 
 Assert::group('A shelf and a file');
 
-$assignPdo = new PDO('sqlite::memory:');
-$assignPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$assignPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($assignPdo, dirname(__DIR__) . '/schema.sql');
+$assignPdo = TestDatabase::fresh();
 (new UserRepository($assignPdo))->create('d@example.org', 'ein-langes-passwort', 'D');
 $assignBooks = new BookRepository($assignPdo);
 $assignTags = new TagRepository($assignPdo);

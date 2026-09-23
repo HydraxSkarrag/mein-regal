@@ -6,9 +6,9 @@ use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('CoverImage::attributionLink');
 
@@ -34,10 +34,7 @@ Assert::same('no cover, no link', CoverImage::attributionLink(null, '97834990065
 
 Assert::group('BookRepository::update');
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, dirname(__DIR__) . '/schema.sql');
+$pdo = TestDatabase::fresh();
 
 $users = new UserRepository($pdo);
 $maike = $users->create('maike@example.org', 'ein-langes-passwort', 'Maike');

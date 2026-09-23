@@ -3,16 +3,13 @@ declare(strict_types=1);
 
 use App\Repository\PageRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('PageRepository: one text per language');
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, dirname(__DIR__) . '/schema.sql');
+$pdo = TestDatabase::fresh();
 (new UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $pages = new PageRepository($pdo);
@@ -262,13 +259,22 @@ $seed = App\Content\DefaultPages::all(
     'post@example.org'
 )['privacy']['body'];
 
-// The session starts in the constructor - the login form needs a CSRF token
-// and there is nowhere else to keep one - so the cookie is set for everybody,
-// not on signing in. Checked against a live installation; the text used to
-// describe a different program.
+// The session begins only when something is written into it: the token of
+// a form, the signed-in owner. A visitor who only reads gets no cookie, and
+// the text has to say that - it used to say "every visit", which was true
+// until Session changed, and then would have been a privacy policy
+// describing a different program.
 Assert::true(
-    'the session cookie is described as set on every visit',
-    str_contains($seed, 'wird bei jedem Besuch gesetzt')
+    'the session cookie is described as set where there is a form',
+    str_contains($seed, 'nur, wenn die Anmeldeseite oder ein anderes Formular aufgerufen wird')
+);
+Assert::true(
+    'and not as set on every visit',
+    !str_contains($seed, 'bei jedem Besuch')
+);
+Assert::true(
+    'and without claiming it carries the language, which has its own cookie',
+    !str_contains($seed, 'und die gewählte Sprache')
 );
 Assert::same(
     'and not as something the login does',

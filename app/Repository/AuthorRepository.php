@@ -149,4 +149,73 @@ final class AuthorRepository
 
         return (int) $statement->fetchColumn();
     }
+
+    /** The stored spelling of a person, found by the folded key a link carries. */
+    public function nameByKey(int $ownerId, string $matchKey): ?string
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT name FROM authors WHERE owner_id = ? AND match_key = ? LIMIT 1'
+        );
+        $statement->execute([$ownerId, $matchKey]);
+        $found = $statement->fetchColumn();
+
+        return $found === false ? null : (string) $found;
+    }
+
+    /**
+     * Everybody on the given books, in the order they were entered.
+     *
+     * @param  list<int> $bookIds
+     * @return array<int, list<array{name: string, role: string}>>
+     */
+    public function contributorsOf(int $ownerId, array $bookIds): array
+    {
+        if ($bookIds === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
+        $statement = $this->pdo->prepare(
+            "SELECT ba.book_id, a.name, ba.role
+               FROM book_authors ba JOIN authors a ON a.id = ba.author_id
+              WHERE a.owner_id = ? AND ba.book_id IN ($placeholders)
+              ORDER BY ba.book_id ASC, ba.position ASC, a.sort_name ASC"
+        );
+        $statement->execute([$ownerId, ...array_map('intval', array_values($bookIds))]);
+
+        return self::byBook($statement->fetchAll());
+    }
+
+    /**
+     * Everybody on every book of the shelf - what an export needs at once.
+     *
+     * @return array<int, list<array{name: string, role: string}>>
+     */
+    public function contributorsByBook(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT ba.book_id, a.name, ba.role
+               FROM book_authors ba
+               JOIN authors a ON a.id = ba.author_id
+               JOIN books b ON b.id = ba.book_id
+              WHERE b.owner_id = ?
+              ORDER BY ba.book_id ASC, ba.position ASC'
+        );
+        $statement->execute([$ownerId]);
+
+        return self::byBook($statement->fetchAll());
+    }
+
+    /**
+     * @param  list<array<string, mixed>> $rows
+     * @return array<int, list<array{name: string, role: string}>>
+     */
+    private static function byBook(array $rows): array
+    {
+        $byBook = [];
+        foreach ($rows as $row) {
+            $byBook[(int) $row['book_id']][] = ['name' => (string) $row['name'], 'role' => (string) $row['role']];
+        }
+
+        return $byBook;
+    }
 }

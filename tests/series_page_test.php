@@ -14,9 +14,9 @@ use App\Core\Text;
 use App\Repository\BookRepository;
 use App\Repository\SeriesRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('Filed under the letter the title starts with, not the article');
 
@@ -50,10 +50,7 @@ Assert::same('and a bare article is a name', Text::filingName('Die'), 'Die');
 
 Assert::group('A series can be corrected and removed');
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, PROJECT_ROOT . '/schema.sql');
+$pdo = TestDatabase::fresh();
 (new UserRepository($pdo))->create('s@example.org', 'ein-langes-passwort', 'S');
 
 $books  = new BookRepository($pdo);

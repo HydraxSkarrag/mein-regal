@@ -6,7 +6,6 @@ namespace App\Controller;
 use App\Core\Request;
 use App\Core\Response;
 use App\Http\Application;
-use App\Repository\TagRepository;
 
 /**
  * Two separate pages, deliberately.
@@ -88,8 +87,8 @@ final class StatsController
             'coverage'      => $this->app->books->fieldCoverage($owner),
             'coverSources'  => $this->app->covers->countBySource($owner),
             'todo'          => $this->todo($owner),
-            'bulkDated'     => $this->bulkDatedCount($owner),
-            'recentlyAdded' => $this->recentlyAdded($owner),
+            'bulkDated'     => $this->app->books->countBulkDated($owner),
+            'recentlyAdded' => $this->app->books->recentlyAdded($owner),
             // The legal texts ship as drafts and say so; this is the same
             // reminder somewhere it will actually be seen.
             'legalOpen'     => $this->app->pages->unfinishedLegal($owner),
@@ -102,36 +101,6 @@ final class StatsController
             'current' => 'admin',
             'noIndex' => true,
         ]))->noIndex();
-    }
-
-    /**
-     * How many acquisition dates are a bulk cataloguing day.
-     *
-     * Not "how many came from Bookstats". The flag is set by a pattern - a
-     * date carried by more books than a day of buying could hold - so it says
-     * the same true thing about a shelf typed in over one evening as it does
-     * about an export from somewhere else.
-     */
-    private function bulkDatedCount(int $owner): int
-    {
-        $statement = $this->app->pdo->prepare(
-            'SELECT COUNT(*) FROM books WHERE owner_id = ? AND acquired_at_is_bulk = 1'
-        );
-        $statement->execute([$owner]);
-
-        return (int) $statement->fetchColumn();
-    }
-
-    /** @return list<array<string,mixed>> */
-    private function recentlyAdded(int $owner): array
-    {
-        $statement = $this->app->pdo->prepare(
-            'SELECT id, title, slug, isbn13, created_at FROM books
-              WHERE owner_id = ? ORDER BY id DESC LIMIT 8'
-        );
-        $statement->execute([$owner]);
-
-        return $statement->fetchAll();
     }
 
     /** @return array<int,int> */
@@ -158,47 +127,17 @@ final class StatsController
      */
     private function todo(int $owner): array
     {
-        $withoutCover = $this->app->pdo->prepare(
-            'SELECT COUNT(*) FROM books b
-              WHERE b.owner_id = ? AND NOT EXISTS (SELECT 1 FROM covers c WHERE c.book_id = b.id AND c.rejected_at IS NULL)'
-        );
-        $withoutCover->execute([$owner]);
-
-        $withoutIsbn = $this->app->pdo->prepare(
-            'SELECT COUNT(*) FROM books WHERE owner_id = ? AND isbn13 IS NULL'
-        );
-        $withoutIsbn->execute([$owner]);
-
-        $withoutRating = $this->app->pdo->prepare(
-            "SELECT COUNT(*) FROM books WHERE owner_id = ? AND rating IS NULL AND reading_status = 'read'"
-        );
-        $withoutRating->execute([$owner]);
-
-        /* The same conditions the shelf filters by, so a number and the list
-         * it links to cannot drift apart. A genre thrown out does not count
-         * as one, and a book with nobody on it is not the same as a book
-         * whose author is spelled oddly. */
-        $withoutGenre = $this->app->pdo->prepare(
-            'SELECT COUNT(*) FROM books b
-              WHERE b.owner_id = ?
-                AND NOT EXISTS (SELECT 1 FROM book_tags bt JOIN tags t ON t.id = bt.tag_id
-                                 WHERE bt.book_id = b.id AND t.kind = ? AND t.dropped_at IS NULL)'
-        );
-        $withoutGenre->execute([$owner, TagRepository::KIND_GENRE]);
-
-        $withoutAuthor = $this->app->pdo->prepare(
-            'SELECT COUNT(*) FROM books b
-              WHERE b.owner_id = ?
-                AND NOT EXISTS (SELECT 1 FROM book_authors ba WHERE ba.book_id = b.id)'
-        );
-        $withoutAuthor->execute([$owner]);
+        /* Each through the filter its number links to on the dashboard, so
+           the number and the list behind it are one query and cannot say
+           different things. */
+        $count = fn (array $filter): int => $this->app->books->countMatching($owner, $filter);
 
         return [
-            'no_cover'  => (int) $withoutCover->fetchColumn(),
-            'no_isbn'   => (int) $withoutIsbn->fetchColumn(),
-            'no_rating' => (int) $withoutRating->fetchColumn(),
-            'no_genre'  => (int) $withoutGenre->fetchColumn(),
-            'no_author' => (int) $withoutAuthor->fetchColumn(),
+            'no_cover'  => $count(['cover' => 'no']),
+            'no_isbn'   => $count(['isbn' => 'no']),
+            'no_rating' => $count(['missing' => 'rating']),
+            'no_genre'  => $count(['missing' => 'genre']),
+            'no_author' => $count(['missing' => 'author']),
         ];
     }
 
