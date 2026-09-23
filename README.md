@@ -139,6 +139,14 @@ Shipped so far: **`buecherhausen`** (red on near-white — the look this was fir
 drawn in) and **`night`** (the default, but dark when the reader's system is).
 Copy either as a starting point.
 
+One place ignores that order on purpose: paper. `style.css` ends in an
+`@media print` block that restates the palette as ink on white, and it puts it
+on `html:root` rather than `:root` so that it outranks the two layers loaded
+after it. A theme has no reason to have thought about printing, and a dark one
+that had not would print pale text onto a ground the printer leaves white. A
+theme that does want a say on paper takes it back with an `@media print` of its
+own.
+
 The third layer is the private one. It sits beside the logo, is excluded from
 Git and from the deployment, and is the right place for an installation whose
 appearance is nobody else's business. Web fonts of your own go next to it in

@@ -2227,3 +2227,152 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
 }
 .result-status:hover { border-color: var(--accent); color: var(--accent); }
 .result-status[aria-pressed="true"] { border-style: solid; color: var(--text); }
+
+/* ---- On paper -------------------------------------------------------- */
+
+/*
+ * Printing is rarely asked for, and it was wrong in several ways at once. A
+ * book's page came out as two sheets, the second one all but empty.
+ *
+ * Two measurements run through all of it. With the usual margins an A4 page
+ * box is about 716 pixels wide upright and about 1,046 across, and the
+ * stylesheet has breakpoints at 720 and at 900. Paper lands on both sides of
+ * both of them, which is why printing wanted rules of its own at all.
+ *
+ * The first: upright is under the 720 where the phone layout starts. So the
+ * printer got the phone - the bar that is fixed to the bottom of a screen
+ * printed across the foot of every sheet, the header's navigation dropped,
+ * and 148 pixels held clear for a thumb that is not there.
+ *
+ * The second: body is min-height 100vh, and in print a vh is a sheet. The
+ * page was a sheet tall no matter how little was on it, with the footer
+ * pushed to the bottom of it - the white block that followed every book.
+ *
+ * The third: the print dialogue leaves background graphics off by default,
+ * and a cover stand-in is a coloured ground with pale text on it. It came out
+ * as an empty rectangle with an invisible title inside.
+ *
+ * And a fourth, which these rules caused themselves: hiding the filter column
+ * left its 200-pixel grid track behind for the shelf to fall into. Eleven
+ * books, one per row, over six sheets - and only across, because the two
+ * columns are a rule from 900 pixels up.
+ */
+@media print {
+  /* The palette, as ink on white.
+   *
+   * html:root rather than :root: a theme file is loaded after this one and
+   * sets the same tokens, so an even match would lose on order. One notch of
+   * specificity puts these last without an !important on every line - and
+   * everything downstream follows, which is why this is a list of tokens
+   * rather than a page of overrides. It is also what saves a dark theme,
+   * where the text is pale and the ground it needs is not printed. */
+  html:root {
+    color-scheme: light;
+    --bg: #fff;
+    --surface: #fff;
+    --surface-2: #fff;
+    --text: #000;
+    --muted: #333;
+    --border: #999;
+    --accent: #000;
+    --accent-dark: #000;
+    --shadow: none;
+    --shadow-sm: none;
+    --shadow-nav: none;
+  }
+
+  /* Gone: what is only there to be pressed. A printed sheet is read. */
+  .skip-link,
+  .header-nav,
+  .bottom-nav,
+  .sidebar,
+  .filters-drawer,
+  .filters-drawer-label,
+  .searchbar,
+  .alphabet,
+  .pager,
+  .detail-actions,
+  .edit-actions,
+  .admin-nav,
+  .tile-status,
+  .flash,
+  button,
+  .site-footer nav {
+    display: none !important;
+  }
+
+  body {
+    min-height: 0;
+    display: block;
+    font-size: 11pt;
+  }
+  /* Both of these are room for the bar that is no longer there. */
+  .container { max-width: none; padding: 0 0 4px; }
+  /* What is left of the footer is one line, and it is worth keeping it small
+     enough to sit under the last thing on the sheet. A tall one spilled onto
+     a sheet of its own often enough to be the thing you noticed. */
+  .site-footer { margin-bottom: 0; padding: 6px 0 0; text-align: left; }
+  .site-credit { margin: 0; }
+  .site-header-inner { max-width: none; padding: 0 0 10px; }
+
+  /* The brand stays at the head of the sheet and the credit at the foot;
+     between them is the page itself. Underlining every link inside it only
+     marks words that cannot be followed. */
+  a { color: inherit; text-decoration: none; }
+
+  /* The shelf and the filter column are one grid with two tracks, the first
+     of them 200 pixels wide and named in the rule. Hiding the filters takes
+     the sidebar out of the grid but not its track, so the shelf moved into
+     it and printed as a 200-pixel column of single books - eleven of them
+     over six sheets. Only above 900 pixels, which is A4 across and not A4
+     upright, so it looked like a browser's doing and was ours. */
+  .layout-with-sidebar { display: block; }
+
+  /* The shelf as a run of blocks rather than a grid.
+   *
+   * A grid is the right thing on a screen, where it never has to break. Over
+   * a page boundary Firefox is careful with it and leaves a row's worth of
+   * sheet empty rather than fit a second row on: the same sixty covers came
+   * to seven sheets across and five upright, where Chrome made five and four
+   * of them. Inline blocks wrap at the end of a line and break wherever the
+   * page does, and both browsers now agree to the sheet.
+   *
+   * 118 and 10 are the 128 the wide screen uses, spelled out because there
+   * is no track here to stretch to a fraction of anything.
+   */
+  .shelf { display: block; }
+  .book {
+    display: inline-block;
+    width: 118px;
+    margin: 0 10px 16px 0;
+    vertical-align: top;
+  }
+
+  /* Two columns whatever the page box measures. The screen rule turns them
+     on at 700 pixels, which a wider margin setting falls below. */
+  .book-detail { grid-template-columns: 150px minmax(0, 1fr); gap: 20px; }
+  .book-detail .cover { max-width: 150px; }
+
+  /* A framed label, since its ground is not printed and its text was chosen
+     to sit on that ground. */
+  .cover--placeholder { background: none; color: #000; border: 1px solid var(--border); }
+
+  /* Colour that is not decoration. A bar chart without bars is not a quieter
+     chart, and a half star printed whole says the wrong number. All of these
+     are backgrounds, and the dialogue's default is to print no backgrounds,
+     so they are the few that ask for their ink by name. */
+  .bar,
+  .bar-fill,
+  .split-bar,
+  .split-part,
+  .split-legend .swatch,
+  .stars .half {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Nothing that reads as one thing torn across two sheets. */
+  h1, h2, h3 { break-after: avoid; }
+  .cover, .series-nav, .chips, .book, .meta tr, .panel { break-inside: avoid; }
+  p, li { orphans: 2; widows: 2; }
+}
