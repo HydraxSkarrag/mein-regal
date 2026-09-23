@@ -47,13 +47,20 @@ on:
         # with it - after a schema change, going back is a database question
         # before it is a deploy question.
 
+# A second run started while one is uploading waits for it instead of
+# cancelling it. A deploy stopped halfway leaves the server with part of one
+# version and part of the other, which is the one state worse than either.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Empty falls back to the commit this run was started from, which is
           # what actions/checkout would have used on its own.
@@ -96,20 +103,48 @@ jobs:
       # server checks the two belong together - and the library behind the
       # action does not do that. lftp does. That is the whole reason.
       #
-      # ssl:verify-certificate is off: the traffic stays encrypted, but
-      # nothing proves who is on the other end, because the hoster's FTP
-      # certificate does not match the name it is reached under. Worth
-      # writing down rather than pretending about.
+      # The certificate is verified. Without that the traffic is encrypted but
+      # nothing proves who is on the other end, and whoever sits in between
+      # reads the FTP password. The hoster's certificate is *.kasserver.com, so
+      # FTP_SERVER has to be the server's own name (w0xxxxxx.kasserver.com, as
+      # shown in the KAS) - the site's domain resolves to the same machine but
+      # fails the check. Setting the repository variable FTP_VERIFY_CERT to
+      # "false" turns the check off, for a host that cannot pass it; that is
+      # the old behaviour, and it should not be needed here.
       #
-      # The password goes through the environment, not the command line, so
-      # it is not in the process list of a shared runner.
+      # The password goes through the environment (--env-password reads
+      # LFTP_PASSWORD), not the command line, so it is not in the process list
+      # of a shared runner.
+      #
+      # Every file is written under a temporary name and renamed into place
+      # (xfer:use-temp-file, --overwrite). Without that, lftp removes the old
+      # file first and uploads the new one after it, and for a second or so
+      # index.php or .htaccess simply does not exist - with 140-odd files at a
+      # second each, that happened on every deploy. A rename also means PHP
+      # never reads, or OPcache never compiles, a half-written file: the new
+      # file has a new modification time, which is what OPcache checks. The
+      # temporary names start with a dot, and .htaccess refuses dotfiles, so
+      # one left behind by an aborted run in public/ cannot be requested.
+      #
+      # Two passes, because an upload takes minutes, not seconds:
+      #   1. everything that does not run - CSS, JS, fonts, images, SQL;
+      #   2. the PHP, .htaccess and .user.ini.
+      # So by the time a template that names a new script or class goes live,
+      # the file is already there. The other way round, a page could point at
+      # a stylesheet that has not arrived for most of the upload. The
+      # ?v= in asset addresses comes from each file's own modification time on
+      # the server, so a new address always means the new content.
+      # Within the second pass lftp takes the top level first and then the
+      # folders in order, so app/ lands before public/index.php - the front
+      # controller switches over last, when the classes it needs are in place.
       #
       # The excludes are not the ones in .gitignore. lftp mirrors the file
       # system, so an ignored file that happens to sit in the working tree
       # goes up like any other - on a runner that is a fresh clone and the
       # question never arises, but run from a machine it does. That is how
       # public/assets/brand.zip, taken out of the repository for sitting in
-      # the document root, would have arrived in the document root.
+      # the document root, would have arrived in the document root. They
+      # apply to both passes; in the second, an exclude beats the include.
       #
       # NOTE the missing --delete, which is deliberate and load-bearing. A
       # mirror that removes whatever it does not have locally would take the
@@ -117,41 +152,55 @@ jobs:
       # only on the server, and all of which are excluded from this upload
       # precisely because they have to survive it. Deleting is what a static
       # site wants and the opposite of what this one does. Stale files after
-      # a rename are the price, and a cheap one.
+      # a rename are the price, and a cheap one. --overwrite is not a delete:
+      # it replaces a file this upload carries, and nothing else.
       - name: Upload over FTPS
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_VERIFY_CERT: ${{ vars.FTP_VERIFY_CERT }}
           TARGET: ${{ github.event.inputs.server_dir }}
         run: |
+          VERIFY=yes
+          if [ "${FTP_VERIFY_CERT:-true}" = "false" ]; then
+            VERIFY=no
+            echo "::warning::FTP_VERIFY_CERT=false - the FTPS certificate is not checked."
+          fi
+          EXCLUDES="--exclude '(^|/)\.git' \
+            --exclude '(^|/)\.github/' \
+            --exclude '(^|/)\.claude/' \
+            --exclude '(^|/)\.DS_Store$' \
+            --exclude '(^|/)config\.php$' \
+            --exclude '(^|/)config\.php\.bak$' \
+            --exclude '(^|/)config\.dev\.php$' \
+            --exclude '(^|/)storage/' \
+            --exclude '(^|/)public/covers/' \
+            --exclude '(^|/)public/assets/brand' \
+            --exclude '\.zip$' \
+            --exclude '(^|/)boot-error\.log$' \
+            --exclude '(^|/)tests/' \
+            --exclude '(^|/)router\.dev\.php$' \
+            --exclude '(^|/)dev\.sh$' \
+            --exclude '\.csv$' \
+            --exclude '\.md$' \
+            --exclude '(^|/)docs/'"
+          # What runs, or configures what runs. Pass 1 leaves it out, pass 2
+          # takes only it - the two lists must name the same three patterns.
+          SKIP_CODE="--exclude '\.php$' --exclude '(^|/)\.htaccess$' --exclude '(^|/)\.user\.ini$'"
+          ONLY_CODE="--include '\.php$' --include '(^|/)\.htaccess$' --include '(^|/)\.user\.ini$'"
           lftp -c "
             set cmd:fail-exit true;
             set ftp:ssl-force true;
             set ftp:ssl-protect-data true;
-            set ssl:verify-certificate no;
+            set ssl:verify-certificate $VERIFY;
             set ftp:passive-mode true;
             set net:max-retries 3;
             set net:timeout 20;
-            open -u '$FTP_USERNAME' --env-password '$FTP_SERVER';
-            mirror --reverse --verbose --parallel=1 \
-              --exclude '(^|/)\.git' \
-              --exclude '(^|/)\.github/' \
-              --exclude '(^|/)\.claude/' \
-              --exclude '(^|/)\.DS_Store$' \
-              --exclude '(^|/)config\.php$' \
-              --exclude '(^|/)config\.php\.bak$' \
-              --exclude '(^|/)config\.dev\.php$' \
-              --exclude '(^|/)storage/' \
-              --exclude '(^|/)public/covers/' \
-              --exclude '(^|/)public/assets/brand' \
-              --exclude '\.zip$' \
-              --exclude '(^|/)boot-error\.log$' \
-              --exclude '(^|/)tests/' \
-              --exclude '(^|/)router\.dev\.php$' \
-              --exclude '(^|/)dev\.sh$' \
-              --exclude '\.csv$' \
-              --exclude '\.md$' \
-              --exclude '(^|/)docs/' \
-              ./ '$TARGET';
+            set xfer:use-temp-file yes;
+            open --env-password -u '$FTP_USERNAME' '$FTP_SERVER';
+            mirror --reverse --overwrite --verbose --parallel=1 \
+              $EXCLUDES $SKIP_CODE ./ '$TARGET';
+            mirror --reverse --overwrite --verbose --parallel=1 \
+              $ONLY_CODE $EXCLUDES ./ '$TARGET';
           "

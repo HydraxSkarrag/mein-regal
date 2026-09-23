@@ -417,6 +417,20 @@ control channel's TLS session, and the library behind it does not — the
 symptom is `ECONNRESET (data socket)` after a login that worked perfectly.
 There is deliberately no `--delete`; see the comments in the workflow.
 
+The FTPS certificate is verified, so `FTP_SERVER` must be a name the
+certificate covers. At all-inkl that is the server's own name
+(`w0xxxxxx.kasserver.com`, shown in the KAS), not the site's domain: both reach
+the same machine, but the domain fails the check and the deploy stops before
+logging in. For a host that cannot pass at all, the repository variable
+`FTP_VERIFY_CERT=false` turns the check off, and the password then travels to
+whoever answers.
+
+Each file is uploaded under a temporary name and renamed into place, so no file
+is ever missing mid-deploy, not even `index.php` or `.htaccess`. The upload
+runs in two passes: first everything that does not run (CSS, JS, fonts,
+images), then the PHP, `.htaccess` and `.user.ini`, so a page never points at a
+file that has not arrived yet. A second deploy started during one waits for it.
+
 The repository root is uploaded into the project folder. Never touched:
 `config.php`, `storage/` and `public/covers/` — the cover photographs, which exist
 only on the server.
