@@ -73,9 +73,15 @@ Assert::true('and the credit carries no margin into the page break', str_contain
 Assert::group('One sheet for one book');
 
 Assert::true('the body stops being a screen tall', str_contains($printBlock, 'min-height: 0;'));
+
 Assert::true('and stops being a column with a footer at the bottom of it', str_contains($printBlock, 'display: block;'));
 Assert::true('the room kept for the bar goes with the bar', str_contains($printBlock, '.container { max-width: none; padding: 0 0 4px; }'));
 Assert::true('at both ends of it', str_contains($printBlock, '.site-footer { margin-bottom: 0;'));
+
+/* Sizes are in rem, and a rem is the html's size. The body carried 11pt for
+ * a while, and the sheets came out the same to the sheet with and without it. */
+Assert::true('the smaller type is set where a rem reads it', str_contains($printBlock, '  html { font-size: 14px; }'));
+Assert::true('not on the body, where it did nothing', !preg_match('/  body \{[^}]*font-size/', $printBlock));
 
 /* The two columns are a screen rule from 700px up, and a wider margin
  * setting drops an A4 page box below that. */
@@ -99,6 +105,13 @@ Assert::true('so on paper there is no grid to fall into', str_contains($printBlo
  * wrap at a line end, and both browsers then agree to the sheet. */
 Assert::true('the shelf is not a grid on paper', str_contains($printBlock, '.shelf { display: block; }'));
 Assert::true('but a run of blocks of one width', str_contains($printBlock, 'display: inline-block;') && str_contains($printBlock, 'width: 118px;'));
+
+/* The statistics' two columns are a grid too, and Firefox moved it whole
+ * to the next sheet rather than start it under a chart: half a sheet empty.
+ * Floats break across a page in both browsers. */
+Assert::true('the statistics are not a grid on paper either', str_contains($printBlock, '.stat-grid { display: block; }'));
+Assert::true('but two floated columns', str_contains($printBlock, '.stat-grid > * { float: left; width: 47%; }'));
+Assert::true('which something clears', str_contains($printBlock, '.stat-grid::after { content: ""; display: block; clear: both; }'));
 
 Assert::group('The palette, against a theme loaded after it');
 
@@ -124,12 +137,32 @@ Assert::group('Colour that is not decoration');
 
 /* Backgrounds are off by default in the dialogue. For most of the page that
  * is what it is; for these it is the difference between a chart and a row of
- * empty rails, and between 3 and 3½. */
-foreach (['.bar-fill', '.split-part', '.stars .half'] as $meaningful) {
-    Assert::true($meaningful . ' asks for its ink', str_contains($printBlock, $meaningful));
+ * empty rails, and between an unread book and a white ring on its cover. */
+preg_match('/\n((?:  [^\n]*,\n)+  [^\n]*\{\n    -webkit-print-color-adjust: exact;)/', $printBlock, $exact);
+foreach (['.bar-fill', '.split-part', '.split-legend .swatch', '.badge-unread'] as $meaningful) {
+    Assert::true($meaningful . ' asks for its ink', str_contains($exact[1] ?? '', $meaningful));
 }
 Assert::true('by name', str_contains($printBlock, 'print-color-adjust: exact;'));
 Assert::true('and for the browsers that still want the prefix', str_contains($printBlock, '-webkit-print-color-adjust: exact;'));
+
+/* Text drawn on an accent ground loses the ground and keeps its colour,
+ * which is white: the chosen chip printed as a ghost in Chrome. */
+Assert::true('text meant for an accent ground is ink', str_contains($printBlock, '--on-accent: #000;'));
+
+Assert::group('Stars, which are text whose shade is the number');
+
+/* The half star is a gradient clipped to the glyph on screen. Asking for
+ * that background worked in Chrome and printed in Firefox as a rectangle:
+ * Firefox prints the gradient and not the clip. So it is not among the
+ * backgrounds that ask for ink - it is drawn as two letters instead. */
+Assert::true('the half star is not a background asking for ink', !str_contains($exact[1] ?? '', '.stars .half'));
+Assert::true('it gives the gradient up on paper', str_contains($printBlock, "  .stars .half {\n    position: relative;\n    display: inline-block;\n    background: none;"));
+Assert::true('and lays a black star over a grey one', str_contains($printBlock, '.stars .half::before {') && str_contains($printBlock, 'content: "\\2605";'));
+Assert::true('cut where the screen cuts it', str_contains($printBlock, 'width: 44%;') && str_contains($printCss, 'var(--accent) 44%, var(--border) 44%'));
+
+/* Firefox darkens pale text on paper, and an empty star is pale text: three
+ * stars printed as five black ones. */
+Assert::true('the stars keep their shades', str_contains($printBlock, "  .stars {\n    -webkit-print-color-adjust: exact;\n    print-color-adjust: exact;\n  }"));
 
 /* The stand-in is the other way round: its ground is a colour and its text
  * was picked to sit on that colour, so printing the text alone leaves pale

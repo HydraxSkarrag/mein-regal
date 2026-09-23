@@ -42,8 +42,8 @@ in `public/js/`.
 | **`app/Http/`** | One file. `Application.php` builds everything and holds it. | 1 · 306 |
 | **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,208 |
 | **`public/index.php`** | The only entry point: error display off, bootstrap, every address, `$app->run()`. | 203 |
-| **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,357 |
-| **`tests/`** | 65 files, 1,700+ assertions, no PHPUnit. | 65 · 9,472 |
+| **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,408 |
+| **`tests/`** | 65 files, 1,700+ assertions, no PHPUnit. | 65 · 9,505 |
 | **`bin/`** | Nine command-line scripts: set up, import, enrich, back up, check. | 9 · 2,118 |
 | **`schema.sql` `migrations/`** | Fourteen tables. A new installation takes the schema, an existing one the dated files — by hand in phpMyAdmin, because there is no shell. | |
 
