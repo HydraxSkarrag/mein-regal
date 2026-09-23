@@ -2357,14 +2357,42 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     vertical-align: top;
   }
 
-  /* The statistics' two columns, for the same reason as the shelf: Firefox
-     would not start the grid on a sheet that had a chart on it and moved it
-     whole to the next, leaving half a sheet empty. Floats break across a
-     page in both browsers and keep the two columns. */
-  .stat-grid { display: block; }
-  .stat-grid::after { content: ""; display: block; clear: both; }
-  .stat-grid > * { float: left; width: 47%; }
-  .stat-grid > * + * { margin-left: 6%; }
+  /* The statistics' two columns, as columns of text.
+   *
+   * A grid, Firefox would not start on a sheet that had a chart on it and
+   * moved it whole to the next, leaving half a sheet empty. Floats fixed that
+   * and broke something else: where the left column ended on one sheet and
+   * the right one went on, both browsers set the rest of the right column on
+   * the next sheet at the left margin. Multi-column layout is made for being
+   * broken across pages. The sections run down the first column and on into
+   * the second, which is the order they are read in anyway. */
+  .stat-grid { display: block; columns: 2; column-gap: 6%; }
+  /* A heading and its chart stay together. Chrome keeps a heading with what
+     follows it across a column break; Firefox did not, and left "Top-Genres"
+     alone at the foot of one column with its list at the head of the next. */
+  .stat-grid .stat-block { break-inside: avoid; }
+
+  /* The lists of genres, labels, authors and series, the same way.
+   *
+   * On screen a grid with tracks of at least 260 pixels, and 388 for the
+   * series with their covers - which on A4 upright is one track, and three
+   * fifths of every sheet left empty: seventeen series on four sheets. Blocks
+   * of a fixed width give the screen's two across upright and three across
+   * on its side, and break like the shelf's tiles in both browsers. */
+  .facet-list { display: block; }
+  .facet-list > li {
+    display: inline-block;
+    width: 300px;
+    margin-right: 28px;
+    vertical-align: top;
+    break-inside: avoid;
+  }
+  /* And a smaller cover. Nearly every letter holds one series, so each takes
+     a row of its own whatever the width, and the row is as tall as the
+     picture: 132 pixels of it carried seventeen series over three sheets. */
+  .facet-list--covers { --cover-w: 60px; }
+  .facet-group--short { break-inside: avoid; }
+  .facet-list--covers > li { width: 310px; margin-right: 24px; }
 
   /* Two columns whatever the page box measures. The screen rule turns them
      on at 700 pixels, which a wider margin setting falls below. */

@@ -56,8 +56,12 @@ $books = (int) ($totals['books'] ?? 0);
 ]) ?>
 <?php endif; ?>
 
+<?php /* Each heading and its chart in a section of their own, so that paper can
+         keep them together: in two printed columns a heading would otherwise
+         end up alone at the foot of one and its list at the head of the next. */ ?>
 <div class="stat-grid mt-l">
   <div>
+    <section class="stat-block">
     <h2 class="mt-0"><?= e(t('stats.status')) ?></h2>
     <?= $view->render('partials.chart_split', [
         'counts'    => $statuses,
@@ -65,7 +69,9 @@ $books = (int) ($totals['books'] ?? 0);
         'formatter' => $formatter,
         'label'     => static fn (string $k): string => t('status.' . $k),
     ]) ?>
+    </section>
 
+    <section class="stat-block">
     <h2><?= e(t('stats.binding')) ?></h2>
     <?= $view->render('partials.chart_split', [
         'counts'    => $bindings,
@@ -73,16 +79,20 @@ $books = (int) ($totals['books'] ?? 0);
         'formatter' => $formatter,
         'label'     => static fn (string $k): string => t('binding.' . $k),
     ]) ?>
+    </section>
   </div>
 
   <div>
+    <section class="stat-block">
     <h2 class="mt-0"><?= e(t('stats.genres')) ?></h2>
     <?= $view->render('partials.barlist', [
         'counts'    => array_column($genres, 'book_count', 'name'),
         'formatter' => $formatter,
     ]) ?>
+    </section>
 
     <?php if ($ratings !== []): ?>
+    <section class="stat-block">
     <h2><?= e(t('stats.ratings')) ?></h2>
     <?php
       /* Every rating that occurs, not the five whole ones.
@@ -116,6 +126,7 @@ $books = (int) ($totals['books'] ?? 0);
         'rated' => $formatter->number(array_sum($ratings)),
         'total' => $formatter->number($books),
     ])) ?></p>
+    </section>
     <?php endif; ?>
   </div>
 </div>

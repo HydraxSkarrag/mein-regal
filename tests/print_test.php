@@ -107,11 +107,30 @@ Assert::true('the shelf is not a grid on paper', str_contains($printBlock, '.she
 Assert::true('but a run of blocks of one width', str_contains($printBlock, 'display: inline-block;') && str_contains($printBlock, 'width: 118px;'));
 
 /* The statistics' two columns are a grid too, and Firefox moved it whole
- * to the next sheet rather than start it under a chart: half a sheet empty.
- * Floats break across a page in both browsers. */
-Assert::true('the statistics are not a grid on paper either', str_contains($printBlock, '.stat-grid { display: block; }'));
-Assert::true('but two floated columns', str_contains($printBlock, '.stat-grid > * { float: left; width: 47%; }'));
-Assert::true('which something clears', str_contains($printBlock, '.stat-grid::after { content: ""; display: block; clear: both; }'));
+ * to the next sheet rather than start it under a chart. Floats fixed that and
+ * broke something else, in both browsers: where the left column ended and
+ * the right one went on, its rest was set on the next sheet at the left
+ * margin. Multi-column layout is made for being broken across pages. */
+Assert::true('the statistics are not a grid on paper either', !str_contains($printBlock, '.stat-grid > * { float'));
+Assert::true('but two columns of text', str_contains($printBlock, '.stat-grid { display: block; columns: 2; column-gap: 6%; }'));
+/* Firefox does not keep a heading with what follows it; it does keep a box
+ * whole. So each heading and its chart are one box. */
+$statsTemplate = (string) file_get_contents(PROJECT_ROOT . '/app/templates/stats/index.php');
+Assert::same('each heading and its chart are a section', substr_count($statsTemplate, '<section class="stat-block">'), 4);
+Assert::true('which paper does not split', str_contains($printBlock, '.stat-grid .stat-block { break-inside: avoid; }'));
+
+/* The lists of names and series: on screen a grid with tracks of at least
+ * 260 pixels, 388 with covers - one track on A4 upright, and seventeen series
+ * on four sheets. */
+Assert::true('the name lists are blocks on paper', str_contains($printBlock, '.facet-list { display: block; }') && str_contains($printBlock, "  .facet-list > li {\n    display: inline-block;\n    width: 300px;"));
+Assert::true('the series list with a smaller cover', str_contains($printBlock, '.facet-list--covers { --cover-w: 60px; }'));
+$facetsTemplate = (string) file_get_contents(PROJECT_ROOT . '/app/templates/shelf/facets.php');
+Assert::true(
+    'a short letter is kept whole, heading and all, and only a short one',
+    str_contains($facetsTemplate, "count(\$entries) <= 24 ? ' facet-group--short' : ''")
+        && str_contains($printBlock, '.facet-group--short { break-inside: avoid; }')
+        && !str_contains($printBlock, '.facet-group { break-inside')
+);
 
 Assert::group('The palette, against a theme loaded after it');
 

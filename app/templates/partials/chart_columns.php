@@ -25,10 +25,10 @@ $padBottom = 26;
 $padTop = 10;
 
 $max = max($series);
-// Round the top of the scale up to something a person would choose.
-$step = 10 ** max(0, (int) floor(log10(max($max, 1))) - 1);
-$niceMax = (int) (ceil($max / ($step * 5)) * $step * 5);
-$niceMax = max($niceMax, 1);
+// Four equal steps of a round size; see App\Core\ChartScale.
+$tick = App\Core\ChartScale::step($max);
+$lines = App\Core\ChartScale::lines($max);
+$niceMax = App\Core\ChartScale::top($max);
 
 $count = count($series);
 $plotWidth = $width - $padLeft;
@@ -59,9 +59,9 @@ $maxWidth = min(1160, max(360, $padLeft + $count * 84));
        aria-labelledby="<?= $chartId ?>-t" preserveAspectRatio="xMidYMid meet">
     <title id="<?= $chartId ?>-t"><?= e($caption) ?></title>
 
-<?php for ($line = 0; $line <= 4; $line++): ?>
-    <?php $value = (int) round($niceMax / 4 * $line); ?>
-    <?php $y = $padTop + $plotHeight - ($plotHeight / 4 * $line); ?>
+<?php for ($line = 0; $line <= $lines; $line++): ?>
+    <?php $value = $tick * $line; ?>
+    <?php $y = $padTop + $plotHeight - ($plotHeight / $lines * $line); ?>
     <line x1="<?= $padLeft ?>" y1="<?= round($y, 1) ?>" x2="<?= $width ?>" y2="<?= round($y, 1) ?>"
           class="chart-grid<?= $line === 0 ? ' chart-grid--zero' : '' ?>" stroke-width="1"></line>
     <text x="<?= $padLeft - 7 ?>" y="<?= round($y + 3.5, 1) ?>" text-anchor="end"

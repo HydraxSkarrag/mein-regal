@@ -32,18 +32,18 @@ in `public/js/`.
 
 | | | |
 |---|---|---|
-| **`app/Core/`** | Router, request, response, session, CSRF, CSP, translation, escaping, ISBN, text. Everything every route needs, once, in one place. | 30 files · 4,283 lines |
+| **`app/Core/`** | Router, request, response, session, CSRF, CSP, translation, escaping, ISBN, text. Everything every route needs, once, in one place. | 31 files · 4,342 lines |
 | **`app/Controller/`** | Ten of them, one per area: shelf, book, scanning, tags, statistics, pages, sign-in, setup, data, cron. | 10 · 4,232 |
 | **`app/Repository/`** | Database access. No SQL lives anywhere else, apart from three files named under *The layers*, and `layers_test` keeps it that way. | 9 · 2,837 |
 | **`app/Lookup/`** | The outside world: DNB, MVB, Google Books, Open Library, the cover finder, and the chain that asks them in turn. | 15 · 2,704 |
-| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 32 · 3,365 |
+| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 32 · 3,380 |
 | **`app/Import/` `app/Export/`** | The one-off move in from Bookstats, and the backups back out. | 5 · 987 |
 | **`app/Content/`** | Rules about content with no HTML attached: matching reviews, recognising classification notations, reading genres and labels from a file, the default pages. | 4 · 1,135 |
 | **`app/Http/`** | One file. `Application.php` builds everything and holds it. | 1 · 310 |
 | **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,220 |
 | **`public/index.php`** | The only entry point: error display off, bootstrap, every address, `$app->run()`. | 204 |
-| **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,408 |
-| **`tests/`** | 69 files, 1,800+ assertions, no PHPUnit. The same suite runs against SQLite, MySQL and MariaDB. | 69 · 9,865 |
+| **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,436 |
+| **`tests/`** | 70 files, 1,800+ assertions, no PHPUnit. The same suite runs against SQLite, MySQL and MariaDB. | 70 · 9,956 |
 | **`bin/`** | Nine command-line scripts: set up, import, enrich, back up, check. | 9 · 2,118 |
 | **`schema.sql` `migrations/`** | Fourteen tables. A new installation takes the schema, an existing one the dated files — by hand in phpMyAdmin, because there is no shell. | |
 
