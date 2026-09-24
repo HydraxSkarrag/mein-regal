@@ -39,6 +39,20 @@ Assert::same('review copy mapped', $row->acquisitionType(), BookRepository::ACQU
 Assert::same('hours and minutes combined', $row->audioMinutes(), 150);
 Assert::same('rating kept', $row->rating(), 4);
 
+/* Whole stars are what Bookstats wrote. Half ones are what this
+ * application's own export writes back out, and "4.0" is what a DECIMAL
+ * looks like after MySQL or a spreadsheet has had it - the form in which
+ * the export used to lose every rating on the live servers. */
+$rated = static fn (string $value): int|float|null => (new BookstatsRow(['Titel' => 'x', 'Bewertung' => $value]))->rating();
+Assert::same('half a star with a comma', $rated('3,5'), 3.5);
+Assert::same('and with a point', $rated('3.5'), 3.5);
+Assert::same('a DECIMAL as MySQL hands it over', $rated('4.0'), 4);
+Assert::same('and as a German spreadsheet does', $rated('4,0'), 4);
+Assert::same('five is the top', $rated('5'), 5);
+Assert::same('six is not a rating', $rated('6'), null);
+Assert::same('nor is a step that is not a half', $rated('3,7'), null);
+Assert::same('half a star is the least there is', $rated('0,5'), 0.5);
+
 Assert::group('BookstatsRow: dates');
 
 Assert::same('empty date', BookstatsRow::germanDate(''), null);

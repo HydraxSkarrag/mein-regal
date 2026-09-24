@@ -44,3 +44,47 @@ jobs:
 
       - name: Tests
         run: php tests/run.php
+
+  # The same suite against the database production actually runs on.
+  #
+  # Every test used to be SQLite, and production is MySQL - which is where
+  # the faults that cost the most came from: a DECIMAL that comes back as a
+  # string, a keyword one engine has and the other does not. With
+  # REGAL_TEST_MYSQL_HOST set, tests/support/TestDatabase.php hands each test
+  # a real database, loaded from schema.sql as it stands.
+  #
+  # Both engines, because a hoster offers one or the other and an
+  # installation elsewhere may be on either.
+  database:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["mysql:8.0", "mariadb:10.11"]
+    services:
+      db:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MARIADB_ROOT_PASSWORD: test
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptest || healthcheck.sh --connect"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Tests against ${{ matrix.image }}
+        env:
+          REGAL_TEST_MYSQL_HOST: 127.0.0.1
+          REGAL_TEST_MYSQL_USER: root
+          REGAL_TEST_MYSQL_PASS: test
+        run: php tests/run.php

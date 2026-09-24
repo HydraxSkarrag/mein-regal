@@ -413,6 +413,12 @@ return [
     'maintenance.import.report'            => 'Report',
     'maintenance.import.nofile'            => 'No file arrived.',
     'maintenance.import.notempty'          => 'The shelf already holds {count} books. A second import will duplicate any book without an ISBN.',
+    'maintenance.backups'                  => 'Backups on the server',
+    'maintenance.backups.hint'             => 'What the nightly backup has written. It sits on the same server as the shelf and is no help when the server is the problem - download one now and then and keep it somewhere else. Only these hold the database and the covers complete.',
+    'maintenance.backups.none'             => 'No backup yet. The nightly cron job at /cron/backup writes them.',
+    'maintenance.backups.kind.sql'         => 'Database (SQL)',
+    'maintenance.backups.kind.zip'         => 'Covers (ZIP)',
+    'maintenance.backups.kind.csv'         => 'Bookstats format (CSV)',
     'maintenance.cron'                     => 'The nightly job',
     'maintenance.cron.hint'                => 'This page does not fill in missing covers and details; the nightly job does. It waits between requests to go easy on the sources, and for three thousand books that takes hours - longer than any browser window lasts.',
 

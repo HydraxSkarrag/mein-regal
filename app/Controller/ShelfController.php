@@ -114,12 +114,8 @@ final class ShelfController
             $names['series'] = $series === null ? (string) $filters['series'] : (string) $series['name'];
         }
         if (($filters['tag'] ?? '') !== '') {
-            $statement = $this->app->pdo->prepare(
-                'SELECT name FROM tags WHERE owner_id = ? AND slug = ? AND dropped_at IS NULL LIMIT 1'
-            );
-            $statement->execute([$this->app->ownerId, (string) $filters['tag']]);
-            $found = $statement->fetchColumn();
-            $names['tag'] = $found === false ? (string) $filters['tag'] : (string) $found;
+            $names['tag'] = $this->app->tags->nameBySlug($this->app->ownerId, (string) $filters['tag'])
+                ?? (string) $filters['tag'];
         }
 
         return $names;
@@ -834,13 +830,7 @@ final class ShelfController
      */
     private function authorName(string $name): string
     {
-        $statement = $this->app->pdo->prepare(
-            'SELECT name FROM authors WHERE owner_id = ? AND match_key = ? LIMIT 1'
-        );
-        $statement->execute([$this->app->ownerId, \App\Core\Text::authorMatchKey($name)]);
-        $found = $statement->fetchColumn();
-
-        return $found === false ? $name : (string) $found;
+        return $this->app->authors->nameByKey($this->app->ownerId, \App\Core\Text::authorMatchKey($name)) ?? $name;
     }
 
     /** @return array<int,string> book id => "Author, Author" */
@@ -861,24 +851,7 @@ final class ShelfController
     /** @return array<int,list<array{name: string, role: string}>> */
     private function contributors(array $bookIds): array
     {
-        if ($bookIds === []) {
-            return [];
-        }
-        $placeholders = implode(',', array_fill(0, count($bookIds), '?'));
-        $statement = $this->app->pdo->prepare(
-            "SELECT ba.book_id, a.name, ba.role
-               FROM book_authors ba JOIN authors a ON a.id = ba.author_id
-              WHERE ba.book_id IN ($placeholders)
-              ORDER BY ba.position ASC, a.sort_name ASC"
-        );
-        $statement->execute(array_values($bookIds));
-
-        $byBook = [];
-        foreach ($statement->fetchAll() as $row) {
-            $byBook[(int) $row['book_id']][] = ['name' => (string) $row['name'], 'role' => (string) $row['role']];
-        }
-
-        return $byBook;
+        return $this->app->authors->contributorsOf($this->app->ownerId, array_values($bookIds));
     }
 
     /** @return list<array{name: string, slug: string}> */

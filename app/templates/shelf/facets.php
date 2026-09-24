@@ -44,7 +44,11 @@ foreach ($groups as $entries) {
 </nav>
 
 <?php foreach ($groups as $letter => $entries): ?>
-<section class="facet-group">
+<?php /* A short letter is kept whole on paper, heading and all: Firefox does not
+         keep a heading with what follows it, and "F" stood alone at the foot of
+         a sheet. Only a short one - holding every group together pushed the
+         long ones to fresh sheets and took the authors from 30 sheets to 39. */ ?>
+<section class="facet-group<?= count($entries) <= 24 ? ' facet-group--short' : '' ?>">
   <h2 id="letter-<?= e(rawurlencode($letter)) ?>"><?= e($letter) ?></h2>
   <ul class="facet-list<?= $withCovers ? ' facet-list--covers' : '' ?>">
     <?php foreach ($entries as $entry): ?>

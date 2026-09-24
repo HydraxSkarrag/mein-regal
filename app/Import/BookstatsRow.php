@@ -181,11 +181,24 @@ final class BookstatsRow
         return $this->positiveInt($this->raw['Seitenanzahl'] ?? null);
     }
 
-    public function rating(): ?int
+    /**
+     * Whole stars from Bookstats, and half ones from this application's own
+     * export, which writes 3.5 as "3,5". "4.0" and "4,0" are read too - that is
+     * what a DECIMAL looks like when a spreadsheet or MySQL has had it.
+     * Anything that is not a whole or half step up to five is not a rating.
+     */
+    public function rating(): int|float|null
     {
-        $rating = $this->positiveInt($this->raw['Bewertung'] ?? null);
+        $raw = trim((string) ($this->raw['Bewertung'] ?? ''));
+        if (preg_match('/^([0-5])(?:[.,]([05])0*)?$/', $raw, $match) !== 1) {
+            return null;
+        }
+        $rating = (int) $match[1] + (($match[2] ?? '') === '5' ? 0.5 : 0.0);
+        if ($rating <= 0 || $rating > 5) {
+            return null;
+        }
 
-        return $rating !== null && $rating <= 5 ? $rating : null;
+        return floor($rating) === $rating ? (int) $rating : $rating;
     }
 
     /** "12,90" is 12.90; "0,00" is unknown, not free. */

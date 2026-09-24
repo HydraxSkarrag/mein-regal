@@ -13,16 +13,13 @@ declare(strict_types=1);
 use App\Repository\BookRepository;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('Tags: label until somebody says genre');
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, dirname(__DIR__) . '/schema.sql');
+$pdo = TestDatabase::fresh();
 (new UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $books = new BookRepository($pdo);
@@ -115,10 +112,7 @@ Assert::same('nor counted', $tags->count(1, TagRepository::KIND_GENRE), 1);
 
 Assert::group('Removing a tag has to survive the next import');
 
-$pdo2 = new PDO('sqlite::memory:');
-$pdo2->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo2->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo2, dirname(__DIR__) . '/schema.sql');
+$pdo2 = TestDatabase::fresh();
 (new UserRepository($pdo2))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $books2 = new BookRepository($pdo2);
@@ -314,10 +308,7 @@ Assert::group('A new tag can be made a genre where it is made');
  * once for the whole field. Three names in one line are not always the same
  * sort.
  */
-$pdoC = new PDO('sqlite::memory:');
-$pdoC->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdoC->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdoC, dirname(__DIR__) . '/schema.sql');
+$pdoC = TestDatabase::fresh();
 (new UserRepository($pdoC))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $booksC = new BookRepository($pdoC);

@@ -20,9 +20,9 @@ use App\Lookup\CoverFinder;
 use App\Repository\BookRepository;
 use App\Repository\CoverRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 $scanner = (string) file_get_contents(PROJECT_ROOT . '/public/js/scanner.js');
 
@@ -225,10 +225,7 @@ Assert::true(
 
 Assert::group('Which of several covers a book shows');
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, PROJECT_ROOT . '/schema.sql');
+$pdo = TestDatabase::fresh();
 (new UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $books = new BookRepository($pdo);

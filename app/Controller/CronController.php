@@ -203,8 +203,9 @@ final class CronController
             // Server logs are the host's business; this is ours.
             (new Auth($this->app->pdo, $this->app->session, $this->app->users, $this->app->cookies))
                 ->purgeExpired();
+            $this->app->lookupHits->purgeBefore(new \DateTimeImmutable('-1 day'));
 
-            return 'purge: expired tokens and old login attempts removed';
+            return 'purge: expired tokens, old login attempts and lookup counts removed';
         } catch (Throwable $e) {
             return 'purge: FAILED - ' . $e->getMessage();
         }

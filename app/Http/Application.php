@@ -29,6 +29,7 @@ use App\Lookup\OpenLibraryLookup;
 use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use App\Repository\CoverRepository;
+use App\Repository\LookupHitRepository;
 use App\Repository\PageRepository;
 use App\Repository\SeriesRepository;
 use App\Repository\TagRepository;
@@ -66,6 +67,7 @@ final class Application
     public readonly SeriesRepository $series;
     public readonly PageRepository $pages;
     public readonly UserRepository $users;
+    public readonly LookupHitRepository $lookupHits;
     public readonly LookupChain $lookup;
 
     /** The collection being shown. One installation, one owner, for now. */
@@ -80,6 +82,7 @@ final class Application
         $secure = $request->isSecure();
 
         $this->session = new Session($secure);
+        // Only resumes one the visitor brought; see Session.
         $this->session->start();
         $this->cookies = new HttpCookies($secure);
         $this->csrf = new Csrf($this->session);
@@ -95,6 +98,7 @@ final class Application
         $this->covers = new CoverRepository($this->pdo);
         $this->series = new SeriesRepository($this->pdo);
         $this->pages = new PageRepository($this->pdo);
+        $this->lookupHits = new LookupHitRepository($this->pdo);
 
         $http = new HttpClient($config->str('api_contact'));
         $this->lookup = new LookupChain(
@@ -178,7 +182,7 @@ final class Application
         $this->view->share('publicStats', $this->publicStats());
         $this->view->share('multilingual', $this->multilingual());
         $this->view->share('currentPath', $this->request->path);
-        $this->view->share('csrfField', $this->csrf->field());
+        $this->view->share('csrfField', $this->csrf->lazyField());
         $this->view->share('styles', $this->styles);
         $this->view->share('cspNonce', $this->csp->nonce());
         $this->view->share('asset', self::assetVersion());

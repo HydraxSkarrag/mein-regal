@@ -19,9 +19,9 @@ use App\Core\Text;
 use App\Repository\BookRepository;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('Every shape the notation comes in');
 
@@ -93,10 +93,7 @@ Assert::true('and so is the capital-letter one', !str_contains($dnb, "'/^[A-Z]")
 
 Assert::group('Cleaning up what got through before');
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, PROJECT_ROOT . '/schema.sql');
+$pdo = TestDatabase::fresh();
 (new UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $books = new BookRepository($pdo);

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Core\BackupFiles;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\RunLog;
@@ -25,7 +26,9 @@ use Throwable;
  *            time limit raised and the whole thing in one transaction, so a
  *            timeout leaves nothing half-done.
  *   export   a handful of queries, streamed straight to the browser. Here.
- *   backup   seconds, plus zipping the covers. Here, and also on the cron.
+ *   backup   seconds, plus zipping the covers. On the cron; what it leaves
+ *            is offered here for download, which is the only way a copy
+ *            gets off the server without a shell.
  *   enrich   deliberately NOT here. It waits nearly a second per book to be
  *            polite to the sources it queries; for three thousand books that
  *            is hours. It belongs on the nightly cron and nowhere else.
@@ -137,6 +140,31 @@ final class MaintenanceController
         ]))->noIndex();
     }
 
+    /** GET /admin/backup/{name} - one of the nightly copies, to take home. */
+    public function backup(Request $request, array $params): Response
+    {
+        $guard = $this->app->requireSignIn();
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $name = (string) ($params['name'] ?? '');
+        $path = $this->backups()->path($name);
+        if ($path === null) {
+            return $this->app->notFound();
+        }
+
+        // The cover archive of a full shelf takes a while on a slow line.
+        @set_time_limit(0);
+
+        return Response::file($path, $name, BackupFiles::contentType($name))->noIndex();
+    }
+
+    private function backups(): BackupFiles
+    {
+        return new BackupFiles(PROJECT_ROOT . '/storage/backup');
+    }
+
     private function render(string $error = '', string $report = ''): Response
     {
         $body = $this->app->view->render('admin.maintenance', [
@@ -148,6 +176,7 @@ final class MaintenanceController
                a table on purpose: a night that failed because the database
                was unreachable is the night most worth reading about. */
             'runs'      => RunLog::read(20),
+            'backups'   => $this->backups()->all(),
         ]);
 
         return Response::html($this->app->view->render('layout.base', [

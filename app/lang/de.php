@@ -438,6 +438,12 @@ return [
     'maintenance.import.report'            => 'Bericht',
     'maintenance.import.nofile'            => 'Es kam keine Datei an.',
     'maintenance.import.notempty'          => 'Im Regal stehen bereits {count} Bücher. Ein zweiter Import legt Bücher ohne ISBN doppelt an.',
+    'maintenance.backups'                  => 'Sicherungen vom Server',
+    'maintenance.backups.hint'             => 'Was die nächtliche Sicherung angelegt hat. Sie liegt auf demselben Server wie das Regal und hilft nicht, wenn der Server das Problem ist – ab und zu eine davon herunterladen und woanders aufheben. Nur hier stecken die Datenbank und die Cover vollständig drin.',
+    'maintenance.backups.none'             => 'Noch keine Sicherung. Die legt der nächtliche Cronjob unter /cron/backup an.',
+    'maintenance.backups.kind.sql'         => 'Datenbank (SQL)',
+    'maintenance.backups.kind.zip'         => 'Cover (ZIP)',
+    'maintenance.backups.kind.csv'         => 'Bookstats-Format (CSV)',
     'maintenance.cron'                     => 'Nächtlicher Abgleich',
     'maintenance.cron.hint'                => 'Diese Seite ergänzt keine fehlenden Cover und Angaben – das übernimmt der nächtliche Lauf. Er wartet zwischen den Abfragen, um die Datenquellen zu schonen; bei dreitausend Büchern dauert das Stunden, die kein Browserfenster durchhält.',
 

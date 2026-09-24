@@ -2276,6 +2276,10 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     --border: #999;
     --accent: #000;
     --accent-dark: #000;
+    /* Text drawn on an accent ground: a chosen chip, a primary button. The
+       ground is not printed, and white letters on white paper are what was
+       left - Chrome greys them to a ghost, Firefox blackens them. */
+    --on-accent: #000;
     --shadow: none;
     --shadow-sm: none;
     --shadow-nav: none;
@@ -2301,10 +2305,15 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     display: none !important;
   }
 
+  /* Everything here is sized in rem, and a rem is the html's size, not the
+     body's. The body used to be set to 11pt, which read like "a little
+     smaller on paper" and changed nothing at all: the same sheets, to the
+     sheet, with the line and without it. On html it does what it says - the
+     one thing it changes is that a book fits on one sheet across as well. */
+  html { font-size: 14px; }
   body {
     min-height: 0;
     display: block;
-    font-size: 11pt;
   }
   /* Both of these are room for the bar that is no longer there. */
   .container { max-width: none; padding: 0 0 4px; }
@@ -2348,6 +2357,43 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
     vertical-align: top;
   }
 
+  /* The statistics' two columns, as columns of text.
+   *
+   * A grid, Firefox would not start on a sheet that had a chart on it and
+   * moved it whole to the next, leaving half a sheet empty. Floats fixed that
+   * and broke something else: where the left column ended on one sheet and
+   * the right one went on, both browsers set the rest of the right column on
+   * the next sheet at the left margin. Multi-column layout is made for being
+   * broken across pages. The sections run down the first column and on into
+   * the second, which is the order they are read in anyway. */
+  .stat-grid { display: block; columns: 2; column-gap: 6%; }
+  /* A heading and its chart stay together. Chrome keeps a heading with what
+     follows it across a column break; Firefox did not, and left "Top-Genres"
+     alone at the foot of one column with its list at the head of the next. */
+  .stat-grid .stat-block { break-inside: avoid; }
+
+  /* The lists of genres, labels, authors and series, the same way.
+   *
+   * On screen a grid with tracks of at least 260 pixels, and 388 for the
+   * series with their covers - which on A4 upright is one track, and three
+   * fifths of every sheet left empty: seventeen series on four sheets. Blocks
+   * of a fixed width give the screen's two across upright and three across
+   * on its side, and break like the shelf's tiles in both browsers. */
+  .facet-list { display: block; }
+  .facet-list > li {
+    display: inline-block;
+    width: 300px;
+    margin-right: 28px;
+    vertical-align: top;
+    break-inside: avoid;
+  }
+  /* And a smaller cover. Nearly every letter holds one series, so each takes
+     a row of its own whatever the width, and the row is as tall as the
+     picture: 132 pixels of it carried seventeen series over three sheets. */
+  .facet-list--covers { --cover-w: 60px; }
+  .facet-group--short { break-inside: avoid; }
+  .facet-list--covers > li { width: 310px; margin-right: 24px; }
+
   /* Two columns whatever the page box measures. The screen rule turns them
      on at 700 pixels, which a wider margin setting falls below. */
   .book-detail { grid-template-columns: 150px minmax(0, 1fr); gap: 20px; }
@@ -2358,17 +2404,50 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   .cover--placeholder { background: none; color: #000; border: 1px solid var(--border); }
 
   /* Colour that is not decoration. A bar chart without bars is not a quieter
-     chart, and a half star printed whole says the wrong number. All of these
-     are backgrounds, and the dialogue's default is to print no backgrounds,
-     so they are the few that ask for their ink by name. */
+     chart, and a dot that says "unread" without its colour is a white ring on
+     a cover. All of these are backgrounds, and the dialogue's default is to
+     print no backgrounds, so they are the few that ask for their ink by name. */
   .bar,
   .bar-fill,
   .split-bar,
   .split-part,
   .split-legend .swatch,
-  .stars .half {
+  .badge-unread {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Half a star, drawn in ink instead of in a background.
+   *
+   * On screen it is a gradient clipped to the glyph. Asking for that
+   * background by name worked in Chrome and printed in Firefox as a black
+   * and grey rectangle beside three stars - Firefox prints the gradient and
+   * not the clip. A grey star with a black one over it, cut off at the same
+   * 44%, is two letters, and letters print everywhere.
+   *
+   * As long as the grey stays grey. Firefox darkens pale text on paper for
+   * legibility, and an empty star is pale text: a book with three stars
+   * printed as five black ones, the "3" beside them the only hint. The stars
+   * are the one piece of text whose shade is the information, so they opt
+   * out of that help. */
+  .stars {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .stars .half {
+    position: relative;
+    display: inline-block;
+    background: none;
+    color: var(--border);
+  }
+  .stars .half::before {
+    content: "\2605";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 44%;
+    overflow: hidden;
+    color: var(--accent);
   }
 
   /* Nothing that reads as one thing torn across two sheets. */

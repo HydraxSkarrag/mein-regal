@@ -126,27 +126,43 @@ final class SeriesRepository
      */
     public function listForOwner(int $ownerId): array
     {
+        /* Counted here by countVolumes() rather than by a SUM in the query.
+           The SUM was meant to be the same count and was not: it subtracted
+           the numbers as they stood, so a Sammelband 2.5-3 counted one and a
+           half volumes here and two on its own page, and on MySQL, where
+           series_index is a DECIMAL, the sum came back as the string "4.0"
+           where SQLite said 4. One rule, in one place, in PHP. */
         $statement = $this->pdo->prepare(
-            /* The same count as countVolumes(), in SQL, because this page
-               asks it of every series at once. A Sammelband counts for the
-               volumes it holds; a book with no numbers counts for itself. */
             'SELECT s.id, s.name, s.slug, s.total,
-                    COALESCE(SUM(CASE
-                        WHEN b.id IS NULL THEN 0
-                        WHEN b.series_index IS NOT NULL AND b.series_index_end IS NOT NULL
-                            THEN b.series_index_end - b.series_index + 1
-                        ELSE 1
-                    END), 0) AS owned
+                    b.id AS book_id, b.series_index, b.series_index_end
                FROM series s
           LEFT JOIN books b ON b.series_id = s.id AND b.owner_id = s.owner_id
               WHERE s.owner_id = ?
-           GROUP BY s.id, s.name, s.slug, s.total
-           ORDER BY s.name ASC'
+           ORDER BY s.name ASC, s.id ASC'
         );
         $statement->execute([$ownerId]);
 
-        /** @var list<array{id: int, name: string, slug: string, total: ?int, owned: int}> */
-        return $statement->fetchAll();
+        $series = [];
+        $volumes = [];
+        foreach ($statement->fetchAll() as $row) {
+            $id = (int) $row['id'];
+            $series[$id] ??= [
+                'id'    => $id,
+                'name'  => (string) $row['name'],
+                'slug'  => (string) $row['slug'],
+                'total' => $row['total'] === null ? null : (int) $row['total'],
+                'owned' => 0,
+            ];
+            $volumes[$id] ??= [];
+            if ($row['book_id'] !== null) {
+                $volumes[$id][] = $row;
+            }
+        }
+        foreach ($series as $id => $entry) {
+            $series[$id]['owned'] = self::countVolumes($volumes[$id]);
+        }
+
+        return array_values($series);
     }
 
     /**
@@ -346,5 +362,19 @@ final class SeriesRepository
         }
 
         return $missing;
+    }
+
+    /** @return array<int, string> every series name by its id */
+    public function namesById(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare('SELECT id, name FROM series WHERE owner_id = ?');
+        $statement->execute([$ownerId]);
+
+        $names = [];
+        foreach ($statement->fetchAll() as $row) {
+            $names[(int) $row['id']] = (string) $row['name'];
+        }
+
+        return $names;
     }
 }

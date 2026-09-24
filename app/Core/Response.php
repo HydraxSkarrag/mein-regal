@@ -11,6 +11,9 @@ namespace App\Core;
  */
 final class Response
 {
+    /** A file to stream instead of the body - see file(). */
+    private ?string $file = null;
+
     /** @param array<string,string> $headers */
     public function __construct(
         private string $body = '',
@@ -41,6 +44,31 @@ final class Response
     public static function text(string $body, int $status = 200): self
     {
         return new self($body, $status, ['Content-Type' => 'text/plain; charset=utf-8']);
+    }
+
+    /**
+     * A download read from disk as it is sent.
+     *
+     * Every other response carries its body as a string, which is right for
+     * a page and wrong for a cover archive: the one for three thousand books
+     * is some 200 MB, more than PHP is allowed to hold on most hosts.
+     */
+    public static function file(string $path, string $downloadName, string $type): self
+    {
+        $response = new self('', 200, [
+            'Content-Type'        => $type,
+            'Content-Disposition' => 'attachment; filename="' . str_replace('"', '', $downloadName) . '"',
+            'Content-Length'      => (string) (int) filesize($path),
+        ]);
+        $response->file = $path;
+
+        return $response;
+    }
+
+    /** The file a download streams, or null for an ordinary response. */
+    public function streamedFile(): ?string
+    {
+        return $this->file;
     }
 
     public function withHeader(string $name, string $value): self
@@ -95,6 +123,18 @@ final class Response
            it would depend on the web server: mod_php discards it, php-fpm
            behind a proxy may not. */
         if (($_SERVER['REQUEST_METHOD'] ?? '') === 'HEAD') {
+            return;
+        }
+
+        if ($this->file !== null) {
+            /* Whatever is buffered would go out first and end up at the
+               start of the download, and a buffer would hold the whole file
+               in memory, which is what streaming is for avoiding. */
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            readfile($this->file);
+
             return;
         }
 

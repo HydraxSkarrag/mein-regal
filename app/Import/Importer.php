@@ -6,6 +6,7 @@ namespace App\Import;
 use App\Core\Text;
 use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
+use App\Repository\ImportLogRepository;
 use App\Repository\TagRepository;
 use PDO;
 use Throwable;
@@ -24,12 +25,15 @@ use Throwable;
  */
 final class Importer
 {
+    private readonly ImportLogRepository $log;
+
     public function __construct(
         private readonly PDO $pdo,
         private readonly BookRepository $books,
         private readonly AuthorRepository $authors,
         private readonly TagRepository $tags,
     ) {
+        $this->log = new ImportLogRepository($pdo);
     }
 
     public function run(CsvReader $reader, int $ownerId, bool $dryRun = true): ImportReport
@@ -147,7 +151,7 @@ final class Importer
                     $this->tags->link($bookId, $tagId);
                 }
 
-                $this->log($runId, $number, $isbn, $title, 'imported', null);
+                $this->log->record($runId, $number, $isbn, $title, 'imported', null);
                 $report->imported++;
             }
 
@@ -195,13 +199,5 @@ final class Importer
         arsort($bulk);
 
         return $bulk;
-    }
-
-    private function log(string $runId, int $row, ?string $isbn, string $title, string $status, ?string $message): void
-    {
-        $statement = $this->pdo->prepare(
-            'INSERT INTO import_log (run_id, source_row, isbn, title, status, message) VALUES (?, ?, ?, ?, ?, ?)'
-        );
-        $statement->execute([$runId, $row, $isbn, mb_substr($title, 0, 500), $status, $message]);
     }
 }

@@ -42,6 +42,28 @@ final class Csrf
     }
 
     /** @param array<string,mixed> $input */
+    /**
+     * The field, written only if a page actually prints it.
+     *
+     * Every page is handed one, because any template may hold a form; only a
+     * few do. Making the token begins the session, so an eager field would
+     * put a session cookie on every page again - which is the thing
+     * Session no longer does.
+     */
+    public function lazyField(): \Stringable
+    {
+        return new class ($this) implements \Stringable {
+            public function __construct(private readonly Csrf $csrf)
+            {
+            }
+
+            public function __toString(): string
+            {
+                return $this->csrf->field();
+            }
+        };
+    }
+
     public function isValid(array $input): bool
     {
         $submitted = $input[self::FIELD] ?? '';

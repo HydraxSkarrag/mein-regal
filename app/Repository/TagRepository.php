@@ -676,4 +676,49 @@ final class TagRepository
 
         return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
     }
+
+    /** The name behind a tag's address, while the tag is in use. */
+    public function nameBySlug(int $ownerId, string $slug): ?string
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT name FROM tags WHERE owner_id = ? AND slug = ? AND dropped_at IS NULL LIMIT 1'
+        );
+        $statement->execute([$ownerId, $slug]);
+        $found = $statement->fetchColumn();
+
+        return $found === false ? null : (string) $found;
+    }
+
+    /**
+     * Genres and labels per book, and only the ones in use.
+     *
+     * A removed tag keeps its links - that is what makes removing it
+     * reversible - so asking book_tags alone hands them all back. They came
+     * out in every export: "collection:Forgotten Realms", taken off the shelf
+     * by hand, stood at its book again in the backup, and after a merge a book
+     * carried the old name beside the new one, because merging copies the
+     * links and drops the source.
+     *
+     * @return array<int, array{genres?: list<string>, labels?: list<string>}>
+     */
+    public function namesByBook(int $ownerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT bt.book_id, t.name, t.kind
+               FROM book_tags bt
+               JOIN tags t ON t.id = bt.tag_id
+               JOIN books b ON b.id = bt.book_id
+              WHERE b.owner_id = ? AND t.dropped_at IS NULL
+              ORDER BY bt.book_id ASC, t.name ASC'
+        );
+        $statement->execute([$ownerId]);
+
+        $byBook = [];
+        foreach ($statement->fetchAll() as $row) {
+            $kind = $row['kind'] === self::KIND_GENRE ? 'genres' : 'labels';
+            $byBook[(int) $row['book_id']][$kind][] = (string) $row['name'];
+        }
+
+        return $byBook;
+    }
 }

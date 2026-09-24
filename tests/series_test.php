@@ -19,14 +19,11 @@ use App\Lookup\DnbLookup;
 use App\Repository\BookRepository;
 use App\Repository\SeriesRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($pdo, PROJECT_ROOT . '/schema.sql');
+$pdo = TestDatabase::fresh();
 (new UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $books = new BookRepository($pdo);
@@ -135,13 +132,24 @@ Assert::same(
     5
 );
 
-/* The same sum in SQL, because the list of every series asks it of all of
- * them at once and two counts that disagree is the fault this replaces. */
+/* The list of every series counts the same way. It used to do the sum in
+ * SQL, meant to be the same and not quite: it took end minus start as it
+ * stood, so a Sammelband 2.5-3 was one and a half volumes in the list and
+ * two on its own page, and on MySQL the sum of a DECIMAL came back as "4.0".
+ * The list now asks countVolumes() too. */
 $bound = $series->findOrCreate(1, 'Hanni und Nanni');
 $books->insert(1, ['title' => 'Sammelband 1', 'series_id' => $bound, 'series_index' => 1.0, 'series_index_end' => 3.0]);
 $books->insert(1, ['title' => 'Sammelband 2', 'series_id' => $bound, 'series_index' => 4.0, 'series_index_end' => 6.0]);
 $counted = array_column($series->listForOwner(1), 'owned', 'name');
-Assert::same('two books, six volumes', (int) ($counted['Hanni und Nanni'] ?? 0), 6);
+Assert::same('two books, six volumes', $counted['Hanni und Nanni'] ?? null, 6);
+
+$halves = $series->findOrCreate(1, 'Die Wilden Hühner');
+$books->insert(1, ['title' => 'Band 2 und 3 mit Novelle', 'series_id' => $halves, 'series_index' => 2.5, 'series_index_end' => 3.0]);
+Assert::same(
+    'a Sammelband starting on a half volume counts as its own page counts it',
+    array_column($series->listForOwner(1), 'owned', 'name')['Die Wilden Hühner'] ?? null,
+    SeriesRepository::countVolumes([['series_index' => 2.5, 'series_index_end' => 3.0]])
+);
 
 Assert::group('How many there are is not how many you have');
 
@@ -159,7 +167,7 @@ $empty = $series->findOrCreate(1, 'Mistborn');
 $listed = array_column($series->listForOwner(1), 'owned', 'name');
 
 Assert::same('a series with no books is still listed', $listed['Mistborn'] ?? null, 0);
-Assert::same('and one with books counts them', (int) ($listed['Die Sturmlicht-Chroniken'] ?? 0), 4);
+Assert::same('and one with books counts them', $listed['Die Sturmlicht-Chroniken'] ?? null, 4);
 
 /* Deleting one frees its books rather than taking them with it. No tombstone,
  * unlike a tag: nothing recreates a series behind the owner's back, because
@@ -223,7 +231,6 @@ Assert::same(
 );
 
 $stock = new ReflectionMethod(DnbLookup::class, 'isStockNumber');
-$stock->setAccessible(true);
 Assert::true('13697 out of 978-3-423-13697-6', $stock->invoke(null, '13697', '9783423136976'));
 Assert::true('24510 out of 978-3-442-24510-9', $stock->invoke(null, '24510', '9783442245109'));
 Assert::true('a real volume is too short to be one', !$stock->invoke(null, '8', '9783789147470'));
@@ -242,7 +249,6 @@ Assert::true('and a colon settles the rest', str_contains($source, "str_contains
 /* Every shape the volume field takes, all four measured off the wire. A range
  * is one volume holding two parts and starts at the first of them. */
 $number = new ReflectionMethod(DnbLookup::class, 'volumeNumber');
-$number->setAccessible(true);
 
 foreach (['8' => 8.0, 'Band 13' => 13.0, '8. Roman' => 8.0, '3/4' => 3.0, 'Bd. 2' => 2.0] as $raw => $want) {
     Assert::same('"' . $raw . '"', $number->invoke(null, $raw), $want);

@@ -18,7 +18,7 @@ declare(strict_types=1);
 use App\Core\Formatter;
 use App\Core\View;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
 Assert::group('Shelf filters: a facet that cannot divide the shelf');
 
@@ -151,10 +151,7 @@ Assert::true(
 Assert::true('the sidebar offers it', str_contains($partial, "\$urlFor(['rating'"));
 Assert::true('and the counts reach the sidebar', str_contains($page, "'ratingCounts'"));
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-Tests\Support\SqliteSchema::apply($pdo, PROJECT_ROOT . '/schema.sql');
+$pdo = Tests\Support\TestDatabase::fresh();
 (new App\Repository\UserRepository($pdo))->create('m@example.org', 'ein-langes-passwort', 'M');
 
 $books = new App\Repository\BookRepository($pdo);

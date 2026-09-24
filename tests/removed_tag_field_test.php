@@ -12,14 +12,11 @@ declare(strict_types=1);
 use App\Repository\BookRepository;
 use App\Repository\TagRepository;
 use App\Repository\UserRepository;
-use Tests\Support\SqliteSchema;
+use Tests\Support\TestDatabase;
 
-require_once __DIR__ . '/support/SqliteSchema.php';
+require_once __DIR__ . '/support/TestDatabase.php';
 
-$fieldPdo = new PDO('sqlite::memory:');
-$fieldPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$fieldPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-SqliteSchema::apply($fieldPdo, dirname(__DIR__) . '/schema.sql');
+$fieldPdo = TestDatabase::fresh();
 (new UserRepository($fieldPdo))->create('d@example.org', 'ein-langes-passwort', 'D');
 $fieldBooks = new BookRepository($fieldPdo);
 $fieldTags = new TagRepository($fieldPdo);
