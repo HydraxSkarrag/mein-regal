@@ -142,21 +142,22 @@ Assert::same(
     2
 );
 
-// link() is the gate every path goes through - import, scanner, edit form.
+/* A book arriving with the removed name - from the scanner or an import -
+ * gets the link, out of sight. It used to be refused, and then restoring
+ * left out every book that came in while the tag was away; see
+ * removed_tag_scan_test. What the import must not do is bring the tag back
+ * on show, and it does not. */
 $three = $books2->insert(1, ['title' => 'Drittes', 'isbn13' => '9783785723166']);
 $tags2->link($three, $shop);
-Assert::same(
-    'a removed tag cannot be put on a book',
-    (int) $pdo2->query('SELECT COUNT(*) FROM book_tags')->fetchColumn(),
-    2
-);
+Assert::same('a new book keeps the removed tag', $tags2->bookIdsFor(1, $shop), [$one, $two, $three]);
+Assert::same('and it is still gone from the lists', [$tags2->count(1), $tags2->listWithCounts(1, 10)], [0, []]);
 
 // And the same name does not become a second tag: the slug is still taken.
 Assert::same('nor does it come back under its own name', $tags2->findOrCreate(1, 'Custom Stores'), $shop);
 
 $tags2->restore(1, $shop);
 Assert::same('restoring brings it back', $tags2->count(1), 1);
-Assert::same('with both its books', $tags2->listWithCounts(1, 10)[0]['book_count'], 2);
+Assert::same('with every book it belongs to', $tags2->listWithCounts(1, 10)[0]['book_count'], 3);
 
 Assert::group('Merging two spellings of one genre');
 

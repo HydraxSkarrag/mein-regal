@@ -1930,6 +1930,14 @@ h3 { font-size: 1.05rem; margin: 1.5rem 0 8px; }
   border-radius: var(--radius-sm);
   padding: 2px 8px;
 }
+/* A label the owner removed: saved, but not shown on the book, and the card
+   says so instead of drawing it like the others. */
+.result-tags li.result-tag--removed {
+  background: none;
+  border-style: dashed;
+}
+.result-tags li.result-tag--removed .result-tag-note { font-style: italic; }
+.result-tags-note { margin: 6px 0 0; font-size: 0.78rem; }
 
 /* One step at a time.
  *

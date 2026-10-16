@@ -33,17 +33,17 @@ in `public/js/`.
 | | | |
 |---|---|---|
 | **`app/Core/`** | Router, request, response, session, CSRF, CSP, translation, escaping, ISBN, text. Everything every route needs, once, in one place. | 31 files · 4,342 lines |
-| **`app/Controller/`** | Ten of them, one per area: shelf, book, scanning, tags, statistics, pages, sign-in, setup, data, cron. | 10 · 4,232 |
-| **`app/Repository/`** | Database access. No SQL lives anywhere else, apart from three files named under *The layers*, and `layers_test` keeps it that way. | 9 · 2,837 |
+| **`app/Controller/`** | Ten of them, one per area: shelf, book, scanning, tags, statistics, pages, sign-in, setup, data, cron. | 10 · 4,258 |
+| **`app/Repository/`** | Database access. No SQL lives anywhere else, apart from three files named under *The layers*, and `layers_test` keeps it that way. | 9 · 2,853 |
 | **`app/Lookup/`** | The outside world: DNB, MVB, Google Books, Open Library, the cover finder, and the chain that asks them in turn. | 15 · 2,704 |
-| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 32 · 3,380 |
+| **`app/templates/`** | PHP templates by area. Loops and conditionals, nothing else. | 32 · 3,395 |
 | **`app/Import/` `app/Export/`** | The one-off move in from Bookstats, and the backups back out. | 5 · 987 |
 | **`app/Content/`** | Rules about content with no HTML attached: matching reviews, recognising classification notations, reading genres and labels from a file, the default pages. | 4 · 1,135 |
 | **`app/Http/`** | One file. `Application.php` builds everything and holds it. | 1 · 310 |
-| **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,220 |
+| **`app/lang/`** | `de.php` is the source and `en.php` follows it. Not the other way round. | 2 · 1,236 |
 | **`public/index.php`** | The only entry point: error display off, bootstrap, every address, `$app->run()`. | 204 |
-| **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,436 |
-| **`tests/`** | 70 files, 1,800+ assertions, no PHPUnit. The same suite runs against SQLite, MySQL and MariaDB. | 70 · 9,956 |
+| **`public/css/` `public/js/`** | One stylesheet plus two themes, seven own scripts plus the decoder. | 11 · 4,505 |
+| **`tests/`** | 72 files, 1,800+ assertions, no PHPUnit. The same suite runs against SQLite, MySQL and MariaDB. | 72 · 10,102 |
 | **`bin/`** | Nine command-line scripts: set up, import, enrich, back up, check. | 9 · 2,118 |
 | **`schema.sql` `migrations/`** | Fourteen tables. A new installation takes the schema, an existing one the dated files — by hand in phpMyAdmin, because there is no shell. | |
 
@@ -177,7 +177,7 @@ interface — never the reverse.
 |---|---|
 | `books` | The core: title, ISBN, publisher, binding, price, reading status, rating, and `series_id` with `series_index`. |
 | `authors`, `book_authors` | Normalised, with a role. A translator is not an author, and the import disagreed. |
-| `tags`, `book_tags` | Genre and label in one table, told apart by `kind`. A removed tag stays, with its links: that is what makes restoring it real and what stops an import making the name again. Every query that shows or counts tags asks `dropped_at IS NULL`. |
+| `tags`, `book_tags` | Genre and label in one table, told apart by `kind`. A removed tag stays, with its links: that is what makes restoring it real and what stops an import making the name again. A book that arrives with a removed name - scanned or imported - gets the link too, out of sight, so that restoring also covers the books that came in meanwhile; only the edit form refuses, because there the owner is told it will. Every query that shows or counts tags asks `dropped_at IS NULL`. |
 | `series` | Name, slug, total and a note — because the catalogues do not agree on how to count. |
 | `covers` | Path or source, with attribution and a rejection date. |
 | `users`, `auth_tokens`, `login_attempts` | The account, "stay signed in" (stored only as a hash), and the lockout after failed attempts. |

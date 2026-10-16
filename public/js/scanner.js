@@ -59,6 +59,7 @@
   var manualForm = document.getElementById('manual');
   var isbnInput = document.getElementById('isbn');
   var readToggle = document.getElementById('read');
+  var noTagsToggle = document.getElementById('no-tags');
 
   /* Which door this ISBN came through, so every ending knows where to put
    * the user back.
@@ -506,11 +507,9 @@
             + (book.series_index ? ' · ' + esc(text.volume.replace('{number}', String(book.series_index).replace(/\.0$/, '').replace('.', ','))) : '')
             + '</p>'
           : '') +
-        ((book.tags || []).length
-          ? '<ul class="result-tags">' + (book.tags || []).map(function (tag) {
-              return '<li>' + esc(tag) + '</li>';
-            }).join('') + '</ul>'
-          : '') +
+        /* What the catalogue suggests as genres and labels - or, with the
+           option on, that none of it is taken. See tagsArea(). */
+        '<div id="result-tags-area">' + tagsArea(book, noTagsToggle.checked, false) + '</div>' +
         /* As what this book is about to be put away, on the screen where
            that is decided.
            
@@ -532,6 +531,7 @@
     step('result');
     document.getElementById('save').addEventListener('click', save);
     document.getElementById('skip').addEventListener('click', dismiss);
+    bindTagsLine(book);
     document.getElementById('result-status').addEventListener('click', function () {
       readToggle.checked = !readToggle.checked;
       // Through the switch's own handler, so what it remembers and what the
@@ -539,6 +539,51 @@
       readToggle.dispatchEvent(new Event('change'));
       this.setAttribute('aria-pressed', readToggle.checked ? 'true' : 'false');
       this.textContent = readToggle.checked ? text.willBeRead : text.willBeUnread;
+    });
+  }
+
+  /* The catalogue's subjects on the card, or the line saying they are left out.
+
+     A label the owner has removed comes back from the source like any other.
+     It is saved, out of sight, so that bringing it back puts it on this book
+     too - and drawn as removed, so the card does not promise a label the book
+     page will not show.
+
+     With "Ohne Genre und Schlagwörter" on, none of them is saved, and the
+     card says so in a line that can be pressed - the same switch, the way the
+     reading status works below it. The line stays on the card once it was
+     there, so the switch can be pressed back, and the list is shown again
+     when it is. Nothing at all when the catalogue had nothing. */
+  function tagsArea(book, skip, toggled) {
+    var tags = book.tags || [];
+    if (!tags.length) { return ''; }
+    var line = (skip || toggled)
+      ? '<button class="result-status" type="button" id="result-tags" aria-pressed="' + (skip ? 'true' : 'false') + '">' +
+          esc(skip ? fill(text.willSkipTags, 'tags', tags.join(', ')) : text.willTakeTags) + '</button>'
+      : '';
+    if (skip) { return line; }
+
+    return '<ul class="result-tags">' + tags.map(function (tag) {
+        var removed = (book.tags_removed || []).indexOf(tag) !== -1;
+        return removed
+          ? '<li class="result-tag--removed" title="' + esc(text.tagRemoved) + '">' + esc(tag)
+            + ' <span class="result-tag-note">' + esc(text.tagRemovedShort) + '</span></li>'
+          : '<li>' + esc(tag) + '</li>';
+      }).join('') + '</ul>'
+      + ((book.tags_removed || []).length ? '<p class="note result-tags-note">' + esc(text.tagRemoved) + '</p>' : '')
+      + line;
+  }
+
+  /* Pressing the line on the card moves the switch on the first screen, and
+     the card is drawn again from it. */
+  function bindTagsLine(book) {
+    var button = document.getElementById('result-tags');
+    if (!button) { return; }
+    button.addEventListener('click', function () {
+      noTagsToggle.checked = !noTagsToggle.checked;
+      noTagsToggle.dispatchEvent(new Event('change'));
+      document.getElementById('result-tags-area').innerHTML = tagsArea(book, noTagsToggle.checked, true);
+      bindTagsLine(book);
     });
   }
 
@@ -566,7 +611,8 @@
     body.append('reading_status', readToggle.checked ? 'read' : 'unread');
     body.append('acquisition_type', 'purchase');
     body.append('authors', JSON.stringify(currentBook.authors || []));
-    body.append('tags', JSON.stringify(currentBook.tags || []));
+    // None at all with the option on - not even the removed ones, out of sight.
+    body.append('tags', JSON.stringify(noTagsToggle.checked ? [] : (currentBook.tags || [])));
     /* Only where the catalogue actually said so - see DnbLookup::seriesFor
        for why that is a minority, and why it is a second request. */
     body.append('series', currentBook.series || '');
@@ -889,6 +935,21 @@
   } catch (error) {
     // No storage available. Unread it is.
   }
+
+  try {
+    noTagsToggle.checked = localStorage.getItem('regal.scan.notags') === '1';
+  } catch (error) {
+    // No storage available. The catalogue's subjects are taken, as before.
+  }
+
+  noTagsToggle.addEventListener('change', function () {
+    try {
+      localStorage.setItem('regal.scan.notags', noTagsToggle.checked ? '1' : '0');
+    } catch (error) {
+      // Not being able to remember it does not stop it applying now.
+    }
+    say(noTagsToggle.checked ? text.markedNoTags : text.markedTags, 'ok');
+  });
 
   readToggle.addEventListener('change', function () {
     try {

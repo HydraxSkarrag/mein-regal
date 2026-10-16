@@ -21,7 +21,9 @@ installation puts on the screen.
 - **Scan barcodes** in the browser, on a phone or a desktop. Uses the browser's
   own detector where there is one and falls back to a bundled library.
 - **Fetch book data** from the German National Library, Google Books and Open
-  Library, in whichever order the ISBN suggests.
+  Library, in whichever order the ISBN suggests. Two switches hold for a whole
+  run: shelve as read, and leave out the catalogue's genres and labels - for a
+  shelf whose vocabulary is its own.
 - **Covers** from the free sources, or photographed yourself.
 - **The shelf** with search, filters and sorting; public to read, editing behind
   the login.
@@ -404,8 +406,10 @@ files in.
   something is written into it - a form's token, a message, the signed-in owner -
   so a visitor who only reads gets no cookie. Print `$csrfField` where there is a
   form; do not make a token for a page that has none.
-- **A removed tag is hidden, not gone.** Its links stay so it can be restored.
-  A query that shows or counts tags asks `dropped_at IS NULL`, and nothing but
+- **A removed tag is hidden, not gone.** Its links stay so it can be restored,
+  and a book arriving with the removed name from the scanner or an import gets
+  one too, out of sight - otherwise restoring would leave those books out. A
+  query that shows or counts tags asks `dropped_at IS NULL`, and nothing but
   *delete for good* takes a removed tag's links away.
 - **`owner_id` is always part of the filter**, even while there is one collection.
 - **Source and comments in English.** German belongs in the interface translations

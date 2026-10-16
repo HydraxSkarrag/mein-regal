@@ -3,7 +3,7 @@
  * Typing a removed name into a book's tags.
  *
  * It looked like a new label - "neu als Schlagwort" - and saving took it off
- * again without a word, because a removed tag cannot be put on a book. The
+ * again without a word, because the form does not put a removed tag on a book. The
  * refusal is right; the silence was not. The field now says so as the name is
  * typed, and the save says so for anybody without JavaScript.
  */

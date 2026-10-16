@@ -72,6 +72,15 @@ declare(strict_types=1);
       <input id="read" type="checkbox">
       <label for="read"><?= e(t('scan.read')) ?> <span class="note">– <?= e(t('scan.read.hint')) ?></span></label>
     </div>
+    <?php /* For a shelf with a vocabulary of its own. The catalogues' subjects
+             are written for libraries, and once the genres and labels here
+             are the owner's own, nearly every one of them is a label to take
+             off again. Remembered like the box above, and for the same
+             reason: it is decided once and holds for the whole run. */ ?>
+    <div class="field field--check">
+      <input id="no-tags" type="checkbox">
+      <label for="no-tags"><?= e(t('scan.notags')) ?> <span class="note">– <?= e(t('scan.notags.hint')) ?></span></label>
+    </div>
   </section>
 
   <section data-when="camera">
@@ -133,6 +142,8 @@ declare(strict_types=1);
     'detected'    => t('scan.detected'),
     'nothingShort'=> t('scan.nothing.short'),
     'volume'      => t('book.series.only', ['number' => '{number}']),
+    'tagRemoved'  => t('scan.tag.removed'),
+    'tagRemovedShort' => t('scan.tag.removed.short'),
     'save'        => t('scan.save'),
     'photo'       => t('scan.photo'),
     'openBook'    => t('scan.open.book'),
@@ -148,6 +159,10 @@ declare(strict_types=1);
     'again'       => t('scan.again'),
     'willBeRead'   => t('scan.will.read'),
     'willBeUnread' => t('scan.will.unread'),
+    'willSkipTags' => t('scan.will.notags', ['tags' => '{tags}']),
+    'willTakeTags' => t('scan.will.tags'),
+    'markedNoTags' => t('scan.notags.on'),
+    'markedTags'   => t('scan.notags.off'),
     'markedRead'  => t('scan.read.on'),
     'markedUnread'=> t('scan.read.off'),
     /* The placeholder is handed over rather than filled in, because these

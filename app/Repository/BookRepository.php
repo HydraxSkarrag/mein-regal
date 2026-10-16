@@ -237,7 +237,16 @@ final class BookRepository
             'DELETE FROM book_tags WHERE book_id = ?
                 AND tag_id NOT IN (SELECT id FROM tags WHERE dropped_at IS NOT NULL)'
         )->execute([$bookId]);
+        /* A name that was removed is not taken here. The field says so as it
+           is typed and the save says so afterwards, and keeping it out of
+           sight anyway - which is what link() does for a book arriving from
+           a catalogue - would make both of them untrue. Asked of the same
+           method that writes the message, so the two cannot disagree. */
+        $refused = array_flip($tags->refusedAmong($ownerId, $names));
         foreach ($names as $name) {
+            if (isset($refused[$name])) {
+                continue;
+            }
             $created = null;
             $tagId = $tags->findOrCreate(
                 $ownerId,

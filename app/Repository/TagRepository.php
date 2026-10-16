@@ -74,16 +74,23 @@ final class TagRepository
     /**
      * Put a tag on a book, honouring what was decided about that tag.
      *
-     * The check sits here rather than in the importer because every path
-     * leads through this method: import, scanner, and the edit form. A tag
-     * removed by hand would otherwise come back on the next import, along
-     * with the books that carried it, which is exactly what the removal was
-     * meant to stop.
+     * A merged tag is followed: a book arriving with "Comic" gets "Comics",
+     * because that is what the merge said should happen to everything
+     * carrying the old name - not only to the books that happened to be in
+     * the shelf that afternoon.
      *
-     * A merged tag is not refused but followed: a book arriving with "Comic"
-     * gets "Comics", because that is what the merge said should happen to
-     * everything carrying the old name - not only to the books that happened
-     * to be in the shelf that afternoon.
+     * A removed tag gets the link, and it stays out of sight like every other
+     * link a removed tag has. This used to refuse it, so that a removed name
+     * would not come back with the next import - which a hidden link does not
+     * do, since nothing shows a removed tag. What refusing did do was break
+     * restoring: the scanner showed a removed label on the card, saved the
+     * book without it, and bringing the label back later left out every book
+     * that had arrived in between. Restoring is only real if a removed tag
+     * goes on collecting the books it belongs to.
+     *
+     * The edit form is the exception and handles it itself, in
+     * BookRepository::replaceTags: there the name is typed by hand and the
+     * owner is told it will not be taken.
      */
     public function link(int $bookId, int $tagId): void
     {
@@ -97,7 +104,9 @@ final class TagRepository
     }
 
     /**
-     * Which tag a link should really point at: null when it was removed.
+     * Which tag a link should really point at: the end of its merge trail,
+     * in use or not. Null only for a tag that does not exist, or a trail
+     * that goes round in a circle.
      *
      * Merges can chain - A into B, later B into C - so this follows the
      * trail, with a limit in case one ever points back at itself.
@@ -112,11 +121,8 @@ final class TagRepository
             if ($row === false) {
                 return null;
             }
-            if ($row['dropped_at'] === null) {
+            if ($row['dropped_at'] === null || $row['merged_into'] === null) {
                 return $tagId;
-            }
-            if ($row['merged_into'] === null) {
-                return null;
             }
             $tagId = (int) $row['merged_into'];
         }
@@ -670,7 +676,8 @@ final class TagRepository
         $statement = $this->pdo->prepare(
             'SELECT bt.book_id FROM book_tags bt
                JOIN books b ON b.id = bt.book_id
-              WHERE bt.tag_id = ? AND b.owner_id = ?'
+              WHERE bt.tag_id = ? AND b.owner_id = ?
+              ORDER BY bt.book_id ASC'
         );
         $statement->execute([$tagId, $ownerId]);
 

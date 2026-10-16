@@ -6,7 +6,7 @@
  * genres and 36 labels, decided book by book in a spreadsheet. The plan for
  * getting there was "create the new ones, delete the old ones, import" - and
  * 13 names are on both lists. Creating finds them, deleting takes them with
- * it, and a removed tag cannot be put on a book again. The 51 books meant to
+ * it, and a removed tag does not show on a book again. The 51 books meant to
  * carry "Drachenlanze" would have ended up without it.
  */
 declare(strict_types=1);

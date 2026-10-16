@@ -112,6 +112,32 @@ final class ScanController
 
         $data = $found->toArray();
 
+        /* What the owner has decided about these names, on the card where the
+         * book is looked at. A merged name is shown as what it became, which
+         * is what the book will be given. A removed one is still sent and
+         * still saved - out of sight, so that bringing it back later puts it
+         * on this book as well - but the card says it is removed rather than
+         * showing it like any other label, which is how it was reported: on
+         * the card, and then nowhere. */
+        $decided = [];
+        foreach ($this->app->tags->removedNames($this->app->ownerId) as $removed) {
+            $decided[$removed['slug']] = $removed['into'];
+        }
+        $tagsShown = [];
+        $data['tags_removed'] = [];
+        foreach ($data['tags'] as $tagName) {
+            $slug = Text::slug((string) $tagName, 190);
+            if (!array_key_exists($slug, $decided)) {
+                $tagsShown[] = $tagName;
+            } elseif ($decided[$slug] !== null) {
+                $tagsShown[] = $decided[$slug];
+            } else {
+                $tagsShown[] = $tagName;
+                $data['tags_removed'][] = $tagName;
+            }
+        }
+        $data['tags'] = array_values(array_unique($tagsShown));
+
         /* The best source for a German book is the DNB, and it has no covers
          * at all. So the cover services are asked directly rather than a bare
          * placeholder being shown - the same step took the nightly job's cover
