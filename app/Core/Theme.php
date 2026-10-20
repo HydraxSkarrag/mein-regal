@@ -127,6 +127,42 @@ final class Theme
      *
      * @return array{0: string, 1: string}
      */
+    /**
+     * The plain scheme's value of each token, as hex, read through every layer
+     * in load order. A token a layer sets to something other than a colour
+     * written in hex - a var(), an rgba() - is left at what came before.
+     *
+     * For drawing outside the browser: the share image takes its colours
+     * from here, so it is red on white on one installation and blue on dark
+     * on another without either of them saying so twice.
+     *
+     * @param  array<string, string> $defaults token => colour if no layer sets one
+     * @return array<string, string>
+     */
+    public function palette(array $defaults): array
+    {
+        $palette = $defaults;
+        $sheets = [$this->root . '/public/css/style.css'];
+        foreach (array_keys($this->files()) as $path) {
+            $sheets[] = $path;
+        }
+        foreach ($sheets as $sheet) {
+            $css = @file_get_contents($sheet);
+            if ($css === false) {
+                continue;
+            }
+            [$plain] = self::split($css);
+            foreach (array_keys($palette) as $token) {
+                $pattern = '/' . preg_quote($token, '/') . '\s*:\s*(#[0-9a-f]{3,8})\s*(?=[;}]|$)/i';
+                if (preg_match_all($pattern, $plain, $m) > 0) {
+                    $palette[$token] = strtolower((string) end($m[1]));
+                }
+            }
+        }
+
+        return $palette;
+    }
+
     private static function split(string $css): array
     {
         $plain = '';

@@ -122,6 +122,16 @@ Four settings decide what the installation is rather than how it looks:
 | `review_blog_url` | empty | the WordPress blog `bin/reviews.php` matches against. Empty means nothing is ever contacted |
 | `ai_crawlers` | `false` | whether crawlers collecting training text are welcome. `false` writes a `Disallow` for each into `robots.txt`; search engines are unaffected |
 
+**The picture a shared link carries** - on Facebook, WhatsApp, Signal and the
+rest - is drawn for each installation from what it already says about itself:
+the name, the blog, the theme's colours and the logo, with three covers on a
+shelf. `share_books` in `config.php` names those books, by ISBN or by the
+address of their page; without it they are the three newest. It is drawn once,
+kept under `public/covers/share/` and drawn again only when something on it
+changes - the file name changes with it, which is what makes the platforms
+fetch it anew. A book page shares its own cover instead. Drawing needs GD with
+FreeType; without it pages simply carry no picture.
+
 ### 4. Your own logo and colours
 
 The shelf ships with a neutral mark and a neutral palette so a fresh
@@ -173,6 +183,7 @@ to the wrong one half the time.
 | `favicon-32x32.png` | the browser tab |
 | `favicon-192x192.png` | the home-screen tile |
 | `apple-touch-icon.png` | the same on iOS, 180×180 |
+| `og.jpg` or `og.png` | the picture a shared link carries, instead of the drawn one; 1200×630 is what the platforms ask for |
 
 Whatever is there wins; the rest stays on the default. The folder is excluded
 from Git **and** from the deployment, so your logo is neither published with the

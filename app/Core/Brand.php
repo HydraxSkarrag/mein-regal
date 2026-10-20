@@ -42,6 +42,9 @@ final class Brand
         'icon'    => ['favicon-32x32.png'],
         'tile'    => ['favicon-192x192.png'],
         'touch'   => ['apple-touch-icon.png'],
+        // The picture a shared link carries, if a designed one should replace
+        // the drawn one - see ShareImage.
+        'share'   => ['og.jpg', 'og.png'],
     ];
 
     /** @var array<string, string|null> */

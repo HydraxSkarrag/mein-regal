@@ -13,10 +13,12 @@ use App\Core\ErrorLog;
 use App\Core\Database;
 use App\Core\Formatter;
 use App\Core\HttpCookies;
+use App\Core\Isbn;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Router;
 use App\Core\Session;
+use App\Core\ShareImage;
 use App\Core\Styles;
 use App\Core\Theme;
 use App\Core\Translator;
@@ -177,6 +179,7 @@ final class Application
         $this->view->share('blogUrl', $this->config->str('blog_url'));
         $this->view->share('blogName', $this->config->str('blog_name'));
         $this->view->share('brand', $this->brand);
+        $this->view->share('shareImage', $this->shareImage());
         $this->view->share('themeUrls', $this->theme->urls());
         $this->view->share('metaColours', $this->theme->metaColours());
         $this->view->share('publicStats', $this->publicStats());
@@ -222,6 +225,66 @@ final class Application
     }
 
     /** What this installation calls itself. One default, in one place. */
+    /**
+     * The picture a shared link to this shelf carries. Built here because it
+     * is made of what this class holds - the name, the blog, the theme, the
+     * brand - and asked for its facts only once a page wants it.
+     */
+    private function shareImage(): ShareImage
+    {
+        $blogName = $this->config->str('blog_name');
+
+        return new ShareImage(
+            PROJECT_ROOT,
+            rtrim($this->config->str('site_url'), '/'),
+            $this->brand,
+            $this->theme,
+            $this->siteName(),
+            $blogName !== '' ? t('app.by') . ' ' . $blogName : t('app.tagline'),
+            fn (): array => [
+                'count'  => t('shelf.count', ['count' => $this->formatter->number($this->books->countAll($this->ownerId))]),
+                'covers' => $this->shareCovers(3),
+            ],
+        );
+    }
+
+    /**
+     * The covers on the shared picture: the books config.php names under
+     * 'share_books', in that order, and the newest ones after them if fewer
+     * than three were named or some had no cover of their own.
+     *
+     * Named by ISBN or by the address of the book page, whichever is to hand
+     * - the end of a book's URL is its slug, and the ISBN is in it as well.
+     * A name that matches no book is skipped rather than reported: the
+     * picture is drawn for a crawler, and there is nobody to tell.
+     *
+     * @return list<string>
+     */
+    private function shareCovers(int $count): array
+    {
+        $paths = [];
+        $named = $this->config->get('share_books', []);
+        foreach (is_array($named) ? $named : [] as $entry) {
+            $entry = trim(basename((string) parse_url(trim((string) $entry), PHP_URL_PATH)));
+            if ($entry === '') {
+                continue;
+            }
+            $isbn = Isbn::normalize($entry);
+            $book = $isbn !== null
+                ? $this->books->findByIsbn($this->ownerId, $isbn)
+                : $this->books->findBySlug($this->ownerId, $entry);
+            $cover = $book === null ? null : $this->covers->bestFor((int) $book['id'], false);
+            if (($cover['path'] ?? null) !== null) {
+                $paths[] = (string) $cover['path'];
+            }
+        }
+        foreach ($this->covers->newestPaths($this->ownerId, $count + count($paths)) as $path) {
+            $paths[] = $path;
+        }
+
+        return array_slice(array_values(array_unique($paths)), 0, $count);
+    }
+
     public function siteName(): string
     {
         return $this->config->str('site_name', 'Mein Regal');

@@ -57,6 +57,17 @@ return [
     'blog_url'  => '',
     'blog_name' => '',
 
+    // The picture a link to the shelf carries when it is shared - drawn from
+    // the name, the blog, the theme's colours and the logo, with three covers
+    // standing on a shelf. Which three: the books named here, by ISBN or by
+    // the address of their page, and the newest ones for any place left over.
+    // Empty means the three newest. A designed picture of your own goes in
+    // public/assets/brand/og.jpg instead, and replaces all of this.
+    'share_books' => [
+        // '9783453274419',
+        // 'https://regal.example.org/book/drachenzwielicht-9783442245109',
+    ],
+
 
     // The statistics page at /stats, visible to anyone. Set to false to keep
     // the figures to yourself; the owner's dashboard under /admin is

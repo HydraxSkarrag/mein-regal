@@ -804,7 +804,7 @@ final class ShelfController
             'canonical'       => $this->app->url('/book/' . $book['slug']),
             'metaDescription' => $this->description($book, $authorLine),
             'ogType'          => 'book',
-            'ogImage'         => $this->publicOgImage($bookId),
+            'ogImage'         => $this->publicOgImage($bookId, (string) $book['title']),
             'jsonLd'          => $this->bookJsonLd($book, $contributors),
         ]));
     }
@@ -812,16 +812,26 @@ final class ShelfController
     /**
      * Only a cover we host ourselves may be used as a social preview image.
      * A hotlinked third-party cover would be fetched by every service that
-     * unfurls the link, and it is not ours to republish.
+     * unfurls the link, and it is not ours to republish. A book without one
+     * gets the shelf's picture instead; see ShareImage.
+     *
+     * @return array{url: string, width: ?int, height: ?int, alt: string}|null
      */
-    private function publicOgImage(int $bookId): ?string
+    private function publicOgImage(int $bookId, string $title): ?array
     {
         $cover = $this->app->covers->bestFor($bookId, false);
         if ($cover === null || ($cover['path'] ?? null) === null) {
             return null;
         }
+        $width = (int) ($cover['width'] ?? 0);
+        $height = (int) ($cover['height'] ?? 0);
 
-        return $this->app->url('/covers/' . $cover['path']);
+        return [
+            'url'    => $this->app->url('/covers/' . $cover['path']),
+            'width'  => $width > 0 ? $width : null,
+            'height' => $height > 0 ? $height : null,
+            'alt'    => t('book.cover.of', ['title' => $title]),
+        ];
     }
 
     /**

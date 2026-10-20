@@ -279,4 +279,28 @@ final class CoverRepository
 
         return $byBook;
     }
+
+    /**
+     * The stored pictures of the newest books that have one - one per book,
+     * hosted here, not thrown out. What the share image puts on its shelf.
+     *
+     * @return list<string> paths below public/covers
+     */
+    public function newestPaths(int $ownerId, int $limit): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT c.book_id, c.path FROM covers c
+               JOIN books b ON b.id = c.book_id
+              WHERE b.owner_id = ? AND c.path IS NOT NULL AND c.rejected_at IS NULL
+              ORDER BY c.book_id DESC, c.id ASC'
+        );
+        $statement->execute([$ownerId]);
+
+        $paths = [];
+        while (($row = $statement->fetch()) !== false && count($paths) < $limit) {
+            $paths[(int) $row['book_id']] ??= (string) $row['path'];
+        }
+
+        return array_values($paths);
+    }
 }

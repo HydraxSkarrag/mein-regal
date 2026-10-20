@@ -65,8 +65,18 @@ $current = $current ?? '';
   <meta property="og:title" content="<?= e($ogTitle ?? $pageTitle) ?>">
   <meta property="og:description" content="<?= e($metaDescription ?? t('app.tagline')) ?>">
   <meta property="og:url" content="<?= e($canonical ?? $siteUrl) ?>">
-  <?php if (($ogImage ?? null) !== null): ?>
-  <meta property="og:image" content="<?= e($ogImage) ?>">
+  <?php /* The page's own picture where it has one - a book its cover - and
+           the shelf's otherwise; see App\Core\ShareImage. With the size
+           given, Facebook shows the picture the first time a link is shared
+           rather than after it has fetched and measured it. */ ?>
+  <?php $shareCard = $shareImage->card($ogImage ?? null); ?>
+  <?php if ($shareCard !== null): ?>
+  <meta property="og:image" content="<?= e($shareCard['url']) ?>">
+  <?php if ($shareCard['width'] !== null && $shareCard['height'] !== null): ?>
+  <meta property="og:image:width" content="<?= (int) $shareCard['width'] ?>">
+  <meta property="og:image:height" content="<?= (int) $shareCard['height'] ?>">
+  <?php endif; ?>
+  <meta property="og:image:alt" content="<?= e($shareCard['alt']) ?>">
   <meta name="twitter:card" content="summary_large_image">
   <?php else: ?>
   <meta name="twitter:card" content="summary">
